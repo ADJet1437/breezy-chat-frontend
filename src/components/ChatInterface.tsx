@@ -33,23 +33,85 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const simulateTyping = async () => {
-    setIsTyping(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    setIsTyping(false);
-  };
+  const sendMessageToBackend = async (message: string) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/missions/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          llm: 'gpt-4o'
+        }),
+      });
 
-  const generateBotResponse = (userMessage: string): string => {
-    // Simple response simulation - replace with actual API call later
-    const responses = [
-      "That's an interesting question! I'd be happy to help you with that.",
-      "I understand what you're asking. Let me provide you with some information.",
-      "Great question! Here's what I think about that topic.",
-      "I appreciate you asking. Based on what you've shared, here's my perspective.",
-      "That's a thoughtful inquiry. Let me break this down for you.",
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Create initial bot message
+      const botMessageId = (Date.now() + 1).toString();
+      const botMessage: Message = {
+        id: botMessageId,
+        content: '',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const jsonStr = line.slice(6); // Remove 'data: ' prefix
+                const data = JSON.parse(jsonStr);
+                
+                if (data.event_type === 'mission_content') {
+                  // Update the bot message content by appending the new content
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === botMessageId 
+                      ? { ...msg, content: msg.content + data.answer }
+                      : msg
+                  ));
+                }
+              } catch (error) {
+                console.error('Error parsing JSON:', error);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+      
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: "Sorry, I'm having trouble connecting to the server. Please try again.",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -63,18 +125,11 @@ const ChatInterface = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = inputValue;
     setInputValue('');
+    setIsTyping(true);
 
-    await simulateTyping();
-
-    const botResponse: Message = {
-      id: (Date.now() + 1).toString(),
-      content: generateBotResponse(inputValue),
-      sender: 'bot',
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, botResponse]);
+    await sendMessageToBackend(messageToSend);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
