@@ -11,6 +11,23 @@ import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import { Message } from '../types/chat';
 
+interface TaskMessage {
+  id: string;
+  message: string;
+  answer: string;
+  created_at: string;
+  mission_id: string;
+}
+
+interface MissionDetails {
+  name: string;
+  id: string;
+  created_at: string;
+  updated_at: string;
+  llm_id: string;
+  task_messages: TaskMessage[];
+}
+
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -22,6 +39,7 @@ const ChatInterface = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -33,6 +51,79 @@ const ChatInterface = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load mission history when currentMissionId changes
+  useEffect(() => {
+    if (currentMissionId) {
+      loadMissionHistory(currentMissionId);
+    }
+  }, [currentMissionId]);
+
+  const loadMissionHistory = async (missionId: string) => {
+    console.log('Loading mission history for:', missionId);
+    setIsLoadingHistory(true);
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/missions/${missionId}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const missionDetails: MissionDetails = await response.json();
+      console.log('Mission details loaded:', missionDetails);
+
+      // Transform task_messages to Message format
+      const historyMessages: Message[] = [];
+      
+      missionDetails.task_messages.forEach((taskMessage) => {
+        // Add user message
+        historyMessages.push({
+          id: `${taskMessage.id}_user`,
+          content: taskMessage.message,
+          sender: 'user',
+          timestamp: new Date(taskMessage.created_at),
+        });
+
+        // Add bot response
+        historyMessages.push({
+          id: `${taskMessage.id}_bot`,
+          content: taskMessage.answer,
+          sender: 'bot',
+          timestamp: new Date(taskMessage.created_at),
+        });
+      });
+
+      // Set the messages to the loaded history
+      setMessages(historyMessages);
+      console.log('Mission history loaded successfully:', historyMessages.length, 'messages');
+      
+    } catch (error) {
+      console.error('Error loading mission history:', error);
+      toast({
+        description: "Failed to load mission history. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+      
+      // Keep default welcome message on error
+      setMessages([
+        {
+          id: '1',
+          content: "Hello! I'm your AI assistant. How can I help you today?",
+          sender: 'bot',
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   const handleNewMission = () => {
     setMessages([
@@ -211,7 +302,7 @@ const ChatInterface = () => {
           <Button
             onClick={handleNewMission}
             className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
-            disabled={isStreaming}
+            disabled={isStreaming || isLoadingHistory}
           >
             <Plus className="h-4 w-4 mr-2" />
             New Mission
@@ -222,8 +313,19 @@ const ChatInterface = () => {
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-6 py-4">
-          <MessageList messages={messages} />
-          {isStreaming && <TypingIndicator />}
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-center">
+                <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Loading mission history...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <MessageList messages={messages} />
+              {isStreaming && <TypingIndicator />}
+            </>
+          )}
           <div ref={messagesEndRef} />
         </ScrollArea>
       </div>
@@ -238,12 +340,12 @@ const ChatInterface = () => {
               onKeyPress={handleKeyPress}
               placeholder="Type your message here..."
               className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
-              disabled={isStreaming}
+              disabled={isStreaming || isLoadingHistory}
             />
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isStreaming}
+            disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
           >
             <Send className="h-4 w-4" />
