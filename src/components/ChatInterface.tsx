@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Copy, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +21,7 @@ const ChatInterface = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [currentMissionId, setCurrentMissionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -43,6 +43,8 @@ const ChatInterface = () => {
       },
     ]);
     setInputValue('');
+    setCurrentMissionId(null); // Clear mission ID to start a new mission
+    console.log('Cleared mission ID for new mission');
     toast({
       description: "New mission started!",
       duration: 2000,
@@ -51,16 +53,27 @@ const ChatInterface = () => {
 
   const sendMessageToBackend = async (message: string) => {
     console.log('Starting to send message:', message);
+    console.log('Current mission ID:', currentMissionId);
     try {
+      // Prepare request payload - include mission_id only if we have one
+      const requestPayload: any = {
+        message: message,
+        llm: 'gpt-4o'
+      };
+
+      if (currentMissionId) {
+        requestPayload.mission_id = currentMissionId;
+        console.log('Including mission_id in request:', currentMissionId);
+      } else {
+        console.log('No mission_id - this will create a new mission');
+      }
+
       const response = await fetch('http://localhost:8000/api/v1/missions/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: message,
-          llm: 'gpt-4o'
-        }),
+        body: JSON.stringify(requestPayload),
       });
 
       console.log('Response received:', response.status, response.ok);
@@ -105,7 +118,10 @@ const ChatInterface = () => {
                 const data = JSON.parse(jsonStr);
                 console.log('Parsed data:', data);
                 
-                if (data.event_type === 'mission_content') {
+                if (data.event_type === 'mission_init') {
+                  console.log('Received mission_init event with mission_id:', data.answer);
+                  setCurrentMissionId(data.answer);
+                } else if (data.event_type === 'mission_content') {
                   console.log('Updating message content with:', data.answer);
                   // Update the bot message content by appending the new content
                   setMessages(prev => prev.map(msg => 
