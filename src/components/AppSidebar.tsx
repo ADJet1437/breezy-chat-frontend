@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
 
@@ -34,26 +33,31 @@ export function AppSidebar() {
   const currentPath = location.pathname;
 
   const isActive = (path: string) => currentPath === path;
-  const getNavClassName = ({ isActive }: { isActive: boolean }) =>
-    isActive ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-accent hover:text-accent-foreground';
 
   return (
-    <Sidebar className="border-r">
+    <Sidebar className="border-r bg-sidebar">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-semibold px-4 py-2">
+          <SidebarGroupLabel className="text-lg font-semibold px-4 py-3 text-sidebar-foreground">
             AI Assistant
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild size="lg">
-                    <NavLink to={item.url} className={getNavClassName}>
-                      <item.icon className="h-5 w-5" />
-                      {state === 'expanded' && (
-                        <span className="text-base">{item.title}</span>
-                      )}
+                  <SidebarMenuButton asChild size="lg" className="w-full">
+                    <NavLink 
+                      to={item.url} 
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors ${
+                          isActive 
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                        }`
+                      }
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
