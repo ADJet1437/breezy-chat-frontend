@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Copy, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const ChatInterface = () => {
   };
 
   const sendMessageToBackend = async (message: string) => {
+    console.log('Starting to send message:', message);
     try {
       const response = await fetch('http://localhost:8000/api/v1/missions/complete', {
         method: 'POST',
@@ -60,6 +62,8 @@ const ChatInterface = () => {
           llm: 'gpt-4o'
         }),
       });
+
+      console.log('Response received:', response.status, response.ok);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,26 +78,35 @@ const ChatInterface = () => {
         timestamp: new Date(),
       };
 
+      console.log('Adding initial bot message with id:', botMessageId);
       setMessages(prev => [...prev, botMessage]);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
       if (reader) {
+        console.log('Starting to read stream...');
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('Stream reading completed');
+            break;
+          }
 
           const chunk = decoder.decode(value);
+          console.log('Received chunk:', chunk);
           const lines = chunk.split('\n');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
                 const jsonStr = line.slice(6); // Remove 'data: ' prefix
+                console.log('Parsing JSON:', jsonStr);
                 const data = JSON.parse(jsonStr);
+                console.log('Parsed data:', data);
                 
                 if (data.event_type === 'mission_content') {
+                  console.log('Updating message content with:', data.answer);
                   // Update the bot message content by appending the new content
                   setMessages(prev => prev.map(msg => 
                     msg.id === botMessageId 
@@ -102,11 +115,13 @@ const ChatInterface = () => {
                   ));
                 }
               } catch (error) {
-                console.error('Error parsing JSON:', error);
+                console.error('Error parsing JSON:', error, 'Line:', line);
               }
             }
           }
         }
+      } else {
+        console.error('No reader available from response body');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -125,12 +140,15 @@ const ChatInterface = () => {
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
+      console.log('Setting isStreaming to false');
       setIsStreaming(false);
     }
   };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
+
+    console.log('Handling send message:', inputValue);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -143,6 +161,7 @@ const ChatInterface = () => {
     const messageToSend = inputValue;
     setInputValue('');
     setIsStreaming(true);
+    console.log('Set isStreaming to true');
 
     await sendMessageToBackend(messageToSend);
   };
