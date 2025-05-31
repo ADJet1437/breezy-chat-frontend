@@ -7,7 +7,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -38,9 +37,6 @@ export function AppSidebar() {
     <Sidebar className="border-r bg-sidebar">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-semibold px-4 py-3 text-sidebar-foreground">
-            AI Assistant
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (

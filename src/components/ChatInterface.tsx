@@ -293,7 +293,6 @@ const ChatInterface = () => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-xl font-semibold text-gray-800">AI Assistant</h1>
               <p className="text-sm text-gray-500">
                 {currentMissionId ? `Mission: ${currentMissionId.slice(0, 8)}...` : 'Always here to help'}
               </p>
