@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useMissionContext } from '../contexts/MissionContext';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import { Message } from '../types/chat';
@@ -21,7 +22,7 @@ const ChatInterface = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentMissionId, setCurrentMissionId] = useState<string | null>(null);
+  const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -202,7 +203,9 @@ const ChatInterface = () => {
             </Avatar>
             <div>
               <h1 className="text-xl font-semibold text-gray-800">AI Assistant</h1>
-              <p className="text-sm text-gray-500">Always here to help</p>
+              <p className="text-sm text-gray-500">
+                {currentMissionId ? `Mission: ${currentMissionId.slice(0, 8)}...` : 'Always here to help'}
+              </p>
             </div>
           </div>
           <Button
