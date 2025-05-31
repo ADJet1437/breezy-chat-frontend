@@ -21,7 +21,7 @@ const ChatInterface = () => {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -31,7 +31,7 @@ const ChatInterface = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages]);
 
   const sendMessageToBackend = async (message: string) => {
     try {
@@ -50,7 +50,7 @@ const ChatInterface = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Create initial bot message
+      // Create initial bot message with empty content
       const botMessageId = (Date.now() + 1).toString();
       const botMessage: Message = {
         id: botMessageId,
@@ -110,7 +110,7 @@ const ChatInterface = () => {
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsTyping(false);
+      setIsStreaming(false);
     }
   };
 
@@ -127,7 +127,7 @@ const ChatInterface = () => {
     setMessages(prev => [...prev, userMessage]);
     const messageToSend = inputValue;
     setInputValue('');
-    setIsTyping(true);
+    setIsStreaming(true);
 
     await sendMessageToBackend(messageToSend);
   };
@@ -165,7 +165,7 @@ const ChatInterface = () => {
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-6 py-4">
           <MessageList messages={messages} />
-          {isTyping && <TypingIndicator />}
+          {isStreaming && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </ScrollArea>
       </div>
@@ -180,12 +180,12 @@ const ChatInterface = () => {
               onKeyPress={handleKeyPress}
               placeholder="Type your message here..."
               className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
-              disabled={isTyping}
+              disabled={isStreaming}
             />
           </div>
           <Button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isTyping}
+            disabled={!inputValue.trim() || isStreaming}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
           >
             <Send className="h-4 w-4" />

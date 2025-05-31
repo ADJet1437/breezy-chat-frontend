@@ -60,20 +60,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    code({ node, inline, className, children, ...props }) {
+                    code(props) {
+                      const { children, className, ...rest } = props;
                       const match = /language-(\w+)/.exec(className || '');
-                      return !inline && match ? (
+                      return match ? (
                         <SyntaxHighlighter
-                          style={oneDark}
+                          style={oneDark as any}
                           language={match[1]}
                           PreTag="div"
                           className="rounded-lg"
-                          {...props}
+                          {...rest}
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
                       ) : (
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...rest}>
                           {children}
                         </code>
                       );
