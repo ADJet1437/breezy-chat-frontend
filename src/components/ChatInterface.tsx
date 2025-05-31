@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Copy, MoreVertical } from 'lucide-react';
+import { Send, Bot, User, Copy, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,6 +31,22 @@ const ChatInterface = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleNewMission = () => {
+    setMessages([
+      {
+        id: '1',
+        content: "Hello! I'm your AI assistant. How can I help you today?",
+        sender: 'bot',
+        timestamp: new Date(),
+      },
+    ]);
+    setInputValue('');
+    toast({
+      description: "New mission started!",
+      duration: 2000,
+    });
+  };
 
   const sendMessageToBackend = async (message: string) => {
     try {
@@ -155,8 +170,13 @@ const ChatInterface = () => {
               <p className="text-sm text-gray-500">Always here to help</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-5 w-5" />
+          <Button
+            onClick={handleNewMission}
+            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
+            disabled={isStreaming}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Mission
           </Button>
         </div>
       </div>
