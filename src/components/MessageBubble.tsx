@@ -61,7 +61,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   remarkPlugins={[remarkGfm]}
                   components={{
                     code(props) {
-                      const { children, className, ...rest } = props;
+                      const { children, className } = props;
                       const match = /language-(\w+)/.exec(className || '');
                       return match ? (
                         <SyntaxHighlighter
@@ -69,12 +69,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                           language={match[1]}
                           PreTag="div"
                           className="rounded-lg"
-                          {...rest}
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
                       ) : (
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...rest}>
+                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
                           {children}
                         </code>
                       );
