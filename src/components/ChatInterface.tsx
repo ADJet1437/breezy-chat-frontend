@@ -281,8 +281,8 @@ const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
+      {/* Messages Area - takes remaining space */}
+      <div className="flex-1 min-h-0">
         <ScrollArea className="h-full px-6 py-4">
           {isLoadingHistory ? (
             <div className="flex items-center justify-center h-32">
@@ -301,8 +301,8 @@ const ChatInterface = () => {
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
-      <div className="bg-white/80 backdrop-blur-sm border-t border-gray-200 px-6 py-4">
+      {/* Input Area - fixed height */}
+      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 px-6 py-4">
         <div className="flex space-x-3">
           <div className="flex-1 relative">
             <Input
