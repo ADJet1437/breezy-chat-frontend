@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Clock, Shield, RefreshCw, Book, LogOut, Edit, CheckCircle, Calendar } from 'lucide-react';
@@ -57,9 +56,14 @@ const AuthDashboard = () => {
 
   const refreshToken = async () => {
     try {
+      // Get the current refresh token from cookies and send it in request body
       const response = await fetch('http://localhost:8000/api/v1/auth/refresh', {
         method: 'POST',
-        credentials: 'include'
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({}) // Backend will get refresh token from cookies
       });
       
       if (response.ok) {

@@ -66,34 +66,84 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to get Google OAuth URL');
       }
       
-      const { url } = await response.json();
+      const { authorization_url, state } = await response.json();
       
       // Open Google OAuth in a popup
       const popup = window.open(
-        url,
+        authorization_url,
         'google-oauth',
         'width=500,height=600,scrollbars=yes,resizable=yes'
       );
 
       // Listen for popup to close or receive auth result
       return new Promise((resolve, reject) => {
+        // Listen for messages from the popup (callback handling)
+        const messageListener = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+            const { code, state: returnedState } = event.data;
+            
+            // Verify state matches
+            if (returnedState !== state) {
+              reject(new Error('Invalid state parameter'));
+              return;
+            }
+            
+            try {
+              // Send callback data to backend
+              const callbackResponse = await fetch(`${API_BASE}/api/v1/auth/google/callback`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ code, state: returnedState })
+              });
+              
+              if (!callbackResponse.ok) {
+                throw new Error('Authentication failed');
+              }
+              
+              const authData = await callbackResponse.json();
+              setUser(authData.user);
+              
+              popup?.close();
+              window.removeEventListener('message', messageListener);
+              setIsLoading(false);
+              resolve();
+            } catch (error) {
+              popup?.close();
+              window.removeEventListener('message', messageListener);
+              setIsLoading(false);
+              reject(error);
+            }
+          }
+          
+          if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+            popup?.close();
+            window.removeEventListener('message', messageListener);
+            setIsLoading(false);
+            reject(new Error(event.data.error || 'Authentication failed'));
+          }
+        };
+        
+        window.addEventListener('message', messageListener);
+        
+        // Check if popup was closed manually
         const checkClosed = setInterval(() => {
           if (popup?.closed) {
             clearInterval(checkClosed);
-            // Check auth status after popup closes
-            checkAuthStatus().then(() => {
-              setIsLoading(false);
-              resolve();
-            }).catch(() => {
-              setIsLoading(false);
-              reject(new Error('Authentication failed'));
-            });
+            window.removeEventListener('message', messageListener);
+            setIsLoading(false);
+            reject(new Error('Authentication was cancelled'));
           }
         }, 1000);
 
         // Timeout after 5 minutes
         setTimeout(() => {
           clearInterval(checkClosed);
+          window.removeEventListener('message', messageListener);
           popup?.close();
           setIsLoading(false);
           reject(new Error('Authentication timeout'));
