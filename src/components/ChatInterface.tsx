@@ -280,47 +280,51 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Messages Area - takes remaining space */}
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full px-6 py-4">
-          {isLoadingHistory ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="text-center">
-                <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">Loading mission history...</p>
+    <div className="flex flex-col h-full">
+      {/* Messages Area */}
+      <div className="flex-1 min-h-0 p-6">
+        <div className="max-w-4xl mx-auto h-full flex flex-col">
+          <ScrollArea className="flex-1">
+            {isLoadingHistory ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Loading mission history...</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <MessageList messages={messages} />
-              {isStreaming && <TypingIndicator />}
-            </>
-          )}
-          <div ref={messagesEndRef} />
-        </ScrollArea>
+            ) : (
+              <>
+                <MessageList messages={messages} />
+                {isStreaming && <TypingIndicator />}
+              </>
+            )}
+            <div ref={messagesEndRef} />
+          </ScrollArea>
+        </div>
       </div>
 
-      {/* Input Area - fixed height */}
-      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 px-6 py-4">
-        <div className="flex space-x-3">
-          <div className="flex-1 relative">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message here..."
-              className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
-              disabled={isStreaming || isLoadingHistory}
-            />
+      {/* Input Area */}
+      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex space-x-3">
+            <div className="flex-1 relative">
+              <Input
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message here..."
+                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                disabled={isStreaming || isLoadingHistory}
+              />
+            </div>
+            <Button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>

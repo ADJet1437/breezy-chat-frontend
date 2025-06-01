@@ -39,17 +39,17 @@ const Header = () => {
   const { title, subtitle } = getHeaderContent();
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 shadow-sm">
+      <div className="flex items-center justify-between h-full">
         <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600">
+          <Avatar className="h-9 w-9 bg-gradient-to-r from-blue-500 to-purple-600">
             <AvatarFallback className="text-white">
-              <Bot className="h-5 w-5" />
+              <Bot className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
           <div>
             <h1 className="text-lg font-semibold text-gray-800">{title}</h1>
-            <p className="text-sm text-gray-500">{subtitle}</p>
+            <p className="text-xs text-gray-500">{subtitle}</p>
           </div>
         </div>
         <Button

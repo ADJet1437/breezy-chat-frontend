@@ -34,8 +34,8 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <Sidebar className="border-r bg-sidebar">
-      <SidebarContent>
+    <Sidebar className="border-r bg-sidebar h-full w-64">
+      <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
