@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, UserShield, Key } from 'lucide-react';
+import { Shield, Lock, Key } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/auth-styles.css';
 
@@ -86,7 +86,7 @@ const GoogleAuthLogin = () => {
               <span>Secure OAuth 2.0</span>
             </div>
             <div className="security-feature">
-              <UserShield />
+              <Shield />
               <span>Privacy Protected</span>
             </div>
             <div className="security-feature">
