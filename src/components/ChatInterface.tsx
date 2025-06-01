@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Copy, Plus } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
 import MessageList from './MessageList';
@@ -283,32 +281,6 @@ const ChatInterface = () => {
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600">
-              <AvatarFallback className="text-white">
-                <Bot className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm text-gray-500">
-                {currentMissionId ? `Mission: ${currentMissionId.slice(0, 8)}...` : 'Always here to help'}
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={handleNewMission}
-            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
-            disabled={isStreaming || isLoadingHistory}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Mission
-          </Button>
-        </div>
-      </div>
-
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-6 py-4">

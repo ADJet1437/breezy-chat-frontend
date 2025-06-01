@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, MessageSquare } from 'lucide-react';
@@ -89,25 +88,6 @@ const MissionsInterface = () => {
 
   return (
     <div className="flex flex-col h-full max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">All Missions</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {missions.length} mission{missions.length !== 1 ? 's' : ''} found
-            </p>
-          </div>
-          <Button
-            onClick={() => navigate('/')}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl px-6 py-2"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            New Mission
-          </Button>
-        </div>
-      </div>
-
       {/* Missions List */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full p-6">
