@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import AuthLayout from "./components/auth/AuthLayout";
 import GoogleAuthLogin from "./components/auth/GoogleAuthLogin";
+import GoogleAuthCallback from "./components/auth/GoogleAuthCallback";
 import AuthLoadingScreen from "./components/auth/AuthLoadingScreen";
 import AuthDashboard from "./components/auth/AuthDashboard";
 import AuthErrorDisplay from "./components/auth/AuthErrorDisplay";
@@ -37,6 +37,7 @@ const App = () => (
                 <Route path="loading" element={<AuthLoadingScreen />} />
                 <Route path="dashboard" element={<AuthDashboard />} />
                 <Route path="error" element={<AuthErrorDisplay />} />
+                <Route path="callback" element={<GoogleAuthCallback />} />
               </Route>
               
               {/* Catch-all route */}

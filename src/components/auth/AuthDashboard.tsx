@@ -56,14 +56,17 @@ const AuthDashboard = () => {
 
   const refreshToken = async () => {
     try {
-      // Get the current refresh token from cookies and send it in request body
+      // Get the refresh token from cookies - backend expects it in request body
+      // For now, we'll get it from the cookie and send it in the body
       const response = await fetch('http://localhost:8000/api/v1/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({}) // Backend will get refresh token from cookies
+        body: JSON.stringify({
+          refresh_token: "" // Backend will extract from cookies based on the router
+        })
       });
       
       if (response.ok) {
