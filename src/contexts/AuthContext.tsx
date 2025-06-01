@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string) => Promise<void>;
+  login: () => Promise<void>;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
@@ -27,52 +27,121 @@ export const useAuth = () => {
   return context;
 };
 
+const API_BASE = 'http://localhost:8000';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check for stored auth state
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Check if user is already authenticated on app load
+    checkAuthStatus();
   }, []);
 
-  const login = async (email: string): Promise<void> => {
-    setIsLoading(true);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const mockUser: User = {
-      id: `user_${Date.now()}`,
-      email,
-      name: email.split('@')[0],
-      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
-    };
-    
-    setUser(mockUser);
-    localStorage.setItem('auth_user', JSON.stringify(mockUser));
-    setIsLoading(false);
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/auth/me`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.log('Not authenticated or connection failed');
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('auth_user');
+  const login = async (): Promise<void> => {
+    setIsLoading(true);
+    
+    try {
+      // Get Google OAuth URL from backend
+      const response = await fetch(`${API_BASE}/api/v1/auth/google`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get Google OAuth URL');
+      }
+      
+      const { url } = await response.json();
+      
+      // Open Google OAuth in a popup
+      const popup = window.open(
+        url,
+        'google-oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      // Listen for popup to close or receive auth result
+      return new Promise((resolve, reject) => {
+        const checkClosed = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(checkClosed);
+            // Check auth status after popup closes
+            checkAuthStatus().then(() => {
+              setIsLoading(false);
+              resolve();
+            }).catch(() => {
+              setIsLoading(false);
+              reject(new Error('Authentication failed'));
+            });
+          }
+        }, 1000);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          popup?.close();
+          setIsLoading(false);
+          reject(new Error('Authentication timeout'));
+        }, 5 * 60 * 1000);
+      });
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch(`${API_BASE}/api/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout request failed:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
   const updateProfile = async (updates: Partial<User>): Promise<void> => {
     if (!user) return;
     
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem('auth_user', JSON.stringify(updatedUser));
-    setIsLoading(false);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const value = {

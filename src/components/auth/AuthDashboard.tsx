@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import '../../styles/auth-styles.css';
 
 const AuthDashboard = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, isLoading } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [editName, setEditName] = useState(user?.name || '');
@@ -46,8 +46,8 @@ const AuthDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
     toast({
       description: "Successfully signed out",
@@ -55,15 +55,32 @@ const AuthDashboard = () => {
     });
   };
 
-  const refreshToken = () => {
-    toast({
-      description: "Token refreshed successfully",
-      duration: 3000,
-    });
+  const refreshToken = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/auth/refresh', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        toast({
+          description: "Token refreshed successfully",
+          duration: 3000,
+        });
+      } else {
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      toast({
+        description: "Failed to refresh token",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const viewApiDocs = () => {
-    window.open('https://docs.lovable.dev', '_blank');
+    window.open('http://localhost:8000/docs', '_blank');
   };
 
   const currentTime = new Date().toLocaleDateString('en-US', {
@@ -80,7 +97,7 @@ const AuthDashboard = () => {
       <div className="welcome-section">
         <div className="welcome-content">
           <h1>Welcome back, {user.name || user.email.split('@')[0]}!</h1>
-          <p className="welcome-subtitle">You're successfully authenticated with the demo system</p>
+          <p className="welcome-subtitle">You're successfully authenticated with Google SSO</p>
         </div>
         <div className="user-avatar">
           {user.avatar_url ? (
@@ -100,6 +117,7 @@ const AuthDashboard = () => {
           <button 
             className="auth-btn auth-btn-outline auth-btn-sm" 
             onClick={handleEditProfile}
+            disabled={isLoading}
           >
             <Edit />
             Edit
@@ -147,7 +165,7 @@ const AuthDashboard = () => {
               <Shield />
               <div>
                 <label>Authentication Method</label>
-                <span>Google OAuth 2.0 (Demo)</span>
+                <span>Google OAuth 2.0</span>
               </div>
             </div>
             <div className="session-item">
@@ -233,14 +251,16 @@ const AuthDashboard = () => {
               <button 
                 onClick={() => setIsEditModalOpen(false)}
                 className="auth-btn auth-btn-outline"
+                disabled={isLoading}
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveProfile}
                 className="auth-btn auth-btn-primary"
+                disabled={isLoading}
               >
-                Save Changes
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

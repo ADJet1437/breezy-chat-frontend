@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/auth-styles.css';
@@ -10,12 +10,33 @@ const AuthLoadingScreen = () => {
   const [progress, setProgress] = useState(0);
   const [subtitle, setSubtitle] = useState('Please wait while we verify your credentials...');
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login } = useAuth();
-
-  const email = location.state?.email || 'demo@example.com';
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
+    // If user becomes authenticated, navigate to dashboard
+    if (user && !isLoading) {
+      setCurrentStep(3);
+      setProgress(100);
+      setSubtitle('Success! Redirecting to dashboard...');
+      setTimeout(() => {
+        navigate('/auth/dashboard');
+      }, 1000);
+      return;
+    }
+
+    // If not loading and no user, there might be an error
+    if (!isLoading && !user) {
+      setTimeout(() => {
+        navigate('/auth/error', { 
+          state: { 
+            error: 'authentication_failed',
+            message: 'Authentication process was interrupted. Please try again.'
+          } 
+        });
+      }, 2000);
+      return;
+    }
+
     const updateProgress = () => {
       setProgress(prev => {
         const newProgress = prev + Math.random() * 15 + 5;
@@ -25,38 +46,16 @@ const AuthLoadingScreen = () => {
           setSubtitle('Establishing secure connection...');
         } else if (newProgress > 70 && currentStep === 2) {
           setCurrentStep(3);
-          setSubtitle('Almost done, redirecting...');
+          setSubtitle('Finalizing authentication...');
         }
         
-        if (newProgress >= 100) {
-          processAuth();
-          return 100;
-        }
-        
-        return newProgress;
+        return Math.min(newProgress, 95); // Don't reach 100% unless actually complete
       });
-    };
-
-    const processAuth = async () => {
-      try {
-        await login(email);
-        setSubtitle('Success! Redirecting to dashboard...');
-        setTimeout(() => {
-          navigate('/auth/dashboard');
-        }, 1000);
-      } catch (error) {
-        navigate('/auth/error', { 
-          state: { 
-            error: 'authentication_failed',
-            message: 'Failed to complete authentication. Please try again.'
-          } 
-        });
-      }
     };
 
     const interval = setInterval(updateProgress, 200 + Math.random() * 300);
     return () => clearInterval(interval);
-  }, [currentStep, email, login, navigate]);
+  }, [user, isLoading, navigate, currentStep]);
 
   return (
     <div className="loading-container">

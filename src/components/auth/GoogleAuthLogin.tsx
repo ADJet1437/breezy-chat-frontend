@@ -1,31 +1,37 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, Key } from 'lucide-react';
+import { Shield, Lock, Key, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/auth-styles.css';
 
 const GoogleAuthLogin = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
 
   const handleGoogleAuth = async () => {
     if (isLoading) return;
     
-    setIsLoading(true);
     setError(null);
 
     try {
-      // Simulate Google OAuth flow
-      const mockEmail = 'demo@example.com';
-      navigate('/auth/loading', { 
-        state: { email: mockEmail, step: 'oauth' } 
-      });
+      // Navigate to loading screen immediately
+      navigate('/auth/loading');
+      
+      // Start the OAuth flow
+      await login();
+      
+      // If successful, navigate to dashboard
+      navigate('/auth/dashboard');
     } catch (err) {
-      setError('Authentication failed. Please try again.');
-      setIsLoading(false);
+      const errorMessage = err instanceof Error ? err.message : 'Authentication failed. Please try again.';
+      navigate('/auth/error', { 
+        state: { 
+          error: 'authentication_failed',
+          message: errorMessage
+        } 
+      });
     }
   };
 
@@ -42,7 +48,7 @@ const GoogleAuthLogin = () => {
             <Shield />
           </div>
           <h1>Welcome to Auth Demo</h1>
-          <p className="auth-subtitle">Sign in to your account</p>
+          <p className="auth-subtitle">Sign in with your Google account</p>
         </div>
         
         {/* Sign In Form */}
@@ -60,7 +66,7 @@ const GoogleAuthLogin = () => {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              <span>Sign in with Google</span>
+              <span>{isLoading ? 'Connecting...' : 'Sign in with Google'}</span>
             </div>
           </button>
           
@@ -73,7 +79,7 @@ const GoogleAuthLogin = () => {
           <div className="alt-signin">
             <p className="info-text" style={{ color: 'var(--auth-gray-600)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Shield size={16} />
-              Use your Google account to sign in securely
+              Secure authentication via Google OAuth 2.0
             </p>
           </div>
         </div>
@@ -110,7 +116,7 @@ const GoogleAuthLogin = () => {
           <div className="bg-white rounded-xl p-6 max-w-md mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-red-600" />
+                <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">Authentication Error</h3>
             </div>
