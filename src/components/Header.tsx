@@ -41,6 +41,13 @@ const Header = () => {
   return (
     <div className="h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 shadow-sm">
       <div className="flex items-center justify-between h-full">
+        <Button
+          onClick={handleNewMission}
+          className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Mission
+        </Button>
         <div className="flex items-center space-x-3">
           <Avatar className="h-9 w-9 bg-gradient-to-r from-blue-500 to-purple-600">
             <AvatarFallback className="text-white">
@@ -52,13 +59,6 @@ const Header = () => {
             <p className="text-xs text-gray-500">{subtitle}</p>
           </div>
         </div>
-        <Button
-          onClick={handleNewMission}
-          className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Mission
-        </Button>
       </div>
     </div>
   );
