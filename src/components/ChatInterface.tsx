@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
-import { useNavigate } from 'react-router-dom';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import { Message } from '../types/chat';
@@ -44,7 +43,6 @@ const ChatInterface = () => {
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -300,24 +298,14 @@ const ChatInterface = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => navigate('/auth/login')}
-              className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
-              disabled={isStreaming || isLoadingHistory}
-            >
-              <User className="h-4 w-4 mr-2" />
-              Sign In Demo
-            </Button>
-            <Button
-              onClick={handleNewMission}
-              className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
-              disabled={isStreaming || isLoadingHistory}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Mission
-            </Button>
-          </div>
+          <Button
+            onClick={handleNewMission}
+            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-4 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
+            disabled={isStreaming || isLoadingHistory}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Mission
+          </Button>
         </div>
       </div>
 
