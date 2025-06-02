@@ -27,11 +27,11 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           <div className="mx-auto w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center">
             <Shield className="h-8 w-8 text-white" />
           </div>
-          <div>
-            <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2">
+          <div className="text-center">
+            <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2 text-center">
               Welcome to Talosy
             </DialogTitle>
-            <p className="text-gray-500 text-sm">Sign in to your account</p>
+            <p className="text-gray-500 text-sm text-center">Sign in to your account</p>
           </div>
         </DialogHeader>
         
