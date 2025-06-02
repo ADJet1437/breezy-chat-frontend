@@ -26,13 +26,23 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       // Store current location for redirect after login
       sessionStorage.setItem('returnTo', window.location.pathname);
       
-      const { authorization_url } = await initiateGoogleAuth();
+      console.log('Initiating Google auth...');
+      const response = await initiateGoogleAuth();
+      console.log('Auth response:', response);
+      
+      const { authorization_url } = response;
+      
+      if (!authorization_url) {
+        throw new Error('No authorization URL received from server');
+      }
+      
+      console.log('Opening popup with URL:', authorization_url);
       
       // Open Google OAuth in a popup window
       const popup = window.open(
         authorization_url,
         'googleAuth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
+        'width=500,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes'
       );
       
       if (!popup) {
@@ -44,6 +54,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
         if (popup.closed) {
           clearInterval(checkClosed);
           setIsLoading(false);
+          console.log('Popup closed');
           // The AuthCallback page will handle the actual authentication
           // and close the popup when done
         }
