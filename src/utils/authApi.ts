@@ -31,10 +31,10 @@ export const initiateGoogleAuth = async (): Promise<GoogleAuthResponse> => {
 
 export const handleGoogleCallback = async (code: string, state: string): Promise<void> => {
   console.log('=== Handling Google Callback ===');
-  console.log('Making request to:', `${BASE_URL}/api/v1/google/callback`);
+  console.log('Making request to:', `${BASE_URL}/api/v1/auth/google/callback`);
   console.log('Payload:', { code: `${code.substring(0, 10)}...`, state });
   
-  const response = await fetch(`${BASE_URL}/api/v1/google/callback`, {
+  const response = await fetch(`${BASE_URL}/api/v1/auth/google/callback`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
