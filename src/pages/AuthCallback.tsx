@@ -16,24 +16,38 @@ const AuthCallback: React.FC = () => {
   useEffect(() => {
     const processCallback = async () => {
       try {
+        console.log('=== OAuth Callback Started ===');
+        console.log('Current URL:', window.location.href);
+        console.log('Search params:', Object.fromEntries(searchParams.entries()));
+        
         const code = searchParams.get('code');
         const state = searchParams.get('state');
+
+        console.log('Extracted code:', code ? `${code.substring(0, 10)}...` : 'null');
+        console.log('Extracted state:', state);
 
         if (!code || !state) {
           throw new Error('Missing authentication parameters');
         }
 
-        await handleGoogleCallback(code, state);
+        console.log('Calling handleGoogleCallback...');
+        const response = await handleGoogleCallback(code, state);
+        console.log('Backend response:', response);
         
+        console.log('Calling login() to update auth state...');
         login();
         
         // Check if we're in a popup window
         const isPopup = window.opener && window.opener !== window;
+        console.log('Is popup window:', isPopup);
+        console.log('Window opener:', window.opener);
         
         if (isPopup) {
+          console.log('Closing popup window...');
           // Close the popup and let the parent window handle the success
           window.close();
         } else {
+          console.log('Not in popup, handling redirect...');
           // If not in popup, show toast and redirect normally
           toast({
             description: "Successfully signed in!",
@@ -42,19 +56,26 @@ const AuthCallback: React.FC = () => {
 
           // Redirect to the page they were on before login
           const returnTo = sessionStorage.getItem('returnTo') || '/';
+          console.log('Redirecting to:', returnTo);
           sessionStorage.removeItem('returnTo');
           navigate(returnTo);
         }
 
       } catch (error) {
-        console.error('Authentication callback failed:', error);
+        console.error('=== Authentication callback failed ===');
+        console.error('Error details:', error);
+        console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Current URL when error occurred:', window.location.href);
         
         const isPopup = window.opener && window.opener !== window;
+        console.log('Is popup during error:', isPopup);
         
         if (isPopup) {
+          console.log('Error in popup, closing window...');
           // If in popup, close it - the parent window should handle the error
           window.close();
         } else {
+          console.log('Error in main window, showing toast and redirecting...');
           toast({
             variant: "destructive",
             title: "Authentication Failed",
@@ -65,6 +86,7 @@ const AuthCallback: React.FC = () => {
           navigate('/');
         }
       } finally {
+        console.log('=== OAuth Callback Finished ===');
         setIsProcessing(false);
       }
     };
