@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +36,10 @@ const AuthCallback: React.FC = () => {
         
         console.log('Calling login() to update auth state...');
         login();
+        
+        // Store session information
+        sessionStorage.setItem('authSuccess', 'true');
+        sessionStorage.setItem('loginTimestamp', Date.now().toString());
         
         console.log('Redirecting to home page...');
         toast({
