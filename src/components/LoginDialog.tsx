@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Shield, Eye, Key } from 'lucide-react';
 import {
@@ -29,8 +28,26 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       
       const { authorization_url } = await initiateGoogleAuth();
       
-      // Open Google OAuth in the same window
-      window.location.href = authorization_url;
+      // Open Google OAuth in a popup window
+      const popup = window.open(
+        authorization_url,
+        'googleAuth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+      
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.');
+      }
+      
+      // Monitor the popup for completion
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          setIsLoading(false);
+          // The AuthCallback page will handle the actual authentication
+          // and close the popup when done
+        }
+      }, 1000);
       
     } catch (error) {
       console.error('Failed to initiate Google sign in:', error);
@@ -38,10 +55,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       toast({
         variant: "destructive",
         title: "Sign In Failed",
-        description: "Unable to start the sign in process. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to start the sign in process. Please try again.",
         duration: 5000,
       });
-    } finally {
       setIsLoading(false);
     }
   };

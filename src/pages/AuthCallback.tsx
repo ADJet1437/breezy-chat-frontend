@@ -27,27 +27,43 @@ const AuthCallback: React.FC = () => {
         
         login();
         
-        toast({
-          description: "Successfully signed in!",
-          duration: 3000,
-        });
+        // Check if we're in a popup window
+        const isPopup = window.opener && window.opener !== window;
+        
+        if (isPopup) {
+          // Close the popup and let the parent window handle the success
+          window.close();
+        } else {
+          // If not in popup, show toast and redirect normally
+          toast({
+            description: "Successfully signed in!",
+            duration: 3000,
+          });
 
-        // Redirect to the page they were on before login
-        const returnTo = sessionStorage.getItem('returnTo') || '/';
-        sessionStorage.removeItem('returnTo');
-        navigate(returnTo);
+          // Redirect to the page they were on before login
+          const returnTo = sessionStorage.getItem('returnTo') || '/';
+          sessionStorage.removeItem('returnTo');
+          navigate(returnTo);
+        }
 
       } catch (error) {
         console.error('Authentication callback failed:', error);
         
-        toast({
-          variant: "destructive",
-          title: "Authentication Failed",
-          description: error instanceof Error ? error.message : "Unable to complete sign in. Please try again.",
-          duration: 5000,
-        });
+        const isPopup = window.opener && window.opener !== window;
+        
+        if (isPopup) {
+          // If in popup, close it - the parent window should handle the error
+          window.close();
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Authentication Failed",
+            description: error instanceof Error ? error.message : "Unable to complete sign in. Please try again.",
+            duration: 5000,
+          });
 
-        navigate('/');
+          navigate('/');
+        }
       } finally {
         setIsProcessing(false);
       }
