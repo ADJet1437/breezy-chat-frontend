@@ -3,6 +3,7 @@ import React from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import Header from './Header';
+import AuthStatusIndicator from './AuthStatusIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -37,6 +38,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </main>
           </div>
         </div>
+        
+        {/* Auth Status Indicator */}
+        <AuthStatusIndicator />
       </div>
     </SidebarProvider>
   );

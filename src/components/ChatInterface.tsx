@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
+import { useAuth } from '../contexts/AuthContext';
+import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import { Message } from '../types/chat';
@@ -39,6 +41,7 @@ const ChatInterface = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
+  const { isAuthenticated, accessToken, user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -62,12 +65,7 @@ const ChatInterface = () => {
     setIsLoadingHistory(true);
     
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/missions/${missionId}`, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-        },
-      });
+      const response = await authenticatedGet(`http://localhost:8000/api/v1/missions/${missionId}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -142,8 +140,22 @@ const ChatInterface = () => {
   };
 
   const sendMessageToBackend = async (message: string) => {
-    console.log('Starting to send message:', message);
-    console.log('Current mission ID:', currentMissionId);
+    console.log('🎯 === SENDING MESSAGE TO BACKEND ===');
+    console.log('🎯 Message:', message);
+    console.log('🎯 Current mission ID:', currentMissionId);
+    
+    // Check authentication state before making API call
+    console.log('🔐 === AUTH STATE CHECK ===');
+    console.log('🔐 isAuthenticated:', isAuthenticated);
+    console.log('🔐 accessToken exists:', !!accessToken);
+    console.log('🔐 user:', user?.email);
+    
+    if (!isAuthenticated) {
+      console.log('🔐 ❌ NOT AUTHENTICATED - Request may fail');
+    } else {
+      console.log('🔐 ✅ AUTHENTICATED - Proceeding with request');
+    }
+    
     try {
       // Prepare request payload - include mission_id only if we have one
       const requestPayload: any = {
@@ -158,13 +170,7 @@ const ChatInterface = () => {
         console.log('No mission_id - this will create a new mission');
       }
 
-      const response = await fetch('http://localhost:8000/api/v1/missions/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestPayload),
-      });
+      const response = await authenticatedPost('http://localhost:8000/api/v1/missions/complete', requestPayload);
 
       console.log('Response received:', response.status, response.ok);
 

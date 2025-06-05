@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
+import { authenticatedGet } from '../utils/authenticatedFetch';
 
 interface Mission {
   id: string;
@@ -34,7 +35,7 @@ const MissionsInterface = () => {
   const fetchMissions = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8000/api/v1/missions');
+      const response = await authenticatedGet('http://localhost:8000/api/v1/missions');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

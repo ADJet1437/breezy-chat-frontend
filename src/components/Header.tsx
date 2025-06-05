@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, LogIn, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -7,14 +7,24 @@ import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginDialog from './LoginDialog';
+import RefreshIndicator from './RefreshIndicator';
 
 const Header = () => {
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+
+  // Debug: Log auth state in Header
+  useEffect(() => {
+    console.log('🏠 HEADER AUTH STATE:', {
+      isAuthenticated,
+      hasUser: !!user,
+      userEmail: user?.email
+    });
+  }, [isAuthenticated, user]);
 
   const handleNewMission = () => {
     setCurrentMissionId(null);
@@ -30,11 +40,7 @@ const Header = () => {
   };
 
   const handleSignOut = async () => {
-    await logout();
-    toast({
-      description: "Successfully signed out!",
-      duration: 2000,
-    });
+    await logout(); // Toast notification is now handled in AuthContext
   };
 
   return (
@@ -49,25 +55,29 @@ const Header = () => {
             New Mission
           </Button>
           
-          {isAuthenticated ? (
-            <Button
-              onClick={handleSignOut}
-              variant="outline"
-              className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSignIn}
-              variant="outline"
-              className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
-            >
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-          )}
+          <div className="flex items-center gap-4">
+            <RefreshIndicator />
+            
+            {isAuthenticated ? (
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSignIn}
+                variant="outline"
+                className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       

@@ -6,6 +6,19 @@ export interface GoogleAuthResponse {
   state: string;
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+}
+
+export interface AuthCallbackResponse {
+  access_token: string;
+  refresh_token?: string;
+  user: UserProfile;
+}
+
 export const initiateGoogleAuth = async (): Promise<GoogleAuthResponse> => {
   console.log('=== Initiating Google Auth ===');
   console.log('Making request to:', `${BASE_URL}/api/v1/auth/google`);
@@ -29,7 +42,7 @@ export const initiateGoogleAuth = async (): Promise<GoogleAuthResponse> => {
   return data;
 };
 
-export const handleGoogleCallback = async (code: string, state: string): Promise<void> => {
+export const handleGoogleCallback = async (code: string, state: string): Promise<AuthCallbackResponse> => {
   console.log('=== Handling Google Callback ===');
   console.log('Making request to:', `${BASE_URL}/api/v1/auth/google/callback`);
   console.log('Payload:', { code: `${code.substring(0, 10)}...`, state });
@@ -54,25 +67,86 @@ export const handleGoogleCallback = async (code: string, state: string): Promise
     try {
       const errorData = JSON.parse(errorText);
       console.error('Parsed error data:', errorData);
-      throw new Error(errorData.message || 'Authentication failed');
+      throw new Error(errorData.detail || errorData.message || 'Authentication failed');
     } catch (parseError) {
       console.error('Could not parse error response as JSON');
       throw new Error(`Authentication failed with status ${response.status}`);
     }
   }
 
-  const responseText = await response.text();
-  console.log('Callback successful, response text:', responseText);
+  const data = await response.json();
+  console.log('Callback successful, parsed response:', data);
   
-  if (responseText) {
-    try {
-      const data = JSON.parse(responseText);
-      console.log('Parsed callback response:', data);
-      return data;
-    } catch (parseError) {
-      console.error('Could not parse success response as JSON:', responseText);
-    }
+  // Validate response structure
+  if (!data.access_token || !data.user) {
+    console.error('Invalid callback response structure:', data);
+    throw new Error('Invalid authentication response from server');
   }
   
-  return;
+  console.log('Tokens extracted successfully:', {
+    access_token: `${data.access_token.substring(0, 10)}...`,
+    refresh_token: data.refresh_token ? `${data.refresh_token.substring(0, 10)}...` : 'not_provided',
+    user: data.user
+  });
+  
+  return data as AuthCallbackResponse;
+};
+
+export interface RefreshTokenResponse {
+  access_token: string;
+}
+
+export const refreshAccessToken = async (): Promise<RefreshTokenResponse> => {
+  console.log('=== Refreshing Access Token ===');
+  
+  const response = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include', // Send refresh token via cookie
+  });
+
+  console.log('Refresh response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Token refresh failed:', errorText);
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.detail || errorData.message || 'Token refresh failed');
+    } catch (parseError) {
+      throw new Error(`Token refresh failed with status ${response.status}`);
+    }
+  }
+
+  const data = await response.json();
+  console.log('Token refresh successful:', {
+    access_token: `${data.access_token.substring(0, 10)}...`
+  });
+  
+  return data as RefreshTokenResponse;
+};
+
+export const getCurrentUser = async (): Promise<UserProfile> => {
+  console.log('=== Getting Current User ===');
+  
+  // Import dynamically to avoid circular dependency
+  const { authenticatedGet } = await import('./authenticatedFetch');
+  
+  const response = await authenticatedGet(`${BASE_URL}/api/v1/auth/me`, {
+    skipAuth: false // Use authentication with both cookies and headers
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Get current user failed:', errorText);
+    throw new Error('Failed to get current user');
+  }
+
+  const data = await response.json();
+  console.log('Current user retrieved:', data);
+  
+  return data as UserProfile;
 };

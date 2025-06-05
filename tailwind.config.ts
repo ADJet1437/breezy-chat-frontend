@@ -95,12 +95,54 @@ export default {
 						opacity: '1',
 						transform: 'translateY(0)'
 					}
+				},
+				'float-slow': {
+					'0%, 100%': {
+						transform: 'translateY(0px) rotate(0deg)',
+						opacity: '0.7'
+					},
+					'50%': {
+						transform: 'translateY(-20px) rotate(180deg)',
+						opacity: '0.3'
+					}
+				},
+				'float-medium': {
+					'0%, 100%': {
+						transform: 'translateY(0px) rotate(0deg)',
+						opacity: '0.5'
+					},
+					'50%': {
+						transform: 'translateY(-15px) rotate(120deg)',
+						opacity: '0.8'
+					}
+				},
+				'float-fast': {
+					'0%, 100%': {
+						transform: 'translateY(0px) rotate(0deg)',
+						opacity: '0.8'
+					},
+					'50%': {
+						transform: 'translateY(-10px) rotate(90deg)',
+						opacity: '0.4'
+					}
+				},
+				'spin-reverse': {
+					'0%': {
+						transform: 'rotate(360deg)'
+					},
+					'100%': {
+						transform: 'rotate(0deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'float-slow': 'float-slow 6s ease-in-out infinite',
+				'float-medium': 'float-medium 4s ease-in-out infinite',
+				'float-fast': 'float-fast 3s ease-in-out infinite',
+				'spin-reverse': 'spin-reverse 2s linear infinite'
 			}
 		}
 	},

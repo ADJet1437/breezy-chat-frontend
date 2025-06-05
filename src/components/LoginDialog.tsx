@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Eye, Key } from 'lucide-react';
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { initiateGoogleAuth } from '../utils/authApi';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LoginDialogProps {
   open: boolean;
@@ -18,6 +19,67 @@ interface LoginDialogProps {
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { login } = useAuth();
+
+  // Listen for messages from popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== window.location.origin) {
+        console.warn('🚨 Received message from unexpected origin:', event.origin);
+        return;
+      }
+
+      console.log('📨 Received message in main window:', event.data);
+
+      if (event.data.type === 'TALOSY_AUTH_SUCCESS') {
+        console.log('📨 Processing auth success from popup');
+        
+        try {
+          // Call login with the auth data from popup
+          login(event.data.authData);
+          
+          console.log('📨 Login called successfully in main window');
+          
+          // Close the login dialog
+          onOpenChange(false);
+          setIsLoading(false);
+          
+          // Show success message
+          toast({
+            description: "Successfully signed in!",
+            duration: 3000,
+          });
+          
+        } catch (error) {
+          console.error('📨 Failed to process auth success:', error);
+          setIsLoading(false);
+          toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "Failed to complete sign in. Please try again.",
+            duration: 5000,
+          });
+        }
+      } else if (event.data.type === 'TALOSY_AUTH_ERROR') {
+        console.log('📨 Processing auth error from popup');
+        
+        setIsLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Authentication Failed",
+          description: event.data.error || "Unable to complete sign in. Please try again.",
+          duration: 5000,
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [login, onOpenChange, toast]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -50,15 +112,38 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       }
       
       // Monitor the popup for completion
-      const checkClosed = setInterval(() => {
+      let checkClosed: NodeJS.Timeout;
+      let timeout: NodeJS.Timeout;
+      
+      const cleanup = () => {
+        if (checkClosed) clearInterval(checkClosed);
+        if (timeout) clearTimeout(timeout);
+        setIsLoading(false);
+      };
+      
+      checkClosed = setInterval(() => {
         if (popup.closed) {
-          clearInterval(checkClosed);
-          setIsLoading(false);
-          console.log('Popup closed');
-          // The AuthCallback page will handle the actual authentication
-          // and close the popup when done
+          console.log('🎪 Popup closed by user or completed');
+          cleanup();
         }
       }, 1000);
+      
+      // Set a timeout for the authentication process (5 minutes)
+      timeout = setTimeout(() => {
+        console.log('🎪 Authentication timeout - closing popup');
+        try {
+          popup.close();
+        } catch (e) {
+          console.warn('Could not close popup:', e);
+        }
+        cleanup();
+        toast({
+          variant: "destructive",
+          title: "Authentication Timeout",
+          description: "Authentication took too long. Please try again.",
+          duration: 5000,
+        });
+      }, 5 * 60 * 1000); // 5 minutes
       
     } catch (error) {
       console.error('Failed to initiate Google sign in:', error);
