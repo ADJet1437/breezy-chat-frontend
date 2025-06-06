@@ -37,6 +37,17 @@ export class NetworkError extends Error {
   }
 }
 
+export class PaymentRequiredError extends Error {
+  constructor(
+    message: string,
+    public errorCode: string,
+    public statusCode: number = 402
+  ) {
+    super(message);
+    this.name = 'PaymentRequiredError';
+  }
+}
+
 export const handleAuthError = (error: unknown, context: string = 'Authentication') => {
   console.error(`${context} error:`, error);
   
@@ -79,11 +90,17 @@ export const handleApiError = async (response: Response, context: string = 'API 
   if (response.ok) return;
   
   let errorMessage = `Request failed with status ${response.status}`;
+  let errorData: any = null;
   
   try {
-    const errorData = await response.json();
+    errorData = await response.json();
     if (errorData.detail) {
-      errorMessage = errorData.detail;
+      // Handle structured error response (object with error_code and message)
+      if (typeof errorData.detail === 'object' && errorData.detail.message) {
+        errorMessage = errorData.detail.message;
+      } else {
+        errorMessage = errorData.detail;
+      }
     } else if (errorData.message) {
       errorMessage = errorData.message;
     }
@@ -93,6 +110,9 @@ export const handleApiError = async (response: Response, context: string = 'API 
   
   if (response.status === 401) {
     throw new AuthError(errorMessage, 'UNAUTHORIZED', 401);
+  } else if (response.status === 402) {
+    const errorCode = errorData?.detail?.error_code || 'PAYMENT_REQUIRED';
+    throw new PaymentRequiredError(errorMessage, errorCode, 402);
   } else if (response.status === 403) {
     throw new AuthError('You do not have permission to perform this action', 'FORBIDDEN', 403);
   } else if (response.status >= 500) {

@@ -7,8 +7,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
+import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
+import SubscriptionDialog from './SubscriptionDialog';
 import { Message } from '../types/chat';
 
 interface TaskMessage {
@@ -40,6 +42,9 @@ const ChatInterface = () => {
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -174,9 +179,8 @@ const ChatInterface = () => {
 
       console.log('Response received:', response.status, response.ok);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Use handleApiError to properly throw PaymentRequiredError for 402 responses
+      await handleApiError(response, 'Chat Message');
 
       // Create initial bot message with empty content
       const botMessageId = (Date.now() + 1).toString();
@@ -237,6 +241,27 @@ const ChatInterface = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      if (error instanceof PaymentRequiredError) {
+        // Handle 402 Payment Required errors
+        // Set appropriate message based on error code
+        let dialogMessage = '';
+        if (error.errorCode === 'SUBSCRIPTION_REQUIRED') {
+          dialogMessage = 'Please subscribe to continue chatting with our AI assistant.';
+        } else if (error.errorCode === 'TRIAL_LIMIT_EXCEEDED') {
+          dialogMessage = 'You\'ve reached your daily message limit for the Trial plan. Upgrade to continue chatting.';
+        } else {
+          dialogMessage = 'Please upgrade your subscription to continue.';
+        }
+        
+        setSubscriptionMessage(dialogMessage);
+        setPendingMessage(message); // Store the message to retry after subscription
+        setShowSubscriptionDialog(true);
+        
+        // Don't show generic error toast for payment errors
+        return;
+      }
+      
       toast({
         description: "Failed to send message. Please try again.",
         variant: "destructive",
@@ -252,7 +277,6 @@ const ChatInterface = () => {
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      console.log('Setting isStreaming to false');
       setIsStreaming(false);
     }
   };
@@ -283,6 +307,40 @@ const ChatInterface = () => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleSubscriptionSuccess = async () => {
+    setShowSubscriptionDialog(false);
+    
+    toast({
+      description: "Subscription successful! You can now continue chatting.",
+      duration: 3000,
+    });
+
+    // If we have a pending message, retry sending it
+    if (pendingMessage) {
+      
+      // Add the user message to chat
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: pendingMessage,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Clear pending message and send it
+      const messageToRetry = pendingMessage;
+      setPendingMessage(null);
+      setIsStreaming(true);
+      
+      await sendMessageToBackend(messageToRetry);
+    }
+  };
+
+  const handleSubscriptionCancel = () => {
+    setShowSubscriptionDialog(false);
+    setPendingMessage(null); // Clear pending message
   };
 
   return (
@@ -333,6 +391,18 @@ const ChatInterface = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscription Dialog */}
+      <SubscriptionDialog
+        open={showSubscriptionDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleSubscriptionCancel();
+          }
+        }}
+        onSubscribed={handleSubscriptionSuccess}
+        message={subscriptionMessage}
+      />
     </div>
   );
 };

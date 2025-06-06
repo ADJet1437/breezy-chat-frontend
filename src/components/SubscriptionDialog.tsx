@@ -25,9 +25,10 @@ interface SubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubscribed?: () => void;
+  message?: string;
 }
 
-const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenChange, onSubscribed }) => {
+const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenChange, onSubscribed, message }) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
@@ -136,7 +137,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
             Choose Your Plan
           </DialogTitle>
           <p className="text-gray-600">
-            Select the perfect plan for your needs. No payment required for now.
+            {message || "Select the perfect plan for your needs. No payment required for now."}
           </p>
         </DialogHeader>
         
