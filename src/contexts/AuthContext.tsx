@@ -98,7 +98,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Save token to localStorage for persistence
     if (authData.access_token) {
       localStorage.setItem(ACCESS_TOKEN_KEY, authData.access_token);
-      debugger;
       console.log('🔐 💾 TOKEN SAVED TO LOCALSTORAGE:', `${authData.access_token.substring(0, 30)}...`);
     }
     

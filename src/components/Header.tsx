@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoginDialog from './LoginDialog';
 import RefreshIndicator from './RefreshIndicator';
+import ProfileButton from './ProfileButton';
 
 const Header = () => {
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
@@ -59,14 +60,17 @@ const Header = () => {
             <RefreshIndicator />
             
             {isAuthenticated ? (
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
+              <>
+                <ProfileButton />
+                <Button
+                  onClick={handleSignOut}
+                  variant="outline"
+                  className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
             ) : (
               <Button
                 onClick={handleSignIn}
