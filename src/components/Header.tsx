@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, LogIn, LogOut, User } from 'lucide-react';
+import { Plus, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
@@ -12,7 +12,7 @@ import ProfileButton from './ProfileButton';
 
 const Header = () => {
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -40,10 +40,6 @@ const Header = () => {
     setLoginDialogOpen(true);
   };
 
-  const handleSignOut = async () => {
-    await logout(); // Toast notification is now handled in AuthContext
-  };
-
   return (
     <>
       <div className="h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 shadow-sm">
@@ -60,17 +56,7 @@ const Header = () => {
             <RefreshIndicator />
             
             {isAuthenticated ? (
-              <>
-                <ProfileButton />
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl px-4 py-2 transition-all duration-200"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </>
+              <ProfileButton />
             ) : (
               <Button
                 onClick={handleSignIn}

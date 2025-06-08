@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, CreditCard, ArrowRight, X, Loader2 } from 'lucide-react';
+import { User, CreditCard, ArrowRight, X, Loader2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,7 +32,7 @@ interface ProfileDialogProps {
 }
 
 const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -120,6 +120,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
 
   const handleNewSubscription = () => {
     fetchCurrentSubscription(); // Refresh subscription data after new subscription
+  };
+
+  const handleSignOut = async () => {
+    await logout();
+    onOpenChange(false); // Close the dialog after signing out
   };
 
   return (
@@ -247,6 +252,18 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Sign Out Section */}
+            <div className="border-t pt-6">
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                className="w-full border-red-300 hover:bg-red-50 text-red-700 rounded-xl px-4 py-3 transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </DialogContent>
