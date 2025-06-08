@@ -42,15 +42,28 @@ const ChatInterface = () => {
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const focusInput = () => {
+    // Small delay to ensure DOM updates complete
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-focus input when component mounts for immediate typing
+  useEffect(() => {
+    focusInput();
+  }, []);
 
   // Load mission history when currentMissionId changes
   useEffect(() => {
@@ -251,6 +264,8 @@ const ChatInterface = () => {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsStreaming(false);
+      // Focus input after streaming completes so user can immediately type next message
+      focusInput();
     }
   };
 
@@ -271,6 +286,9 @@ const ChatInterface = () => {
     setInputValue('');
     setIsStreaming(true);
     console.log('Set isStreaming to true');
+
+    // Focus input immediately after clearing for immediate next message typing
+    focusInput();
 
     await sendMessageToBackend(messageToSend);
   };
@@ -309,6 +327,9 @@ const ChatInterface = () => {
       
       await sendMessageToBackend(messageToRetry);
     }
+    
+    // Focus input after subscription success
+    focusInput();
   };
 
   const handleSubscriptionCancel = () => {
@@ -346,6 +367,7 @@ const ChatInterface = () => {
           <div className="flex space-x-3">
             <div className="flex-1 relative">
               <Input
+                ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
