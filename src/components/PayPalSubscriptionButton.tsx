@@ -37,11 +37,14 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
       setLoading(true);
       setError(null);
 
-      // Get PayPal SDK URL from backend
-      const response = await authenticatedGet('http://localhost:8000/api/v1/paypal/subscribe/url');
+      // Get PayPal SDK URL from backend with plan_id
+      const response = await authenticatedGet(`http://localhost:8000/api/v1/paypal/subscribe/url?plan_id=${planId}`);
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error('Cannot subscribe to free plan via PayPal. Please use the regular subscription method.');
+        }
         throw new Error(data.detail || 'Failed to get PayPal configuration');
       }
 
