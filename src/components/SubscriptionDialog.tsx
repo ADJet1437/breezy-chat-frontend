@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet, authenticatedPost } from '@/utils/authenticatedFetch';
+import PayPalSubscriptionButton from './PayPalSubscriptionButton';
 
 interface Plan {
   id: string;
@@ -19,6 +20,7 @@ interface Plan {
   billing_interval: string;
   features: string[];
   is_active: boolean;
+  provider_plan_id: string | null;
 }
 
 interface SubscriptionDialogProps {
@@ -195,24 +197,36 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
                     ))}
                   </ul>
                   
-                  <Button
-                    onClick={() => handleSubscribe(plan.id, plan.name)}
-                    disabled={subscribing !== null}
-                    className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
-                      plan.name === 'Basic'
-                        ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
-                    }`}
-                  >
-                    {subscribing === plan.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Subscribing...
-                      </>
-                    ) : (
-                      `Subscribe to ${plan.name}`
-                    )}
-                  </Button>
+                  {plan.name === 'Basic' && plan.provider_plan_id ? (
+                    <PayPalSubscriptionButton
+                      planId={plan.id}
+                      providerPlanId={plan.provider_plan_id}
+                      onSuccess={() => {
+                        onSubscribed?.();
+                        onOpenChange(false);
+                      }}
+                      disabled={subscribing !== null}
+                    />
+                  ) : (
+                    <Button
+                      onClick={() => handleSubscribe(plan.id, plan.name)}
+                      disabled={subscribing !== null}
+                      className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
+                        plan.name === 'Basic'
+                          ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+                      }`}
+                    >
+                      {subscribing === plan.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Subscribing...
+                        </>
+                      ) : (
+                        `Subscribe to ${plan.name}`
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
