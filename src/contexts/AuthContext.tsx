@@ -4,6 +4,7 @@ import { UserProfile, AuthCallbackResponse, getCurrentUser, refreshAccessToken }
 import { getTokenExpiry, tokenExpiresWithin, getTokenInfo, isTokenExpired, getUserFromToken } from '../utils/tokenUtils';
 import { setAuthRefreshFunction, setAuthLogoutFunction, setAuthUICallbacks, setAccessTokenFunction } from '../utils/authenticatedFetch';
 import { handleAuthError, AuthError, showSuccessMessage, showWarningMessage } from '../utils/errorHandler';
+import { buildApiUrl } from '../utils/apiConfig';
 
 // localStorage key for token persistence
 const ACCESS_TOKEN_KEY = 'talosy_access_token';
@@ -182,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('=== Logging Out ===');
       // Import dynamically to avoid circular dependency
       const { authenticatedPost } = await import('../utils/authenticatedFetch');
-      await authenticatedPost('http://localhost:8000/api/v1/auth/logout', undefined, {
+      await authenticatedPost(buildApiUrl('/api/v1/auth/logout'), undefined, {
         skipAuth: false // Use both cookies and headers for logout
       });
       

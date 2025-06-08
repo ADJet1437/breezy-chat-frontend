@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet, authenticatedPost } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
 import PayPalSubscriptionButton from './PayPalSubscriptionButton';
 
 interface Plan {
@@ -45,7 +46,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await authenticatedGet('http://localhost:8000/api/v1/plans/?active_only=true');
+      const response = await authenticatedGet(buildApiUrl('/api/v1/plans/?active_only=true'));
       const data = await response.json();
       setPlans(data.plans || []);
     } catch (error) {
@@ -64,7 +65,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
     try {
       setSubscribing(planId);
       
-      const response = await authenticatedPost('http://localhost:8000/api/v1/plans/subscribe', {
+      const response = await authenticatedPost(buildApiUrl('/api/v1/plans/subscribe'), {
         plan_id: planId,
       });
 

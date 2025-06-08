@@ -8,6 +8,7 @@ import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
 import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
+import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
@@ -31,14 +32,7 @@ interface MissionDetails {
 }
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: "Hello! I'm your AI assistant. How can I help you today?",
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -62,6 +56,9 @@ const ChatInterface = () => {
   useEffect(() => {
     if (currentMissionId) {
       loadMissionHistory(currentMissionId);
+    } else {
+      // Clear messages when starting a new mission (currentMissionId becomes null)
+      setMessages([]);
     }
   }, [currentMissionId]);
 
@@ -70,7 +67,7 @@ const ChatInterface = () => {
     setIsLoadingHistory(true);
     
     try {
-      const response = await authenticatedGet(`http://localhost:8000/api/v1/missions/${missionId}`);
+      const response = await authenticatedGet(buildApiUrl(`/api/v1/missions/${missionId}`));
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -112,37 +109,13 @@ const ChatInterface = () => {
         duration: 3000,
       });
       
-      // Keep default welcome message on error
-      setMessages([
-        {
-          id: '1',
-          content: "Hello! I'm your AI assistant. How can I help you today?",
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
+      // Keep messages empty on error
+      setMessages([]);
     } finally {
       setIsLoadingHistory(false);
     }
   };
 
-  const handleNewMission = () => {
-    setMessages([
-      {
-        id: '1',
-        content: "Hello! I'm your AI assistant. How can I help you today?",
-        sender: 'bot',
-        timestamp: new Date(),
-      },
-    ]);
-    setInputValue('');
-    setCurrentMissionId(null); // Clear mission ID to start a new mission
-    console.log('Cleared mission ID for new mission');
-    toast({
-      description: "New mission started!",
-      duration: 2000,
-    });
-  };
 
   const sendMessageToBackend = async (message: string) => {
     console.log('🎯 === SENDING MESSAGE TO BACKEND ===');
@@ -175,7 +148,7 @@ const ChatInterface = () => {
         console.log('No mission_id - this will create a new mission');
       }
 
-      const response = await authenticatedPost('http://localhost:8000/api/v1/missions/complete', requestPayload);
+      const response = await authenticatedPost(buildApiUrl('/api/v1/missions/complete'), requestPayload);
 
       console.log('Response received:', response.status, response.ok);
 

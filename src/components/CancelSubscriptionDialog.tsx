@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedDelete } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
 
 interface UserSubscription {
   id: string;
@@ -53,7 +54,7 @@ const CancelSubscriptionDialog: React.FC<CancelSubscriptionDialogProps> = ({
     try {
       setCancelling(true);
       
-      const response = await authenticatedDelete('http://localhost:8000/api/v1/plans/subscription');
+      const response = await authenticatedDelete(buildApiUrl('/api/v1/plans/subscription'));
 
       if (response.ok) {
         toast({

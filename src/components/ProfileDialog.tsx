@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
 import SubscriptionDialog from './SubscriptionDialog';
 import CancelSubscriptionDialog from './CancelSubscriptionDialog';
 
@@ -47,7 +48,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
   const fetchCurrentSubscription = async () => {
     try {
       setLoadingSubscription(true);
-      const response = await authenticatedGet('http://localhost:8000/api/v1/users/profile');
+      const response = await authenticatedGet(buildApiUrl('/api/v1/users/profile'));
       
       if (response.ok) {
         const data = await response.json();

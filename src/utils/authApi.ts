@@ -1,5 +1,7 @@
 
-const BASE_URL = 'http://localhost:8000';
+import { getBackendUrl, buildApiUrl } from './apiConfig';
+
+const BASE_URL = getBackendUrl();
 
 export interface GoogleAuthResponse {
   authorization_url: string;
@@ -21,9 +23,9 @@ export interface AuthCallbackResponse {
 
 export const initiateGoogleAuth = async (): Promise<GoogleAuthResponse> => {
   console.log('=== Initiating Google Auth ===');
-  console.log('Making request to:', `${BASE_URL}/api/v1/auth/google`);
+  console.log('Making request to:', buildApiUrl('/api/v1/auth/google'));
   
-  const response = await fetch(`${BASE_URL}/api/v1/auth/google`, {
+  const response = await fetch(buildApiUrl('/api/v1/auth/google'), {
     method: 'GET',
     credentials: 'include',
   });
@@ -44,10 +46,10 @@ export const initiateGoogleAuth = async (): Promise<GoogleAuthResponse> => {
 
 export const handleGoogleCallback = async (code: string, state: string): Promise<AuthCallbackResponse> => {
   console.log('=== Handling Google Callback ===');
-  console.log('Making request to:', `${BASE_URL}/api/v1/auth/google/callback`);
+  console.log('Making request to:', buildApiUrl('/api/v1/auth/google/callback'));
   console.log('Payload:', { code: `${code.substring(0, 10)}...`, state });
   
-  const response = await fetch(`${BASE_URL}/api/v1/auth/google/callback`, {
+  const response = await fetch(buildApiUrl('/api/v1/auth/google/callback'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -99,7 +101,7 @@ export interface RefreshTokenResponse {
 export const refreshAccessToken = async (): Promise<RefreshTokenResponse> => {
   console.log('=== Refreshing Access Token ===');
   
-  const response = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+  const response = await fetch(buildApiUrl('/api/v1/auth/refresh'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -135,7 +137,7 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
   // Import dynamically to avoid circular dependency
   const { authenticatedGet } = await import('./authenticatedFetch');
   
-  const response = await authenticatedGet(`${BASE_URL}/api/v1/auth/me`, {
+  const response = await authenticatedGet(buildApiUrl('/api/v1/auth/me'), {
     skipAuth: false // Use authentication with both cookies and headers
   });
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet, authenticatedPost } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
 
 interface PayPalSubscriptionButtonProps {
   planId: string;
@@ -38,7 +39,7 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
       setError(null);
 
       // Get PayPal SDK URL from backend with plan_id
-      const response = await authenticatedGet(`http://localhost:8000/api/v1/paypal/subscribe/url?plan_id=${planId}`);
+      const response = await authenticatedGet(buildApiUrl(`/api/v1/paypal/subscribe/url?plan_id=${planId}`));
       const data = await response.json();
 
       if (!response.ok) {
@@ -162,7 +163,7 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
         
         try {
           // Verify subscription with our backend
-          const response = await authenticatedPost('http://localhost:8000/api/v1/paypal/subscription/verify', {
+          const response = await authenticatedPost(buildApiUrl('/api/v1/paypal/subscription/verify'), {
             subscription_id: data.subscriptionID,
             plan_id: planId
           });
