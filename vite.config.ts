@@ -19,7 +19,4 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  define: {
-    __TALOSY_BACKEND_HOST__: JSON.stringify(process.env.TALOSY_BACKEND_HOST || 'http://localhost:8000'),
-  },
 }));

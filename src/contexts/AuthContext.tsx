@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
+  authFunctionsReady: boolean;
   user: UserProfile | null;
   accessToken: string | null;
   tokenExpiresAt: number | null;
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [authFunctionsReady, setAuthFunctionsReady] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null);
@@ -106,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     const expiryTime = getTokenExpiry(authData.access_token);
     setTokenExpiresAt(expiryTime);
+    
     
     console.log('🔐 AFTER: Setting isAuthenticated = true');
     console.log('🔐 Auth state should be updated:', {
@@ -350,7 +353,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       () => setIsRefreshing(false)
     );
     
-    console.log('🔧 Auth functions setup complete');
+    // Mark auth functions as ready after all are set up
+    setAuthFunctionsReady(true);
+    console.log('🔧 Auth functions setup complete - authFunctionsReady = true');
     // checkAuthStatus(); // DISABLED - no longer calling /auth/me
   }, [refreshToken, getCurrentAccessToken]);
 
@@ -359,6 +364,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated,
       isLoading,
       isRefreshing,
+      authFunctionsReady,
       user,
       accessToken,
       tokenExpiresAt,

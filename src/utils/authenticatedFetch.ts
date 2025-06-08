@@ -59,14 +59,16 @@ const performTokenRefresh = async (): Promise<boolean> => {
       console.log('Starting token refresh...');
       const success = await refreshTokenFn();
       
+      // Don't auto-logout if refresh is disabled (returns false)
+      // The refresh function returning false means refresh is disabled, not that it failed
       if (!success) {
-        console.error('Token refresh returned false, logging out user');
-        logoutFn?.();
+        console.log('Token refresh disabled or returned false - will not auto logout');
       }
       
       return success;
     } catch (error) {
       console.error('Token refresh failed with error:', error);
+      // Only logout on actual errors, not when refresh is disabled
       logoutFn?.();
       return false;
     } finally {
@@ -108,8 +110,22 @@ export const authenticatedFetch = async (
   console.log('🔍 === TOKEN RETRIEVAL DEBUG ===');
   console.log('🔍 getAccessTokenFn exists:', !!getAccessTokenFn);
   
-  const accessToken = getAccessTokenFn?.();
-  console.log('🔍 Retrieved accessToken:', accessToken ? `EXISTS (${accessToken.substring(0, 20)}...)` : 'NULL');
+  let accessToken = getAccessTokenFn?.();
+  
+  // Fallback: If no token from function, try localStorage directly
+  if (!accessToken) {
+    console.log('🔍 No token from getAccessTokenFn, falling back to localStorage');
+    const localToken = localStorage.getItem('talosy_access_token');
+    
+    if (localToken) {
+      accessToken = localToken;
+      console.log('🔍 Using token from localStorage:', `EXISTS (${accessToken.substring(0, 20)}...)`);
+    } else {
+      console.log('🔍 No token in localStorage');
+    }
+  }
+  
+  console.log('🔍 Final accessToken:', accessToken ? `EXISTS (${accessToken.substring(0, 20)}...)` : 'NULL');
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -139,8 +155,15 @@ export const authenticatedFetch = async (
 
   // Handle 401 responses with automatic retry
   if (response.status === 401 && retryCount < maxRetries) {
-    console.log(`Got 401 on attempt ${retryCount + 1}, attempting token refresh...`);
+    console.log(`Got 401 on attempt ${retryCount + 1}, checking if refresh is available...`);
     
+    // Check if refresh function is available and not disabled
+    if (!refreshTokenFn) {
+      console.log('No refresh function available, skipping retry for 401');
+      return response;
+    }
+    
+    console.log('Attempting token refresh...');
     const refreshSuccess = await performTokenRefresh();
     
     if (refreshSuccess) {
@@ -148,7 +171,9 @@ export const authenticatedFetch = async (
       // Retry the original request
       return authenticatedFetch(url, options, retryCount + 1);
     } else {
-      console.error('Token refresh failed, request will fail with 401');
+      console.log('Token refresh disabled or failed, returning 401 response without auto-logout');
+      // Don't retry if refresh is disabled, just return the 401 response
+      return response;
     }
   }
 

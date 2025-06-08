@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
+import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 
@@ -26,26 +27,45 @@ const MissionsInterface = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { setCurrentMissionId } = useMissionContext();
+  const { isLoading: authLoading, isAuthenticated, authFunctionsReady } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchMissions();
-  }, []);
+    // Only fetch missions when auth is ready and user is authenticated
+    // We don't need to wait for authFunctionsReady since authenticatedFetch has localStorage fallback
+    if (!authLoading && isAuthenticated) {
+      console.log('🚀 Auth ready and user authenticated, fetching missions...');
+      fetchMissions();
+    } else if (!authLoading && !isAuthenticated) {
+      console.log('❌ Auth ready but user not authenticated, skipping missions fetch');
+      setIsLoading(false);
+    } else {
+      console.log('⏳ Waiting for auth to be ready...', { authLoading, isAuthenticated, authFunctionsReady });
+    }
+  }, [authLoading, isAuthenticated]);
 
   const fetchMissions = async () => {
     try {
+      console.log('🎯 === FETCH MISSIONS CALLED ===');
+      console.log('🎯 Auth state:', { authLoading, isAuthenticated, authFunctionsReady });
       setIsLoading(true);
-      const response = await authenticatedGet(buildApiUrl('/api/v1/missions'));
+      
+      const apiUrl = buildApiUrl('/api/v1/missions');
+      console.log('🎯 Making request to:', apiUrl);
+      
+      const response = await authenticatedGet(apiUrl);
+      console.log('🎯 Response received:', response.status, response.ok);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: MissionsResponse = await response.json();
+      console.log('🎯 Missions data received:', data);
       setMissions(data.missions);
     } catch (error) {
-      console.error('Error fetching missions:', error);
+      console.error('❌ Error fetching missions:', error);
       toast({
         description: "Failed to load missions. Please try again.",
         variant: "destructive",
@@ -75,13 +95,29 @@ const MissionsInterface = () => {
     });
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading missions...</p>
+            <p className="text-gray-600">
+              {authLoading ? 'Authenticating...' : 'Loading missions...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">Sign in required</h3>
+            <p className="text-gray-500 mb-6">Please sign in to view your missions</p>
           </div>
         </div>
       </div>
