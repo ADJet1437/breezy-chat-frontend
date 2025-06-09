@@ -13,6 +13,10 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Accept build argument for backend URL
+ARG VITE_TALOSY_BACKEND_HOST=http://localhost:8000
+ENV VITE_TALOSY_BACKEND_HOST=$VITE_TALOSY_BACKEND_HOST
+
 # Build the application
 RUN npm run build
 

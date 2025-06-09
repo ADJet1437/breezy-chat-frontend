@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   frontend:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_TALOSY_BACKEND_HOST: https://api.talosy.com
     ports:
       - "8080:8080"
     container_name: breezy-chat-frontend
