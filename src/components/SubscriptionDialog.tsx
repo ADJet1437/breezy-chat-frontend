@@ -16,7 +16,6 @@ interface Plan {
   id: string;
   name: string;
   description: string;
-  max_messages_per_day: number | null;
   price_cents: number;
   billing_interval: string;
   features: string[];
@@ -124,10 +123,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
     return `$${(priceCents / 100).toFixed(2)}`;
   };
 
-  const formatMessages = (maxMessages: number | null) => {
-    if (maxMessages === null) return 'Unlimited';
-    return `${maxMessages.toLocaleString()} messages`;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,7 +135,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
             Choose Your Plan
           </DialogTitle>
           <p className="text-gray-600">
-            {message || "Select the perfect plan for your needs. No payment required for now."}
+            {message || "Select the perfect plan for your needs."}
           </p>
         </DialogHeader>
         
@@ -182,9 +177,6 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {formatMessages(plan.max_messages_per_day)} per day
-                    </p>
                   </div>
                   
                   <ul className="space-y-3 text-left">

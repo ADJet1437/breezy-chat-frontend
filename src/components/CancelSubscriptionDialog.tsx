@@ -17,7 +17,7 @@ interface UserSubscription {
     name: string;
     price_cents: number;
     billing_interval: string;
-    max_messages_per_day: number | null;
+    description: string;
   };
   status: string;
 }
@@ -45,10 +45,6 @@ const CancelSubscriptionDialog: React.FC<CancelSubscriptionDialogProps> = ({
     return `$${(priceCents / 100).toFixed(2)}`;
   };
 
-  const formatMessages = (maxMessages: number | null) => {
-    if (maxMessages === null) return 'Unlimited';
-    return `${maxMessages.toLocaleString()}`;
-  };
 
   const handleCancel = async () => {
     try {
@@ -128,9 +124,9 @@ const CancelSubscriptionDialog: React.FC<CancelSubscriptionDialogProps> = ({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Messages:</span>
+                <span className="text-gray-600">Details:</span>
                 <span className="font-medium text-gray-900">
-                  {formatMessages(subscription.plan.max_messages_per_day)} per day
+                  {subscription.plan.description}
                 </span>
               </div>
             </div>

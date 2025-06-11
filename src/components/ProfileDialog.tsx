@@ -21,7 +21,7 @@ interface UserSubscription {
     name: string;
     price_cents: number;
     billing_interval: string;
-    max_messages_per_day: number | null;
+    description: string;
   };
   status: string;
 }
@@ -60,7 +60,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
               name: data.subscription.plan.name,
               price_cents: data.subscription.plan.price_cents,
               billing_interval: data.subscription.plan.billing_interval,
-              max_messages_per_day: data.subscription.plan.max_messages_per_day,
+              description: data.subscription.plan.description,
             },
             status: data.subscription.status,
           };
@@ -99,10 +99,6 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
     return `$${(priceCents / 100).toFixed(2)}`;
   };
 
-  const formatMessages = (maxMessages: number | null) => {
-    if (maxMessages === null) return 'Unlimited';
-    return `${maxMessages.toLocaleString()}`;
-  };
 
   const handleSubscriptionClick = () => {
     setSubscriptionDialogOpen(true);
@@ -205,9 +201,9 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange }) => 
                           </p>
                         </div>
                         <div className="col-span-2">
-                          <p className="text-gray-600">Messages</p>
+                          <p className="text-gray-600">Plan Details</p>
                           <p className="font-medium text-gray-900">
-                            {formatMessages(currentSubscription.plan.max_messages_per_day)} per day
+                            {currentSubscription.plan.description}
                           </p>
                         </div>
                       </div>
