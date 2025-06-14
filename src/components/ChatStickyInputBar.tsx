@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { Send, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,11 @@ interface ChatStickyInputBarProps {
   rightSidebarVisible?: boolean;
 }
 
-const ChatStickyInputBar: React.FC<ChatStickyInputBarProps> = ({
+export interface ChatStickyInputBarRef {
+  focusInput: () => void;
+}
+
+const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarProps>(({
   inputValue,
   setInputValue,
   onSendMessage,
@@ -36,7 +40,7 @@ const ChatStickyInputBar: React.FC<ChatStickyInputBarProps> = ({
   missionId,
   currentMissionId,
   rightSidebarVisible = false,
-}) => {
+}, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -45,6 +49,10 @@ const ChatStickyInputBar: React.FC<ChatStickyInputBarProps> = ({
       inputRef.current?.focus();
     }, 100);
   };
+
+  useImperativeHandle(ref, () => ({
+    focusInput,
+  }));
 
   useEffect(() => {
     focusInput();
@@ -124,6 +132,8 @@ const ChatStickyInputBar: React.FC<ChatStickyInputBarProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ChatStickyInputBar.displayName = 'ChatStickyInputBar';
 
 export default ChatStickyInputBar;

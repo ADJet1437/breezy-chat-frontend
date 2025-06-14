@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Bot, User, Copy, Paperclip } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Copy, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
@@ -58,14 +57,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
   return (
     <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} group`}>
-      <div className={`flex max-w-[80%] ${isBot ? 'flex-row' : 'flex-row-reverse'} items-start space-x-3`}>
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className={isBot ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white' : 'bg-gradient-to-r from-green-500 to-blue-500 text-white'}>
-            {isBot ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className={`flex flex-col ${isBot ? 'items-start' : 'items-end'}`}>
+      <div className={`flex flex-col max-w-[80%] ${isBot ? 'items-start' : 'items-end'}`}>
           <div
             className={`px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${
               isBot
@@ -170,7 +162,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <Copy className="h-3 w-3" />
             </Button>
           </div>
-        </div>
       </div>
     </div>
   );

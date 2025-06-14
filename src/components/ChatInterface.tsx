@@ -10,7 +10,7 @@ import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
-import ChatStickyInputBar from './ChatStickyInputBar';
+import ChatStickyInputBar, { ChatStickyInputBarRef } from './ChatStickyInputBar';
 import { Message } from '../types/chat';
 
 interface TaskMessage {
@@ -57,6 +57,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   const { isAuthenticated, accessToken, user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputBarRef = useRef<ChatStickyInputBarRef>(null);
   const { toast } = useToast();
 
   const scrollToBottom = () => {
@@ -292,7 +293,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         navigate(`/missions/${newMissionId}`);
       } else {
         // Focus input after streaming completes so user can immediately type next message
-        focusInput();
+        inputBarRef.current?.focusInput();
       }
     }
   };
@@ -322,7 +323,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     console.log('Set isStreaming to true');
 
     // Focus input immediately after clearing for immediate next message typing
-    focusInput();
+    inputBarRef.current?.focusInput();
 
     await sendMessageToBackend(messageToSend);
   };
@@ -364,7 +365,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     }
     
     // Focus input after subscription success
-    focusInput();
+    inputBarRef.current?.focusInput();
   };
 
   const handleSubscriptionCancel = () => {
@@ -413,6 +414,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       {/* Sticky Input Bar */}
       <ChatStickyInputBar
+        ref={inputBarRef}
         inputValue={inputValue}
         setInputValue={setInputValue}
         onSendMessage={handleSendMessage}
