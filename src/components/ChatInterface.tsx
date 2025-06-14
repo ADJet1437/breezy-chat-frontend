@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,6 +12,7 @@ import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
+import FileUpload from './FileUpload';
 import { Message } from '../types/chat';
 
 interface TaskMessage {
@@ -39,6 +40,8 @@ const ChatInterface = () => {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [attachedFileIds, setAttachedFileIds] = useState<string[]>([]);
+  const [attachedFileDetails, setAttachedFileDetails] = useState<any[]>([]);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -151,7 +154,8 @@ const ChatInterface = () => {
       // Prepare request payload - include mission_id only if we have one
       const requestPayload: any = {
         message: message,
-        llm: 'gpt-4o'
+        llm: 'gpt-4o',
+        file_ids: attachedFileIds
       };
 
       if (currentMissionId) {
@@ -159,6 +163,10 @@ const ChatInterface = () => {
         console.log('Including mission_id in request:', currentMissionId);
       } else {
         console.log('No mission_id - this will create a new mission');
+      }
+
+      if (attachedFileIds.length > 0) {
+        console.log('Including file_ids in request:', attachedFileIds);
       }
 
       const response = await authenticatedPost(buildApiUrl('/api/v1/missions/complete'), requestPayload);
@@ -264,6 +272,9 @@ const ChatInterface = () => {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsStreaming(false);
+      // Clear attached files after sending
+      setAttachedFileIds([]);
+      setAttachedFileDetails([]);
       // Focus input after streaming completes so user can immediately type next message
       focusInput();
     }
@@ -279,6 +290,12 @@ const ChatInterface = () => {
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
+      attachedFiles: attachedFileDetails.length > 0 ? attachedFileDetails.map(file => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      })) : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -317,6 +334,7 @@ const ChatInterface = () => {
         content: pendingMessage,
         sender: 'user',
         timestamp: new Date(),
+        attachedFiles: undefined,
       };
       setMessages(prev => [...prev, userMessage]);
       
@@ -335,6 +353,19 @@ const ChatInterface = () => {
   const handleSubscriptionCancel = () => {
     setShowSubscriptionDialog(false);
     setPendingMessage(null); // Clear pending message
+  };
+
+  const handleFilesUploaded = (fileIds: string[], fileDetails: any[]) => {
+    setAttachedFileIds(fileIds);
+    setAttachedFileDetails(fileDetails);
+    toast({
+      description: `${fileIds.length} file(s) attached to your message`,
+      duration: 3000,
+    });
+  };
+
+  const removeAttachedFile = (indexToRemove: number) => {
+    setAttachedFileIds(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
   return (
@@ -363,8 +394,35 @@ const ChatInterface = () => {
 
       {/* Input Area */}
       <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-3">
+          {/* Attached Files Display */}
+          {attachedFileIds.length > 0 && (
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <Paperclip className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-800 font-medium">
+                {attachedFileIds.length} file(s) attached
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setAttachedFileIds([]);
+                  setAttachedFileDetails([]);
+                }}
+                className="ml-auto text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+              >
+                Clear all
+              </Button>
+            </div>
+          )}
+          
+          {/* Input Row */}
           <div className="flex space-x-3">
+            <FileUpload
+              onFilesUploaded={handleFilesUploaded}
+              disabled={isStreaming || isLoadingHistory}
+              missionId={currentMissionId}
+            />
             <div className="flex-1 relative">
               <Input
                 ref={inputRef}

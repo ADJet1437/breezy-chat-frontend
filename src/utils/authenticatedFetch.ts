@@ -128,7 +128,7 @@ export const authenticatedFetch = async (
   console.log('🔍 Final accessToken:', accessToken ? `EXISTS (${accessToken.substring(0, 20)}...)` : 'NULL');
   
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    ...(fetchOptions.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...fetchOptions.headers,
   };
 
@@ -203,7 +203,7 @@ export const authenticatedPost = (url: string, data?: any, options?: Authenticat
   return authenticatedFetch(url, {
     ...options,
     method: 'POST',
-    body: data ? JSON.stringify(data) : undefined,
+    body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
   });
 };
 
@@ -211,7 +211,7 @@ export const authenticatedPut = (url: string, data?: any, options?: Authenticate
   return authenticatedFetch(url, {
     ...options,
     method: 'PUT',
-    body: data ? JSON.stringify(data) : undefined,
+    body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
   });
 };
 
