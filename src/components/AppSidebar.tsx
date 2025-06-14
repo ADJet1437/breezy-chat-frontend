@@ -27,7 +27,7 @@ export function AppSidebar() {
       icon: MessageSquare,
     },
     {
-      title: 'All Missions',
+      title: 'Missions',
       url: '/missions',
       icon: List,
     },
