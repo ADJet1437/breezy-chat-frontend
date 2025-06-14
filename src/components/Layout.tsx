@@ -1,15 +1,30 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import Header from './Header';
-import AuthStatusIndicator from './AuthStatusIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
+  rightSidebar?: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Listen for window resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -26,21 +41,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           {/* Main content area */}
-          <div className="flex-1 flex flex-col ml-0 md:ml-64">
+          <div className={`flex-1 flex flex-col ${!isMobile ? 'ml-0 md:ml-64' : ''}`}>
             {/* Mobile sidebar trigger */}
             <div className="md:hidden p-2 border-b bg-white/80 backdrop-blur-sm">
               <SidebarTrigger />
             </div>
             
             {/* Page content */}
-            <main className="flex-1 flex flex-col min-h-0">
+            <main className={`flex-1 flex flex-col min-h-0 ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
               {children}
             </main>
           </div>
+          
+          {/* Right sidebar */}
+          {rightSidebar && (
+            <div className="hidden md:block">
+              {rightSidebar}
+            </div>
+          )}
         </div>
-        
-        {/* Auth Status Indicator */}
-        <AuthStatusIndicator />
       </div>
     </SidebarProvider>
   );

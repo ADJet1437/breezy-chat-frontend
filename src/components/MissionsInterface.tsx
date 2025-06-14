@@ -42,6 +42,7 @@ interface Mission {
   created_at: string;
   updated_at: string;
   llm_id: string;
+  system_prompt?: string;
   task_messages: any[];
 }
 

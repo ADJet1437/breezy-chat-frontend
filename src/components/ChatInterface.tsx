@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
@@ -13,7 +10,7 @@ import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
-import FileUpload from './FileUpload';
+import ChatStickyInputBar from './ChatStickyInputBar';
 import { Message } from '../types/chat';
 
 interface TaskMessage {
@@ -37,14 +34,16 @@ interface MissionDetails {
   created_at: string;
   updated_at: string;
   llm_id: string;
+  system_prompt?: string;
   task_messages: TaskMessage[];
 }
 
 interface ChatInterfaceProps {
   missionId?: string;
+  rightSidebarVisible?: boolean;
 }
 
-const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
+const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,28 +57,16 @@ const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
   const { isAuthenticated, accessToken, user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const focusInput = () => {
-    // Small delay to ensure DOM updates complete
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Auto-focus input when component mounts for immediate typing
-  useEffect(() => {
-    focusInput();
-  }, []);
 
   // Load mission history when missionId changes
   useEffect(() => {
@@ -399,81 +386,48 @@ const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages Area */}
-      <div className="flex-1 min-h-0 p-6">
-        <div className="max-w-4xl mx-auto h-full flex flex-col">
-          <ScrollArea className="flex-1">
-            {isLoadingHistory ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="text-center">
-                  <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Loading mission history...</p>
+    <>
+      {/* Messages Area with bottom padding for sticky input */}
+      <div className="flex flex-col h-full pb-32">
+        <div className="flex-1 min-h-0 p-6">
+          <div className="max-w-4xl mx-auto h-full flex flex-col">
+            <ScrollArea className="flex-1">
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading mission history...</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                <MessageList messages={messages} />
-                {isStreaming && <TypingIndicator />}
-              </>
-            )}
-            <div ref={messagesEndRef} />
-          </ScrollArea>
-        </div>
-      </div>
-
-      {/* Input Area */}
-      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 p-6">
-        <div className="max-w-4xl mx-auto space-y-3">
-          {/* Attached Files Display */}
-          {attachedFileIds.length > 0 && (
-            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <Paperclip className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-blue-800 font-medium">
-                {attachedFileIds.length} file(s) attached
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setAttachedFileIds([]);
-                  setAttachedFileDetails([]);
-                }}
-                className="ml-auto text-blue-600 hover:text-blue-800 hover:bg-blue-100"
-              >
-                Clear all
-              </Button>
-            </div>
-          )}
-          
-          {/* Input Row */}
-          <div className="flex space-x-3">
-            <FileUpload
-              onFilesUploaded={handleFilesUploaded}
-              disabled={isStreaming || isLoadingHistory}
-              missionId={missionId || currentMissionId}
-            />
-            <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message here..."
-                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
-                disabled={isStreaming || isLoadingHistory}
-              />
-            </div>
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+              ) : (
+                <>
+                  <MessageList messages={messages} />
+                  {isStreaming && <TypingIndicator />}
+                </>
+              )}
+              <div ref={messagesEndRef} />
+            </ScrollArea>
           </div>
         </div>
       </div>
+
+      {/* Sticky Input Bar */}
+      <ChatStickyInputBar
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        onSendMessage={handleSendMessage}
+        onKeyPress={handleKeyPress}
+        onFilesUploaded={handleFilesUploaded}
+        attachedFileIds={attachedFileIds}
+        attachedFileDetails={attachedFileDetails}
+        setAttachedFileIds={setAttachedFileIds}
+        setAttachedFileDetails={setAttachedFileDetails}
+        isStreaming={isStreaming}
+        isLoadingHistory={isLoadingHistory}
+        missionId={missionId}
+        currentMissionId={currentMissionId}
+        rightSidebarVisible={rightSidebarVisible}
+      />
 
       {/* Subscription Dialog */}
       <SubscriptionDialog
@@ -486,7 +440,7 @@ const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
         onSubscribed={handleSubscriptionSuccess}
         message={subscriptionMessage}
       />
-    </div>
+    </>
   );
 };
 
