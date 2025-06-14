@@ -273,16 +273,16 @@ const MissionsInterface = () => {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-visible p-4">
               {missions.map((mission) => (
                 <Card
                   key={mission.id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"
+                  className="group cursor-pointer border border-gray-200 transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu"
                   onClick={() => handleMissionSelect(mission.id)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 pr-2">
+                      <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 pr-2 group-hover:text-blue-700 transition-colors duration-300">
                         {mission.name}
                       </CardTitle>
                       <DropdownMenu>
@@ -321,16 +321,16 @@ const MissionsInterface = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="h-4 w-4 mr-2" />
+                    <div className="flex items-center text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                      <Calendar className="h-4 w-4 mr-2 group-hover:text-blue-500 transition-colors duration-300" />
                       <span>Created: {formatDate(mission.created_at)}</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="h-4 w-4 mr-2" />
+                    <div className="flex items-center text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                      <Clock className="h-4 w-4 mr-2 group-hover:text-blue-500 transition-colors duration-300" />
                       <span>Updated: {formatDate(mission.updated_at)}</span>
                     </div>
                     <Button
-                      className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg"
+                      className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg group-hover:scale-105 transition-transform duration-300"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMissionSelect(mission.id);
