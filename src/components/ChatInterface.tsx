@@ -22,6 +22,13 @@ interface TaskMessage {
   answer: string;
   created_at: string;
   mission_id: string;
+  file_ids: string[];
+  files?: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+  }[];
 }
 
 interface MissionDetails {
@@ -103,12 +110,18 @@ const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
       const historyMessages: Message[] = [];
       
       missionDetails.task_messages.forEach((taskMessage) => {
-        // Add user message
+        // Add user message with file attachments
         historyMessages.push({
           id: `${taskMessage.id}_user`,
           content: taskMessage.message,
           sender: 'user',
           timestamp: new Date(taskMessage.created_at),
+          attachedFiles: taskMessage.files ? taskMessage.files.map(file => ({
+            id: file.id,
+            name: file.name,
+            size: file.size,
+            type: file.type
+          })) : undefined,
         });
 
         // Add bot response
