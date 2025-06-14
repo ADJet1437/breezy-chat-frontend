@@ -86,7 +86,7 @@ const MissionDetail = () => {
     <div 
       className={`fixed z-50 transition-all duration-200 ${
         isMobile 
-          ? 'bottom-6 right-6'  // Mobile: simple bottom-right
+          ? 'bottom-32 right-6'  // Mobile: above input bar (32 = 8rem = 128px, clearing the input area)
           : `bottom-20 ${showSidebar ? 'right-96' : 'right-6'}`  // Desktop: above input with sidebar adjustment
       }`}
       style={{ 
