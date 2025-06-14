@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MessageSquare, MoreVertical, Trash2 } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, MoreVertical, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,8 +23,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
-import { authenticatedGet, authenticatedDelete } from '../utils/authenticatedFetch';
+import { authenticatedGet, authenticatedDelete, authenticatedPatch } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Mission {
   id: string;
@@ -45,6 +55,10 @@ const MissionsInterface = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [missionToDelete, setMissionToDelete] = useState<Mission | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [missionToRename, setMissionToRename] = useState<Mission | null>(null);
+  const [newMissionName, setNewMissionName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const { setCurrentMissionId } = useMissionContext();
   const { isLoading: authLoading, isAuthenticated, authFunctionsReady } = useAuth();
   const navigate = useNavigate();
@@ -155,6 +169,62 @@ const MissionsInterface = () => {
     setMissionToDelete(null);
   };
 
+  const handleRenameClick = (mission: Mission) => {
+    setMissionToRename(mission);
+    setNewMissionName(mission.name);
+    setRenameDialogOpen(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!missionToRename || !newMissionName.trim()) return;
+
+    setIsRenaming(true);
+    try {
+      const response = await authenticatedPatch(
+        buildApiUrl(`/api/v1/missions/${missionToRename.id}`),
+        {
+          name: newMissionName.trim()
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Failed to rename mission: ${response.status}`);
+      }
+
+      const updatedMission = await response.json();
+      
+      // Update mission in local state (optimistic update)
+      setMissions(prev => prev.map(m => 
+        m.id === missionToRename.id 
+          ? { ...m, name: updatedMission.name, updated_at: updatedMission.updated_at }
+          : m
+      ));
+      
+      toast({
+        description: "Mission renamed successfully!",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error renaming mission:', error);
+      toast({
+        description: "Failed to rename mission. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsRenaming(false);
+      setRenameDialogOpen(false);
+      setMissionToRename(null);
+      setNewMissionName('');
+    }
+  };
+
+  const handleRenameCancel = () => {
+    setRenameDialogOpen(false);
+    setMissionToRename(null);
+    setNewMissionName('');
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
@@ -230,6 +300,15 @@ const MissionsInterface = () => {
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleRenameClick(mission);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleDeleteClick(mission);
                             }}
                             className="text-red-600 focus:text-red-600"
@@ -301,6 +380,61 @@ const MissionsInterface = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Mission</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="mission-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="mission-name"
+                value={newMissionName}
+                onChange={(e) => setNewMissionName(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter mission name"
+                maxLength={200}
+                disabled={isRenaming}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isRenaming && newMissionName.trim()) {
+                    handleRenameConfirm();
+                  }
+                  if (e.key === 'Escape') {
+                    handleRenameCancel();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={handleRenameCancel}
+              disabled={isRenaming}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRenameConfirm}
+              disabled={isRenaming || !newMissionName.trim()}
+            >
+              {isRenaming ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  Renaming...
+                </>
+              ) : (
+                'Rename Mission'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -215,6 +215,14 @@ export const authenticatedPut = (url: string, data?: any, options?: Authenticate
   });
 };
 
+export const authenticatedPatch = (url: string, data?: any, options?: AuthenticatedFetchOptions) => {
+  return authenticatedFetch(url, {
+    ...options,
+    method: 'PATCH',
+    body: data instanceof FormData ? data : (data ? JSON.stringify(data) : undefined),
+  });
+};
+
 export const authenticatedDelete = (url: string, options?: AuthenticatedFetchOptions) => {
   return authenticatedFetch(url, { ...options, method: 'DELETE' });
 };
