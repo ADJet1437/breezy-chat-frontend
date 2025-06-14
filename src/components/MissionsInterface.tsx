@@ -1,13 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
-import { authenticatedGet } from '../utils/authenticatedFetch';
+import { authenticatedGet, authenticatedDelete } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 
 interface Mission {
@@ -26,6 +42,9 @@ interface MissionsResponse {
 const MissionsInterface = () => {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [missionToDelete, setMissionToDelete] = useState<Mission | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { setCurrentMissionId } = useMissionContext();
   const { isLoading: authLoading, isAuthenticated, authFunctionsReady } = useAuth();
   const navigate = useNavigate();
@@ -94,6 +113,48 @@ const MissionsInterface = () => {
     });
   };
 
+  const handleDeleteClick = (mission: Mission) => {
+    setMissionToDelete(mission);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!missionToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await authenticatedDelete(buildApiUrl(`/api/v1/missions/${missionToDelete.id}`));
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete mission: ${response.status}`);
+      }
+
+      // Remove mission from local state (optimistic update)
+      setMissions(prev => prev.filter(m => m.id !== missionToDelete.id));
+      
+      toast({
+        description: "Mission deleted successfully!",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error deleting mission:', error);
+      toast({
+        description: "Failed to delete mission. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setMissionToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setMissionToDelete(null);
+  };
+
   if (authLoading || isLoading) {
     return (
       <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
@@ -150,9 +211,35 @@ const MissionsInterface = () => {
                   onClick={() => handleMissionSelect(mission.id)}
                 >
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2">
-                      {mission.name}
-                    </CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 pr-2">
+                        {mission.name}
+                      </CardTitle>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-gray-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(mission);
+                            }}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center text-sm text-gray-600">
@@ -180,6 +267,40 @@ const MissionsInterface = () => {
           )}
         </ScrollArea>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Mission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{missionToDelete?.name}"?
+              <br />
+              <br />
+              This action cannot be undone. All conversation history and files attached to this mission will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDeleteCancel} disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                'Delete Mission'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
