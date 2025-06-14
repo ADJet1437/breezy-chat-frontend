@@ -241,7 +241,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
         
         <div className="text-center pt-6 border-t border-gray-100">
           <p className="text-xs text-gray-400">
-            © 2025 Talosy. Built with FastAPI and Google OAuth.
+            © 2025 Talosy
           </p>
         </div>
       </DialogContent>
