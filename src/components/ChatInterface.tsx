@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,7 +33,11 @@ interface MissionDetails {
   task_messages: TaskMessage[];
 }
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  missionId?: string;
+}
+
+const ChatInterface = ({ missionId }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -44,6 +49,7 @@ const ChatInterface = () => {
   const [attachedFileDetails, setAttachedFileDetails] = useState<any[]>([]);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
+  const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -68,15 +74,16 @@ const ChatInterface = () => {
     focusInput();
   }, []);
 
-  // Load mission history when currentMissionId changes
+  // Load mission history when missionId changes
   useEffect(() => {
-    if (currentMissionId) {
-      loadMissionHistory(currentMissionId);
+    const effectiveMissionId = missionId || currentMissionId;
+    if (effectiveMissionId) {
+      loadMissionHistory(effectiveMissionId);
     } else {
-      // Clear messages when starting a new mission (currentMissionId becomes null)
+      // Clear messages when starting a new mission
       setMessages([]);
     }
-  }, [currentMissionId]);
+  }, [missionId, currentMissionId]);
 
   const loadMissionHistory = async (missionId: string) => {
     console.log('Loading mission history for:', missionId);
@@ -134,9 +141,11 @@ const ChatInterface = () => {
 
 
   const sendMessageToBackend = async (message: string) => {
+    const effectiveMissionId = missionId || currentMissionId;
+    let newMissionId: string | null = null; // Track new mission ID for navigation
     console.log('🎯 === SENDING MESSAGE TO BACKEND ===');
     console.log('🎯 Message:', message);
-    console.log('🎯 Current mission ID:', currentMissionId);
+    console.log('🎯 Effective mission ID:', effectiveMissionId);
     
     // Check authentication state before making API call
     console.log('🔐 === AUTH STATE CHECK ===');
@@ -158,9 +167,9 @@ const ChatInterface = () => {
         file_ids: attachedFileIds
       };
 
-      if (currentMissionId) {
-        requestPayload.mission_id = currentMissionId;
-        console.log('Including mission_id in request:', currentMissionId);
+      if (effectiveMissionId) {
+        requestPayload.mission_id = effectiveMissionId;
+        console.log('Including mission_id in request:', effectiveMissionId);
       } else {
         console.log('No mission_id - this will create a new mission');
       }
@@ -214,6 +223,7 @@ const ChatInterface = () => {
                 
                 if (data.event_type === 'mission_init') {
                   console.log('Received mission_init event with mission_id:', data.answer);
+                  newMissionId = data.answer; // Store for navigation
                   setCurrentMissionId(data.answer);
                 } else if (data.event_type === 'mission_content') {
                   console.log('Updating message content with:', data.answer);
@@ -275,8 +285,15 @@ const ChatInterface = () => {
       // Clear attached files after sending
       setAttachedFileIds([]);
       setAttachedFileDetails([]);
-      // Focus input after streaming completes so user can immediately type next message
-      focusInput();
+      
+      // If we're on root route and created a new mission, navigate to mission detail
+      if (!missionId && newMissionId) {
+        console.log('Navigating to new mission detail:', newMissionId);
+        navigate(`/missions/${newMissionId}`);
+      } else {
+        // Focus input after streaming completes so user can immediately type next message
+        focusInput();
+      }
     }
   };
 
@@ -421,7 +438,7 @@ const ChatInterface = () => {
             <FileUpload
               onFilesUploaded={handleFilesUploaded}
               disabled={isStreaming || isLoadingHistory}
-              missionId={currentMissionId}
+              missionId={missionId || currentMissionId}
             />
             <div className="flex-1 relative">
               <Input

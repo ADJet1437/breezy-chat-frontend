@@ -2,6 +2,7 @@
 import React from 'react';
 import { MessageSquare, List } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useMissionContext } from '../contexts/MissionContext';
 import {
   Sidebar,
   SidebarContent,
@@ -13,23 +14,24 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-const navigationItems = [
-  {
-    title: 'Current Mission',
-    url: '/',
-    icon: MessageSquare,
-  },
-  {
-    title: 'All Missions',
-    url: '/missions',
-    icon: List,
-  },
-];
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { currentMissionId } = useMissionContext();
+
+  const navigationItems = [
+    {
+      title: 'Current Mission',
+      url: currentMissionId ? `/missions/${currentMissionId}` : '/',
+      icon: MessageSquare,
+    },
+    {
+      title: 'All Missions',
+      url: '/missions',
+      icon: List,
+    },
+  ];
 
   const isActive = (path: string) => currentPath === path;
 

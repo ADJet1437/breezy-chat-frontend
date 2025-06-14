@@ -11,6 +11,7 @@ import { setGlobalToast } from "./utils/errorHandler";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Missions from "./pages/Missions";
+import MissionDetail from "./pages/MissionDetail";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
@@ -35,6 +36,7 @@ const AppInner = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/missions" element={<Layout><Missions /></Layout>} />
+            <Route path="/missions/:id" element={<Layout><MissionDetail /></Layout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>

@@ -77,8 +77,7 @@ const MissionsInterface = () => {
   };
 
   const handleMissionSelect = (missionId: string) => {
-    setCurrentMissionId(missionId);
-    navigate('/');
+    navigate(`/missions/${missionId}`);
     toast({
       description: "Mission loaded successfully!",
       duration: 2000,
