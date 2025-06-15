@@ -73,13 +73,13 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
 
   return (
     <div 
-      className={`fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-sm border-t border-gray-200 transition-all duration-200 ${
-        !isMobile && rightSidebarVisible ? 'md:right-80' : ''
+      className={`fixed bottom-0 z-40 bg-white/80 backdrop-blur-sm border-t border-gray-200 transition-all duration-200 ${
+        !isMobile ? `left-0 md:left-64 right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` : 'left-0 right-0'
       }`}
       style={{ marginLeft: 'max(0px, env(safe-area-inset-left))', marginRight: 'max(0px, env(safe-area-inset-right))' }}
     >
-      {/* Responsive left margin for desktop sidebar */}
-      <div className={`p-6 ${!isMobile ? 'ml-0 md:ml-64' : ''}`}>
+      {/* Remove the extra margin since positioning is handled by the container */}
+      <div className="p-6">
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Attached Files Display */}
           {attachedFileIds.length > 0 && (
