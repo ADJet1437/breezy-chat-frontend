@@ -14,6 +14,8 @@ import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
+import { KnowledgeBase } from "./pages/KnowledgeBase";
+import { KnowledgeBaseDetail } from "./pages/KnowledgeBaseDetail";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -37,6 +39,8 @@ const AppInner = () => {
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/missions" element={<Layout><Missions /></Layout>} />
             <Route path="/missions/:id" element={<MissionDetail />} />
+            <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
+            <Route path="/knowledge-base/:id" element={<Layout><KnowledgeBaseDetail /></Layout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>

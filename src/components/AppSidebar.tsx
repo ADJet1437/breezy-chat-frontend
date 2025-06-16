@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MessageSquare, List } from 'lucide-react';
+import { MessageSquare, List, BookOpen } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useMissionContext } from '../contexts/MissionContext';
 import {
@@ -30,6 +30,11 @@ export function AppSidebar() {
       title: 'Missions',
       url: '/missions',
       icon: List,
+    },
+    {
+      title: 'Knowledge Base',
+      url: '/knowledge-base',
+      icon: BookOpen,
     },
   ];
 
