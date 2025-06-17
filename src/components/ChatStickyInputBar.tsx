@@ -1,14 +1,14 @@
 import React, { useRef, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { Send, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import FileUpload from './FileUpload';
 
 interface ChatStickyInputBarProps {
   inputValue: string;
   setInputValue: (value: string) => void;
   onSendMessage: () => void;
-  onKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onFilesUploaded: (fileIds: string[], fileDetails: any[]) => void;
   attachedFileIds: string[];
   attachedFileDetails: any[];
@@ -41,13 +41,53 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
   currentMissionId,
   rightSidebarVisible = false,
 }, ref) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [textareaHeight, setTextareaHeight] = useState(44); // Initial height
 
   const focusInput = () => {
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
+  };
+
+  const adjustTextareaHeight = () => {
+    const textarea = inputRef.current;
+    if (textarea) {
+      // Reset height to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate new height with constraints
+      const scrollHeight = textarea.scrollHeight;
+      const minHeight = 44; // Minimum single line height
+      const maxHeight = 120; // Maximum height before scrolling
+      
+      const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+      textarea.style.height = `${newHeight}px`;
+      setTextareaHeight(newHeight);
+      
+      // Enable/disable scrolling based on content
+      textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    adjustTextareaHeight();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle Enter key for sending message (Shift+Enter for new line)
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (inputValue.trim() && !isStreaming && !isLoadingHistory) {
+        onSendMessage();
+      }
+    }
+    // Call original onKeyPress if it exists
+    if (onKeyPress) {
+      onKeyPress(e);
+    }
   };
 
   useImperativeHandle(ref, () => ({
@@ -57,6 +97,11 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
   useEffect(() => {
     focusInput();
   }, []);
+
+  useEffect(() => {
+    // Adjust height when inputValue changes (e.g., when cleared after sending)
+    adjustTextareaHeight();
+  }, [inputValue]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -110,14 +155,16 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
               missionId={missionId || currentMissionId}
             />
             <div className="flex-1 relative">
-              <Input
+              <Textarea
                 ref={inputRef}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={onKeyPress}
-                placeholder="Type your message here..."
-                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl resize-none transition-all duration-200 ease-in-out min-h-[44px] max-h-[120px] overflow-y-hidden"
+                style={{ height: `${textareaHeight}px` }}
                 disabled={isStreaming || isLoadingHistory}
+                rows={1}
               />
             </div>
             <Button
