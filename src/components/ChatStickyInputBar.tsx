@@ -77,14 +77,7 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Handle Enter key for sending message (Shift+Enter for new line)
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (inputValue.trim() && !isStreaming && !isLoadingHistory) {
-        onSendMessage();
-      }
-    }
-    // Call original onKeyPress if it exists
+    // Call original onKeyPress if it exists (handles Enter key processing)
     if (onKeyPress) {
       onKeyPress(e);
     }
