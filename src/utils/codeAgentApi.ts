@@ -192,7 +192,7 @@ class CodeAgentAPI {
     }
   }
 
-  // Execution
+  // Execution - Simplified non-streaming approach
   executePromptSSE(
     sessionId: string,
     request: ExecutePromptRequest,
@@ -200,100 +200,110 @@ class CodeAgentAPI {
     onError: (error: Error) => void,
     onComplete: () => void
   ): () => void {
-    // Create a new EventSource for SSE
-    const eventSourceUrl = this.getApiUrl(`/sessions/${sessionId}/execute`);
-    
-    // We need to send the POST request first, then listen to SSE
-    // For now, we'll simulate this - in production, you might need to:
-    // 1. POST to initiate execution
-    // 2. Connect to SSE endpoint with execution ID
-    
-    // Simulate SSE connection
-    let timeoutId: NodeJS.Timeout;
     let cancelled = false;
-    
-    const simulate = async () => {
-      try {
-        // Simulate events
-        const events: SSEEvent[] = [
-          {
-            event_type: 'execution_init',
-            data: {
-              execution_id: `exec-${Date.now()}`,
-              session_id: sessionId,
-              prompt: request.prompt,
-              status: 'initializing'
-            }
-          },
-          {
-            event_type: 'execution_progress',
-            data: {
-              execution_id: `exec-${Date.now()}`,
-              progress_percentage: 25,
-              current_step: 'Analyzing request',
-              message: 'Reading project files...'
-            }
-          },
-          {
-            event_type: 'execution_progress',
-            data: {
-              execution_id: `exec-${Date.now()}`,
-              progress_percentage: 50,
-              current_step: 'Planning implementation',
-              message: 'Generating plan...'
-            }
-          },
-          {
-            event_type: 'execution_progress',
-            data: {
-              execution_id: `exec-${Date.now()}`,
-              progress_percentage: 75,
-              current_step: 'Executing changes',
-              message: 'Modifying files...'
-            }
-          },
-          {
-            event_type: 'execution_complete',
-            data: {
-              execution_id: `exec-${Date.now()}`,
-              session_id: sessionId,
-              status: 'completed',
-              tool_executions: []
-            }
-          }
-        ];
 
-        for (let i = 0; i < events.length; i++) {
+    const executeRequest = async () => {
+      try {
+        console.log('🚀 Starting execution request...');
+        
+        // Send POST request and wait for complete response
+        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${sessionId}/execute`), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to execute prompt: ${response.statusText}`);
+        }
+
+        // Get the complete response text
+        const responseText = await response.text();
+        console.log('📥 Complete response received:', responseText);
+
+        // Parse all SSE events from the response
+        const events = this.parseSSEResponse(responseText);
+        console.log('📋 Parsed events:', events);
+
+        if (cancelled) return;
+
+        // Process all events in sequence
+        for (const event of events) {
           if (cancelled) break;
           
-          await new Promise(resolve => {
-            timeoutId = setTimeout(resolve, 1000 + Math.random() * 500);
-          });
+          console.log('🎯 Processing event:', event.event_type);
+          onEvent(event);
           
-          if (!cancelled) {
-            onEvent(events[i]);
-          }
+          // Small delay to allow UI updates between events
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
+
         if (!cancelled) {
+          console.log('✅ All events processed, calling completion');
           onComplete();
         }
+
       } catch (error) {
+        console.error('❌ Execution error:', error);
         if (!cancelled) {
           onError(error as Error);
         }
       }
     };
 
-    simulate();
+    // Start the execution
+    executeRequest();
 
     // Return cleanup function
     return () => {
+      console.log('🛑 Cancelling execution...');
       cancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
     };
+  }
+
+  private parseSSEResponse(responseText: string): SSEEvent[] {
+    const events: SSEEvent[] = [];
+    const lines = responseText.split('\n');
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Skip empty lines and comments
+      if (!trimmedLine || trimmedLine.startsWith(':')) {
+        continue;
+      }
+
+      console.log('🔍 Processing line:', trimmedLine);
+
+      // Process data lines - handle duplicate data: prefixes
+      if (trimmedLine.startsWith('data: ')) {
+        let eventData = trimmedLine.substring(6); // Remove first 'data: ' prefix
+        
+        // Handle duplicate 'data: ' prefixes
+        while (eventData.startsWith('data: ')) {
+          console.log('⚠️ Found duplicate data: prefix, removing...');
+          eventData = eventData.substring(6); // Remove additional 'data: ' prefix
+        }
+        
+        if (!eventData) continue;
+
+        console.log('🔍 Final event data for parsing:', eventData);
+
+        try {
+          const event: SSEEvent = JSON.parse(eventData);
+          events.push(event);
+          console.log('✅ Parsed event:', event.event_type);
+        } catch (parseError) {
+          console.error('❌ Failed to parse event:', eventData, parseError);
+          console.error('❌ Original line:', trimmedLine);
+        }
+      }
+    }
+
+    console.log(`📊 Total events parsed: ${events.length}`);
+    return events;
   }
 
   async getExecutionStatus(executionId: string): Promise<ExecutionStatusResponse> {

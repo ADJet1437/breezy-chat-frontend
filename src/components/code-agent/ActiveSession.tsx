@@ -160,33 +160,181 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
   };
 
   const handleSSEEvent = (event: SSEEvent) => {
+    console.log('🎯 [ActiveSession] Handling SSE event:', event.event_type, event.data);
+    
     switch (event.event_type) {
       case 'execution_init':
+        console.log('🚀 [ActiveSession] Initializing execution:', event.data.execution_id);
         setExecutionState(prev => ({
           ...prev,
           executionId: event.data.execution_id,
           progress: 10,
-          currentStep: 'Starting execution...',
+          currentStep: `Initializing agent in ${event.data.working_directory}...`,
+          isExecuting: true,
+          canCancel: true,
         }));
+        
+        // Add system message showing initialization
+        const initMessage: Message = {
+          id: `init-${Date.now()}`,
+          type: 'system',
+          content: `🤖 Starting code agent in: ${event.data.working_directory}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, initMessage]);
         break;
 
       case 'execution_progress':
         setExecutionState(prev => ({
           ...prev,
           progress: event.data.progress_percentage || prev.progress,
-          currentStep: event.data.current_step || prev.currentStep,
+          currentStep: event.data.current_step || event.data.message || prev.currentStep,
+        }));
+        break;
+
+      case 'llm_response':
+        // Handle streaming LLM responses
+        if (event.data.is_partial) {
+          // Update or create a streaming assistant message
+          setMessages(prev => {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage && lastMessage.type === 'assistant' && lastMessage.id.includes('streaming')) {
+              // Update existing streaming message
+              return [
+                ...prev.slice(0, -1),
+                {
+                  ...lastMessage,
+                  content: event.data.accumulated_content || lastMessage.content + (event.data.content || ''),
+                }
+              ];
+            } else {
+              // Create new streaming message
+              return [
+                ...prev,
+                {
+                  id: `streaming-${Date.now()}`,
+                  type: 'assistant' as const,
+                  content: event.data.content || '',
+                  timestamp: new Date(),
+                }
+              ];
+            }
+          });
+        }
+        break;
+
+      case 'llm_response_complete':
+        // Finalize the LLM response
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage && lastMessage.type === 'assistant' && lastMessage.id.includes('streaming')) {
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastMessage,
+                id: `assistant-${Date.now()}`, // Remove streaming prefix
+                content: event.data.final_content || lastMessage.content,
+              }
+            ];
+          }
+          return prev;
+        });
+        break;
+
+      case 'agent_action':
+        setExecutionState(prev => ({
+          ...prev,
+          currentStep: `Planning to use: ${event.data.tool || 'tool'}`,
+          progress: Math.min(prev.progress + 5, 90),
+        }));
+        break;
+
+      case 'tool_execution':
+      case 'tool_start':
+        const toolName = event.data.tool_name || 'unknown tool';
+        setExecutionState(prev => ({
+          ...prev,
+          currentStep: `Executing: ${toolName}`,
+          progress: Math.min(prev.progress + 10, 85),
+        }));
+        break;
+
+      case 'tool_result':
+      case 'tool_end':
+        const completedTool = event.data.tool_name || 'tool';
+        const success = event.data.success !== false;
+        
+        setExecutionState(prev => ({
+          ...prev,
+          currentStep: success ? `✅ Completed: ${completedTool}` : `❌ Failed: ${completedTool}`,
+          progress: Math.min(prev.progress + 5, 90),
+        }));
+
+        // Show tool execution in chat if it's a significant action
+        if (event.data.tool_name && ['write_file', 'execute_command'].includes(event.data.tool_name)) {
+          const toolMessage: Message = {
+            id: `tool-${Date.now()}`,
+            type: 'system',
+            content: success 
+              ? `🔧 ${completedTool}: ${event.data.result || 'Completed successfully'}`
+              : `⚠️ ${completedTool} failed: ${event.data.error || 'Unknown error'}`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, toolMessage]);
+        }
+        break;
+
+      case 'tool_error':
+        const errorTool = event.data.tool_name || 'tool';
+        setExecutionState(prev => ({
+          ...prev,
+          currentStep: `❌ Error in: ${errorTool}`,
+        }));
+        
+        const toolErrorMessage: Message = {
+          id: `tool-error-${Date.now()}`,
+          type: 'system',
+          content: `⚠️ Tool error in ${errorTool}: ${event.data.error || 'Unknown error'}`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, toolErrorMessage]);
+        break;
+
+      case 'agent_finish':
+        setExecutionState(prev => ({
+          ...prev,
+          currentStep: 'Finalizing response...',
+          progress: 95,
         }));
         break;
 
       case 'execution_complete':
-        const assistantMessage: Message = {
-          id: Date.now().toString(),
-          type: 'assistant',
-          content: 'Execution completed successfully! I\'ve processed your request and made the necessary changes.',
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
+        // Final completion - extract the actual result
+        const result = event.data.result || event.data.message;
+        console.log('🏁 [ActiveSession] Execution complete event:', event.data);
+        console.log('🏁 [ActiveSession] Extracted result:', result);
         
+        // Always add the agent's response to chat
+        if (result && result.trim()) {
+          const assistantMessage: Message = {
+            id: `assistant-${Date.now()}`,
+            type: 'assistant' as const,
+            content: result,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+        } else {
+          // Fallback message if no result
+          const fallbackMessage: Message = {
+            id: `fallback-${Date.now()}`,
+            type: 'assistant' as const,
+            content: '✅ Task completed successfully!',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, fallbackMessage]);
+        }
+        
+        // Update execution state to completed
         setExecutionState(prev => ({
           ...prev,
           progress: 100,
@@ -194,13 +342,27 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
           isExecuting: false,
           canCancel: false,
         }));
+
+        toast({
+          title: "Execution Complete",
+          description: "The code agent has finished processing your request.",
+        });
+        break;
+
+      case 'raw_message':
+        // Log raw messages but don't display them in chat
+        console.warn('🚨 [ActiveSession] Received raw message event (should be parsed):', event.data.content);
+        break;
+
+      case 'formatting_error':
+        console.error('🚨 [ActiveSession] Backend formatting error:', event.data);
         break;
 
       case 'execution_error':
         const errorMessage: Message = {
           id: Date.now().toString(),
           type: 'assistant',
-          content: `Execution failed: ${event.data.error_message}`,
+          content: `❌ Execution failed: ${event.data.error_message || 'Unknown error occurred'}`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMessage]);
@@ -211,22 +373,35 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
           currentStep: 'Failed',
           canCancel: false,
         });
-        break;
 
-      case 'tool_execution':
-        // Could show individual tool executions in the UI
+        toast({
+          title: "Execution Error",
+          description: event.data.error_message || 'Unknown error occurred',
+          variant: "destructive",
+        });
         break;
 
       default:
-        console.log('Unknown SSE event:', event);
+        console.log('🤷 [ActiveSession] Unknown SSE event:', event.event_type, event.data);
     }
   };
 
-
-  const handleCancelExecution = () => {
+  const handleCancelExecution = async () => {
+    // Cancel the SSE connection first
     if (cancelExecutionRef.current) {
       cancelExecutionRef.current();
       cancelExecutionRef.current = null;
+    }
+
+    // If we have an execution ID, try to cancel it on the backend
+    if (executionState.executionId) {
+      try {
+        await codeAgentAPI.cancelExecution(executionState.executionId, 'User cancelled');
+        console.log('✅ [ActiveSession] Backend execution cancelled successfully');
+      } catch (error) {
+        console.error('❌ [ActiveSession] Failed to cancel backend execution:', error);
+        // Don't show error to user - cancellation UX should be immediate
+      }
     }
     
     setExecutionState({
@@ -239,10 +414,15 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
     const cancelMessage: Message = {
       id: Date.now().toString(),
       type: 'system',
-      content: 'Execution was cancelled by user.',
+      content: '🚫 Execution was cancelled by user.',
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, cancelMessage]);
+
+    toast({
+      title: "Execution Cancelled",
+      description: "The execution has been stopped.",
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
