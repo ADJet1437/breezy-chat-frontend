@@ -29,6 +29,7 @@ interface ConversationPanelProps {
 export function ConversationPanel({ session }: ConversationPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [executionState, setExecutionState] = useState<ExecutionState>({
     isExecuting: false,
     progress: 0,
@@ -49,8 +50,42 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
     scrollToBottom();
   }, [messages]);
 
+  // Load chat history when component mounts or session changes
+  useEffect(() => {
+    loadChatHistory();
+  }, [session.session_id]);
+
+  const loadChatHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+      const response = await codeAgentAPI.getConversation(session.session_id, 20, 0);
+      
+      // Convert backend messages to frontend format
+      const historyMessages: Message[] = response.messages.map((msg: any) => ({
+        id: msg.message_id,
+        type: msg.message_type.toLowerCase() as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+      }));
+
+      // Sort messages by timestamp (oldest first)
+      historyMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      setMessages(historyMessages);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+      toast({
+        title: "Failed to load chat history",
+        description: "Could not retrieve previous messages. Starting with a fresh conversation.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || executionState.isExecuting) return;
+    if (!inputValue.trim() || executionState.isExecuting || isLoadingHistory) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -438,12 +473,21 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
         <div className="flex-1 min-h-0">
           <div className="h-full overflow-y-auto scroll-smooth">
             <div className="p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <ConversationMessage key={message.id} message={message} />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading chat history...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <ConversationMessage key={message.id} message={message} />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -462,12 +506,12 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="What would you like me to code?"
-                disabled={executionState.isExecuting}
+                disabled={executionState.isExecuting || isLoadingHistory}
                 className="flex-1"
               />
               <Button 
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || executionState.isExecuting}
+                disabled={!inputValue.trim() || executionState.isExecuting || isLoadingHistory}
               >
                 {executionState.isExecuting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
