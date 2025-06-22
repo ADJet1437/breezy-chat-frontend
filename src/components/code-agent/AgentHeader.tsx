@@ -3,17 +3,13 @@ import { Button } from '@/components/ui/button';
 import { 
   ArrowLeft, 
   Settings, 
-  Trash2, 
-  Plus, 
-  FolderOpen
+  Trash2
 } from 'lucide-react';
 import { CodeSession } from '@/utils/codeAgentApi';
 
 interface AgentHeaderProps {
   session: CodeSession;
   onBack: () => void;
-  onCreateNew: () => void;
-  onChangeDirectory?: () => void;
   onSettings?: () => void;
   onDelete?: () => void;
 }
@@ -21,8 +17,6 @@ interface AgentHeaderProps {
 export function AgentHeader({ 
   session, 
   onBack, 
-  onCreateNew, 
-  onChangeDirectory, 
   onSettings, 
   onDelete 
 }: AgentHeaderProps) {
@@ -37,18 +31,9 @@ export function AgentHeader({
             <h1 className="text-lg font-semibold">
               {session.working_directory.split('/').pop() || 'Code Agent Session'}
             </h1>
-            <p className="text-sm text-muted-foreground">{session.working_directory}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onChangeDirectory}
-          >
-            <FolderOpen className="h-4 w-4 mr-2" />
-            Change Dir
-          </Button>
           <Button 
             variant="outline" 
             size="sm"
@@ -62,14 +47,6 @@ export function AgentHeader({
             onClick={onDelete}
           >
             <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onCreateNew}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New
           </Button>
         </div>
       </div>

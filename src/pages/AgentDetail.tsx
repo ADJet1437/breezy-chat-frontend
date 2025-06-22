@@ -44,14 +44,6 @@ export default function AgentDetail() {
     });
   };
 
-  const handleChangeDirectory = () => {
-    // TODO: Implement directory change
-    console.log('Change directory requested');
-    toast({
-      title: "Change Directory",
-      description: "Directory change will be implemented soon",
-    });
-  };
 
   const handleSettings = () => {
     // TODO: Implement settings
@@ -78,8 +70,6 @@ export default function AgentDetail() {
       <AgentHeader 
         session={session}
         onBack={handleBackToAgents}
-        onCreateNew={() => navigate('/code')}
-        onChangeDirectory={handleChangeDirectory}
         onSettings={handleSettings}
         onDelete={handleDelete}
       />

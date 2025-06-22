@@ -27,14 +27,7 @@ interface ConversationPanelProps {
 }
 
 export function ConversationPanel({ session }: ConversationPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: 'Hello! I\'m ready to help you code. What would you like me to do in this project?',
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [executionState, setExecutionState] = useState<ExecutionState>({
     isExecuting: false,
@@ -324,10 +317,6 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
           canCancel: false,
         }));
 
-        toast({
-          title: "Execution Complete",
-          description: "The code agent has finished processing your request.",
-        });
         break;
 
       case 'raw_message':
@@ -464,25 +453,6 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
       <div className="fixed bottom-0 right-0 bg-white border-t z-50" style={{ left: 'calc(16rem + 20rem)' }}>
         <div className="p-4">
           <div className="space-y-3">
-            {/* Example Prompts */}
-            {messages.length <= 1 && (
-              <div className="text-sm">
-                <p className="text-muted-foreground mb-2">✨ Try these examples:</p>
-                <div className="flex flex-wrap gap-2">
-                  {examplePrompts.slice(0, 3).map((prompt, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7"
-                      onClick={() => setInputValue(prompt)}
-                    >
-                      {prompt}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Input */}
             <div className="flex gap-2">

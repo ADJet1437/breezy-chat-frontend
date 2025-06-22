@@ -270,13 +270,6 @@ export function DirectoryExplorer({ workingDirectory, sessionId, onFileClick }: 
 
   return (
     <div className="h-full flex flex-col">
-      {/* Working directory path - always visible */}
-      <div className="flex-shrink-0 p-2 border-b">
-        <div className="text-xs text-muted-foreground px-2 truncate" title={workingDirectory}>
-          {workingDirectory}
-        </div>
-      </div>
-      
       {/* Scrollable tree content */}
       <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
         <div className="p-2">
