@@ -5,7 +5,7 @@ export interface CodeSession {
   session_id: string;
   user_id: string;
   conversation_id: string;
-  agent_id?: string;  // The actual agent ID for URL routing
+  agent_id: string;  // The actual agent ID for URL routing
   working_directory: string;
   status: 'active' | 'idle' | 'executing' | 'terminated' | 'error';
   created_at: string;
@@ -481,6 +481,16 @@ class CodeAgentAPI {
     }
 
     return response.json();
+  }
+
+  async deleteAgent(agentId: string): Promise<void> {
+    const response = await authenticatedFetch(`${this.getApiUrl(`/agents/${agentId}`)}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete agent: ${response.statusText}`);
+    }
   }
 }
 

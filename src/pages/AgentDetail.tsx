@@ -6,6 +6,16 @@ import { ConversationPanel } from '@/components/code-agent/ConversationPanel';
 import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function AgentDetail() {
   const { agentId } = useParams<{ agentId: string }>();
@@ -16,6 +26,8 @@ export default function AgentDetail() {
   // State for session data and loading
   const [session, setSession] = useState<CodeSession | null>(location.state?.session || null);
   const [isLoading, setIsLoading] = useState(!session);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleBackToAgents = () => {
     navigate('/code');
@@ -102,13 +114,39 @@ export default function AgentDetail() {
   };
 
   const handleDelete = () => {
-    // TODO: Implement session deletion
-    console.log('Delete session requested');
-    toast({
-      title: "Delete Session",
-      description: "Session deletion will be implemented soon",
-      variant: "destructive",
-    });
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!agentId) return;
+
+    setIsDeleting(true);
+    try {
+      await codeAgentAPI.deleteAgent(agentId);
+      
+      toast({
+        title: "Agent Deleted",
+        description: "The agent and all its data have been permanently deleted.",
+        variant: "default",
+      });
+      
+      // Navigate back to agents list
+      navigate('/code');
+    } catch (error) {
+      console.error('Failed to delete agent:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the agent. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteDialog(false);
   };
 
   return (
@@ -133,6 +171,46 @@ export default function AgentDetail() {
         {/* Conversation Panel */}
         <ConversationPanel session={session} />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this agent? This action will permanently delete:
+              <ul className="mt-2 ml-4 list-disc text-sm">
+                <li>The agent and all its settings</li>
+                <li>All conversations and messages</li>
+                <li>All execution sessions and history</li>
+                <li>All directory snapshots</li>
+              </ul>
+              <p className="mt-2 font-medium text-destructive">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete} disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Agent'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

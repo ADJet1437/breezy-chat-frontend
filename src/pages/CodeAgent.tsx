@@ -199,7 +199,7 @@ export default function CodeAgent() {
             <Card 
               key={session.session_id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/code/agent/${session.agent_id || session.session_id}`, { 
+              onClick={() => navigate(`/code/agent/${session.agent_id}`, { 
                 state: { session } 
               })}
             >
