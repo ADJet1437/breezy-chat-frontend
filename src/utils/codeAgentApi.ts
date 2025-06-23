@@ -5,6 +5,7 @@ export interface CodeSession {
   session_id: string;
   user_id: string;
   conversation_id: string;
+  agent_id?: string;  // The actual agent ID for URL routing
   working_directory: string;
   status: 'active' | 'idle' | 'executing' | 'terminated' | 'error';
   created_at: string;
@@ -466,6 +467,17 @@ class CodeAgentAPI {
 
     if (!response.ok) {
       throw new Error(`Failed to get statistics: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Agent by ID
+  async getAgentById(agentId: string): Promise<CodeSession> {
+    const response = await authenticatedFetch(`${this.getApiUrl(`/agents/${agentId}`)}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to get agent: ${response.statusText}`);
     }
 
     return response.json();

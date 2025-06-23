@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AgentHeader } from '@/components/code-agent/AgentHeader';
 import { DirectoryPanel } from '@/components/code-agent/DirectoryPanel';
 import { ConversationPanel } from '@/components/code-agent/ConversationPanel';
-import { CodeSession } from '@/utils/codeAgentApi';
+import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function AgentDetail() {
   const { agentId } = useParams<{ agentId: string }>();
@@ -12,14 +13,60 @@ export default function AgentDetail() {
   const location = useLocation();
   const { toast } = useToast();
   
-  // Get session data from navigation state
-  const session = location.state?.session as CodeSession;
+  // State for session data and loading
+  const [session, setSession] = useState<CodeSession | null>(location.state?.session || null);
+  const [isLoading, setIsLoading] = useState(!session);
 
   const handleBackToAgents = () => {
     navigate('/code');
   };
 
-  // If no session data is available, redirect back to agents list
+  // Fetch agent data if not available from navigation state
+  useEffect(() => {
+    const fetchAgentData = async () => {
+      if (!agentId) {
+        navigate('/code');
+        return;
+      }
+
+      if (session) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const agentData = await codeAgentAPI.getAgentById(agentId);
+        setSession(agentData);
+      } catch (error) {
+        console.error('Failed to fetch agent data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load agent data. Redirecting to agent list.",
+          variant: "destructive",
+        });
+        navigate('/code');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgentData();
+  }, [agentId, session, navigate, toast]);
+
+  // Show loading spinner while fetching data
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading agent...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no session data is available after loading, redirect
   if (!session) {
     navigate('/code');
     return null;
