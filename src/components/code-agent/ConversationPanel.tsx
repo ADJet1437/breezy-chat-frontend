@@ -447,82 +447,71 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
   ];
 
   return (
-    <>
-      {/* Messages Area with bottom padding for sticky input */}
-      <div className="flex-1 flex flex-col h-full pb-40">
-        {/* Execution Progress - Fixed when active */}
-        {executionState.isExecuting && (
-          <div className="flex-shrink-0">
-            <ExecutionProgress 
-              progress={executionState.progress}
-              currentStep={executionState.currentStep}
-              onCancel={executionState.canCancel ? handleCancelExecution : undefined}
-            />
-          </div>
-        )}
-
-        {/* Conversation Header - Fixed */}
-        <div className="p-4 border-b flex-shrink-0">
-          <h3 className="font-medium flex items-center gap-2">
-            <Bot className="h-4 w-4" />
-            Conversation
-          </h3>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Fixed Execution Progress - When active */}
+      {executionState.isExecuting && (
+        <div className="flex-shrink-0">
+          <ExecutionProgress 
+            progress={executionState.progress}
+            currentStep={executionState.currentStep}
+            onCancel={executionState.canCancel ? handleCancelExecution : undefined}
+          />
         </div>
+      )}
 
-        {/* Messages - Scrollable */}
-        <div className="flex-1 min-h-0">
-          <div className="h-full overflow-y-auto scroll-smooth">
-            <div className="p-4">
-              {isLoadingHistory ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="text-center">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Loading chat history...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <ConversationMessage key={message.id} message={message} />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
+      {/* Fixed Conversation Header */}
+      <div className="flex-shrink-0 p-4 border-b">
+        <h3 className="font-medium flex items-center gap-2">
+          <Bot className="h-4 w-4" />
+          Conversation
+        </h3>
+      </div>
+
+      {/* Scrollable Messages Area */}
+      <div className="flex-1 overflow-y-auto scroll-smooth">
+        <div className="p-4">
+          {isLoadingHistory ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="text-center">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Loading chat history...</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <ConversationMessage key={message.id} message={message} />
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Fixed Chat Input Area */}
-      <div className="fixed bottom-0 right-0 bg-white border-t z-50" style={{ left: 'calc(16rem + 20rem)' }}>
-        <div className="p-4">
-          <div className="space-y-3">
-
-            {/* Input */}
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="What would you like me to code?"
-                disabled={executionState.isExecuting || isLoadingHistory}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || executionState.isExecuting || isLoadingHistory}
-              >
-                {executionState.isExecuting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
+      <div className="flex-shrink-0 p-4 border-t bg-background">
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="What would you like me to code?"
+            disabled={executionState.isExecuting || isLoadingHistory}
+            className="flex-1"
+          />
+          <Button 
+            onClick={handleSendMessage}
+            disabled={!inputValue.trim() || executionState.isExecuting || isLoadingHistory}
+          >
+            {executionState.isExecuting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

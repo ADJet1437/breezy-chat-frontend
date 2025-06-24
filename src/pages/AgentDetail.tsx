@@ -150,17 +150,19 @@ export default function AgentDetail() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Agent Header */}
-      <AgentHeader 
-        session={session}
-        onBack={handleBackToAgents}
-        onSettings={handleSettings}
-        onDelete={handleDelete}
-      />
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Fixed Header - Always visible */}
+      <div className="flex-shrink-0">
+        <AgentHeader 
+          session={session}
+          onBack={handleBackToAgents}
+          onSettings={handleSettings}
+          onDelete={handleDelete}
+        />
+      </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex min-h-0">
+      {/* Main Content Area - Scrollable panels */}
+      <div className="flex-1 flex overflow-hidden">
         {/* Directory Panel */}
         <DirectoryPanel 
           session={session}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Folder, FileText, File, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { codeAgentAPI, DirectoryTreeItem } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 
@@ -248,7 +247,7 @@ export function DirectoryExplorer({ workingDirectory, sessionId, onFileClick }: 
 
   if (isLoading && !fileTree) {
     return (
-      <div className="h-full flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">Loading directory...</p>
@@ -259,7 +258,7 @@ export function DirectoryExplorer({ workingDirectory, sessionId, onFileClick }: 
 
   if (!fileTree) {
     return (
-      <div className="h-full flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <Folder className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No directory data</p>
@@ -269,13 +268,8 @@ export function DirectoryExplorer({ workingDirectory, sessionId, onFileClick }: 
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Scrollable tree content */}
-      <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
-        <div className="p-2">
-          {renderNode(fileTree)}
-        </div>
-      </div>
+    <div className="p-2">
+      {renderNode(fileTree)}
     </div>
   );
 }
