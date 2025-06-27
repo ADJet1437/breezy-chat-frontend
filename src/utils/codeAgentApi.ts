@@ -278,19 +278,13 @@ class CodeAgentAPI {
 
       console.log('🔍 Processing line:', trimmedLine);
 
-      // Process data lines - handle duplicate data: prefixes
+      // Process data lines - simple SSE parsing
       if (trimmedLine.startsWith('data: ')) {
-        let eventData = trimmedLine.substring(6); // Remove first 'data: ' prefix
-        
-        // Handle duplicate 'data: ' prefixes
-        while (eventData.startsWith('data: ')) {
-          console.log('⚠️ Found duplicate data: prefix, removing...');
-          eventData = eventData.substring(6); // Remove additional 'data: ' prefix
-        }
+        const eventData = trimmedLine.substring(6); // Remove 'data: ' prefix
         
         if (!eventData) continue;
 
-        console.log('🔍 Final event data for parsing:', eventData);
+        console.log('🔍 Event data for parsing:', eventData);
 
         try {
           const event: SSEEvent = JSON.parse(eventData);
@@ -298,7 +292,6 @@ class CodeAgentAPI {
           console.log('✅ Parsed event:', event.event_type);
         } catch (parseError) {
           console.error('❌ Failed to parse event:', eventData, parseError);
-          console.error('❌ Original line:', trimmedLine);
         }
       }
     }
