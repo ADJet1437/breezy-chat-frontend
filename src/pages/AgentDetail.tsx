@@ -23,9 +23,9 @@ export default function AgentDetail() {
   const location = useLocation();
   const { toast } = useToast();
   
-  // State for session data and loading
-  const [session, setSession] = useState<CodeSession | null>(location.state?.session || null);
-  const [isLoading, setIsLoading] = useState(!session);
+  // State for session data and loading - always start fresh on page load
+  const [session, setSession] = useState<CodeSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -41,17 +41,16 @@ export default function AgentDetail() {
         return;
       }
 
-      if (session) {
-        setIsLoading(false);
-        return;
-      }
+      // Always fetch fresh data to ensure we have the latest conversation messages
 
       try {
         setIsLoading(true);
+        console.log('🔄 Fetching agent data for ID:', agentId);
         const agentData = await codeAgentAPI.getAgentById(agentId);
+        console.log('✅ Received agent data:', agentData);
         setSession(agentData);
       } catch (error) {
-        console.error('Failed to fetch agent data:', error);
+        console.error('❌ Failed to fetch agent data:', error);
         toast({
           title: "Error",
           description: "Failed to load agent data. Redirecting to agent list.",
@@ -64,7 +63,7 @@ export default function AgentDetail() {
     };
 
     fetchAgentData();
-  }, [agentId, session, navigate, toast]);
+  }, [agentId, navigate, toast]); // Removed session from dependencies
 
   // Show loading spinner while fetching data
   if (isLoading) {

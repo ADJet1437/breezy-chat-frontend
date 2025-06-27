@@ -1,6 +1,18 @@
 import { authenticatedFetch } from './authenticatedFetch';
 import { buildApiUrl } from './apiConfig';
 
+export interface ConversationMessage {
+  message_id: string;
+  conversation_id: string;
+  message_type: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+  token_count?: number;
+  tool_calls?: any[];
+  tool_results?: any[];
+  execution_id?: string;
+}
+
 export interface CodeSession {
   session_id: string;
   user_id: string;
@@ -20,6 +32,9 @@ export interface CodeSession {
   successful_executions: number;
   failed_executions: number;
   current_execution_id?: string;
+  
+  // Consolidated data from agent endpoint
+  conversation_messages?: ConversationMessage[];
   
   // Legacy compatibility
   id?: string;

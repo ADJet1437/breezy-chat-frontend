@@ -53,25 +53,30 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
   // Load chat history when component mounts or session changes
   useEffect(() => {
     loadChatHistory();
-  }, [session.session_id]);
+  }, [session.session_id, session.conversation_messages]);
 
-  const loadChatHistory = async () => {
+  const loadChatHistory = () => {
     try {
       setIsLoadingHistory(true);
-      const response = await codeAgentAPI.getConversation(session.session_id, 20, 0);
       
-      // Convert backend messages to frontend format
-      const historyMessages: Message[] = response.messages.map((msg: any) => ({
-        id: msg.message_id,
-        type: msg.message_type.toLowerCase() as 'user' | 'assistant' | 'system',
-        content: msg.content,
-        timestamp: new Date(msg.created_at),
-      }));
+      // Use conversation messages from the consolidated agent endpoint
+      if (session.conversation_messages && session.conversation_messages.length > 0) {
+        // Convert backend messages to frontend format
+        const historyMessages: Message[] = session.conversation_messages.map((msg) => ({
+          id: msg.message_id,
+          type: msg.message_type.toLowerCase() as 'user' | 'assistant' | 'system',
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+        }));
 
-      // Sort messages by timestamp (oldest first)
-      historyMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      
-      setMessages(historyMessages);
+        // Sort messages by timestamp (oldest first)
+        historyMessages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        
+        setMessages(historyMessages);
+      } else {
+        // No conversation history available
+        setMessages([]);
+      }
     } catch (error) {
       console.error('Failed to load chat history:', error);
       toast({
@@ -79,6 +84,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
         description: "Could not retrieve previous messages. Starting with a fresh conversation.",
         variant: "destructive",
       });
+      setMessages([]);
     } finally {
       setIsLoadingHistory(false);
     }
