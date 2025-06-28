@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bot, User, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 
 interface Message {
   id: string;
@@ -73,9 +74,16 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
       <div className="flex-1 min-w-0">
         <Card className={`${styles.card} shadow-sm`}>
           <CardContent className="p-3">
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {message.content}
-            </div>
+            {message.type === 'assistant' ? (
+              <MarkdownRenderer 
+                content={message.content}
+                className="text-sm"
+              />
+            ) : (
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                {message.content}
+              </div>
+            )}
           </CardContent>
         </Card>
         
