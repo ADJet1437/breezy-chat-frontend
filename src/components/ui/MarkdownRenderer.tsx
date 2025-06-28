@@ -38,12 +38,18 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             
             // If it has a language class, it's a code block
             if (match) {
+              const language = match[1].toLowerCase();
+              
+              // Handle TOML specifically - fallback to 'ini' if TOML not supported
+              const resolvedLanguage = language === 'toml' ? 'ini' : language;
+              
               return (
                 <div className="relative">
                   <SyntaxHighlighter
                     style={oneDark as any}
-                    language={match[1]}
+                    language={resolvedLanguage}
                     PreTag="div"
+                    wrapLongLines={false}
                     className="rounded-lg !my-2 max-h-96 overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500"
                     customStyle={{
                       margin: '0.5rem 0',
@@ -51,6 +57,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
                       maxHeight: '384px', // 24rem = 384px
                       overflowX: 'auto',
                       overflowY: 'auto',
+                      whiteSpace: 'pre',
                     }}
                   >
                     {String(children).replace(/\n$/, '')}
