@@ -3,10 +3,7 @@ import React from 'react';
 import { Copy, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 import { Message } from '../types/chat';
 
 interface MessageBubbleProps {
@@ -66,60 +63,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             }`}
           >
             {isBot ? (
-              <div className="prose prose-sm max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code(props) {
-                      const { children, className } = props;
-                      const match = /language-(\w+)/.exec(className || '');
-                      return match ? (
-                        <SyntaxHighlighter
-                          style={oneDark as any}
-                          language={match[1]}
-                          PreTag="div"
-                          className="rounded-lg"
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">
-                          {children}
-                        </code>
-                      );
-                    },
-                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                    ul: ({ children }) => <ul className="mb-2 pl-4 list-disc">{children}</ul>,
-                    ol: ({ children }) => <ol className="mb-2 pl-4 list-decimal">{children}</ol>,
-                    li: ({ children }) => <li className="mb-1">{children}</li>,
-                    h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                    h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-                    h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-                    blockquote: ({ children }) => (
-                      <blockquote className="border-l-4 border-blue-500 pl-4 italic my-2">
-                        {children}
-                      </blockquote>
-                    ),
-                    table: ({ children }) => (
-                      <div className="overflow-x-auto">
-                        <table className="border-collapse border border-gray-300 text-sm">
-                          {children}
-                        </table>
-                      </div>
-                    ),
-                    th: ({ children }) => (
-                      <th className="border border-gray-300 px-2 py-1 bg-gray-100 font-semibold text-left">
-                        {children}
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="border border-gray-300 px-2 py-1">{children}</td>
-                    ),
-                  }}
-                >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
+              <MarkdownRenderer 
+                content={message.content}
+              />
             ) : (
               <div>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">
