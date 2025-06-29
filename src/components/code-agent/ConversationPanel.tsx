@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Bot, Send, Loader2 } from 'lucide-react';
 import { ConversationMessage } from './ConversationMessage';
 import { ExecutionProgress } from './ExecutionProgress';
+import { EnhancedExecutionProgress } from './EnhancedExecutionProgress';
+import { ToolCall } from './ToolCallTracker';
 import { codeAgentAPI, CodeSession, SSEEvent } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,6 +22,7 @@ interface ExecutionState {
   progress: number;
   currentStep: string;
   canCancel: boolean;
+  toolCalls: ToolCall[];
 }
 
 interface ConversationPanelProps {
@@ -35,6 +38,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
     progress: 0,
     currentStep: '',
     canCancel: false,
+    toolCalls: [],
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +115,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
       progress: 0,
       currentStep: 'Initializing...',
       canCancel: true,
+      toolCalls: [],
     });
 
     try {
@@ -136,6 +141,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
             progress: 0,
             currentStep: 'Failed',
             canCancel: false,
+            toolCalls: [],
           });
           
           toast({
@@ -170,12 +176,14 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
         progress: 0,
         currentStep: '',
         canCancel: false,
+        toolCalls: [],
       });
     }
   };
 
   const handleSSEEvent = (event: SSEEvent) => {
     console.log('🎯 Handling SSE event:', event.event_type, event.data);
+    console.log('Current execution state:', executionState);
     
     switch (event.event_type) {
       case 'execution_init':
@@ -264,12 +272,78 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
         }));
         break;
 
+      case 'tool_call':
+        try {
+          const toolCallData = event.data || {};
+          const toolCallId = toolCallData.tool_call_id || `tool-${Date.now()}`;
+          const toolName = toolCallData.tool_name || 'unknown tool';
+          const status = toolCallData.status;
+          
+          console.log('🔧 Processing tool_call event:', { toolCallId, toolName, status });
+          
+          setExecutionState(prev => {
+            const toolCalls = prev.toolCalls || [];
+            const existingToolIndex = toolCalls.findIndex(t => t.id === toolCallId);
+            let updatedToolCalls = [...toolCalls];
+            
+            if (status === 'executing') {
+              // Starting a new tool or updating existing one
+              const toolCall: ToolCall = {
+                id: toolCallId,
+                name: toolName,
+                status: 'executing',
+                startedAt: toolCallData.started_at ? new Date(toolCallData.started_at) : new Date(),
+                message: toolCallData.message,
+              };
+              
+              if (existingToolIndex >= 0) {
+                updatedToolCalls[existingToolIndex] = toolCall;
+              } else {
+                updatedToolCalls.push(toolCall);
+              }
+              
+              return {
+                ...prev,
+                currentStep: `🔧 ${toolName}...`,
+                progress: Math.min(prev.progress + 5, 85),
+                toolCalls: updatedToolCalls,
+              };
+            } else if (status === 'completed' || status === 'failed') {
+              // Completing or failing a tool
+              if (existingToolIndex >= 0) {
+                const completedAt = toolCallData.completed_at ? new Date(toolCallData.completed_at) : new Date();
+                updatedToolCalls[existingToolIndex] = {
+                  ...updatedToolCalls[existingToolIndex],
+                  status: status as 'completed' | 'failed',
+                  completedAt,
+                  executionTimeMs: toolCallData.execution_time_ms,
+                  error: toolCallData.error_message,
+                };
+              }
+              
+              return {
+                ...prev,
+                currentStep: status === 'completed' 
+                  ? `✅ ${toolName} (${toolCallData.execution_time_ms || 0}ms)`
+                  : `❌ ${toolName} failed`,
+                progress: Math.min(prev.progress + 10, 90),
+                toolCalls: updatedToolCalls,
+              };
+            }
+            
+            return prev;
+          });
+        } catch (error) {
+          console.error('Error processing tool_call event:', error);
+        }
+        break;
+
       case 'tool_execution':
       case 'tool_start':
-        const toolName = event.data.tool_name || 'unknown tool';
+        const toolNameLegacy = event.data.tool_name || 'unknown tool';
         setExecutionState(prev => ({
           ...prev,
-          currentStep: `Executing: ${toolName}`,
+          currentStep: `Executing: ${toolNameLegacy}`,
           progress: Math.min(prev.progress + 10, 85),
         }));
         break;
@@ -356,6 +430,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
           currentStep: 'Completed',
           isExecuting: false,
           canCancel: false,
+          toolCalls: [], // Clear tools on completion
         }));
 
         break;
@@ -383,6 +458,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
           progress: 0,
           currentStep: 'Failed',
           canCancel: false,
+          toolCalls: [],
         });
 
         toast({
@@ -420,6 +496,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
       progress: 0,
       currentStep: 'Cancelled',
       canCancel: false,
+      toolCalls: [],
     });
 
     const cancelMessage: Message = {
@@ -457,9 +534,10 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
       {/* Fixed Execution Progress - When active */}
       {executionState.isExecuting && (
         <div className="flex-shrink-0">
-          <ExecutionProgress 
+          <EnhancedExecutionProgress 
             progress={executionState.progress}
             currentStep={executionState.currentStep}
+            toolCalls={executionState.toolCalls}
             onCancel={executionState.canCancel ? handleCancelExecution : undefined}
           />
         </div>
