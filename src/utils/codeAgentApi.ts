@@ -52,6 +52,21 @@ export interface CreateSessionRequest {
   configuration?: Record<string, any>;
 }
 
+export interface CreateProjectFromDescriptionRequest {
+  description: string;
+}
+
+export interface ProjectResponse {
+  id: string;
+  name: string;
+  description?: string;
+  directory_path: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  settings: Record<string, any>;
+}
+
 export interface ExecutePromptRequest {
   prompt: string;
   execution_pattern?: string;
@@ -127,6 +142,23 @@ export interface DirectoryTreeResponse {
 class CodeAgentAPI {
   private getApiUrl(path: string): string {
     return buildApiUrl(`/api/v1/code-agent${path}`);
+  }
+
+  // Project Management
+  async createProjectFromDescription(request: CreateProjectFromDescriptionRequest): Promise<ProjectResponse> {
+    const response = await authenticatedFetch(this.getApiUrl('/projects'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create project: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 
   // Session Management
