@@ -297,7 +297,6 @@ export default function CodeAgent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        <CardDescription>{session.working_directory}</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="flex justify-between items-center text-sm">

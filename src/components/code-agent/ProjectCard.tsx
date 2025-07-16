@@ -96,9 +96,6 @@ export function ProjectCard({ project, onClick, onDelete }: ProjectCardProps) {
             </span>
           </div>
           
-          <div className="text-xs text-gray-400 font-mono truncate">
-            {project.directory_path}
-          </div>
         </div>
       </CardContent>
     </Card>
