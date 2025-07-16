@@ -161,6 +161,77 @@ class CodeAgentAPI {
     return response.json();
   }
 
+  // Streaming project creation with SSE
+  createProjectFromDescriptionSSE(
+    request: CreateProjectFromDescriptionRequest,
+    onEvent: (event: SSEEvent) => void,
+    onError: (error: Error) => void,
+    onComplete: () => void
+  ): () => void {
+    let cancelled = false;
+
+    const executeRequest = async () => {
+      try {
+        console.log('🚀 Starting streaming project creation...');
+        
+        // Send POST request and wait for complete response
+        const response = await authenticatedFetch(this.getApiUrl('/projects'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+          },
+          body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to create project: ${response.statusText}`);
+        }
+
+        // Get the complete response text
+        const responseText = await response.text();
+        console.log('📥 Complete project creation response received:', responseText);
+
+        // Parse all SSE events from the response
+        const events = this.parseSSEResponse(responseText);
+        console.log('📋 Parsed project creation events:', events);
+
+        if (cancelled) return;
+
+        // Process all events in sequence
+        for (const event of events) {
+          if (cancelled) break;
+          
+          console.log('🎯 Processing project creation event:', event.event_type);
+          onEvent(event);
+          
+          // Small delay to allow UI updates between events
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        if (!cancelled) {
+          console.log('✅ All project creation events processed, calling completion');
+          onComplete();
+        }
+
+      } catch (error) {
+        console.error('❌ Project creation error:', error);
+        if (!cancelled) {
+          onError(error as Error);
+        }
+      }
+    };
+
+    // Start the execution
+    executeRequest();
+
+    // Return cleanup function
+    return () => {
+      console.log('🛑 Cancelling project creation...');
+      cancelled = true;
+    };
+  }
+
   // Session Management
   async createSession(request: CreateSessionRequest): Promise<CodeSession> {
     const response = await authenticatedFetch(this.getApiUrl('/sessions'), {

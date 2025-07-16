@@ -6,9 +6,10 @@ import { ProjectResponse } from '@/utils/codeAgentApi';
 interface ProjectListProps {
   projects: ProjectResponse[];
   onProjectSelect: (project: ProjectResponse) => void;
+  onProjectDelete: (project: ProjectResponse) => void;
 }
 
-export function ProjectList({ projects, onProjectSelect }: ProjectListProps) {
+export function ProjectList({ projects, onProjectSelect, onProjectDelete }: ProjectListProps) {
   if (projects.length === 0) {
     return (
       <div className="text-center py-12">
@@ -26,6 +27,7 @@ export function ProjectList({ projects, onProjectSelect }: ProjectListProps) {
           key={project.id}
           project={project}
           onClick={() => onProjectSelect(project)}
+          onDelete={onProjectDelete}
         />
       ))}
     </div>

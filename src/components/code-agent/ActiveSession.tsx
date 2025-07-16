@@ -14,7 +14,6 @@ import {
   Send, 
   Bot, 
   User, 
-  Camera,
   Loader2,
   X
 } from 'lucide-react';
@@ -27,7 +26,6 @@ import { useToast } from '@/hooks/use-toast';
 interface ActiveSessionProps {
   session: CodeSession;
   onBack: () => void;
-  onCreateNew: () => void;
 }
 
 interface Message {
@@ -45,7 +43,7 @@ interface ExecutionState {
   canCancel: boolean;
 }
 
-export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionProps) {
+export function ActiveSession({ session, onBack }: ActiveSessionProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -468,10 +466,6 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
             <Button variant="outline" size="sm">
               <Trash2 className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={onCreateNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              New
-            </Button>
           </div>
         </div>
       </div>
@@ -496,12 +490,6 @@ export function ActiveSession({ session, onBack, onCreateNew }: ActiveSessionPro
                   console.log('File clicked:', filePath);
                 }}
               />
-            </div>
-            <div className="p-4 border-t flex-shrink-0">
-              <Button variant="outline" size="sm" className="w-full">
-                <Camera className="h-4 w-4 mr-2" />
-                Create Snapshot
-              </Button>
             </div>
           </div>
         </div>

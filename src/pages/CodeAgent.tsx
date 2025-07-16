@@ -2,21 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FolderOpen, Plus, Bot, Code, Terminal, FileText } from 'lucide-react';
-import { SessionCreationModal } from '@/components/code-agent/SessionCreationModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { FolderOpen, Bot, Code, Terminal, FileText, MoreVertical, Trash2 } from 'lucide-react';
 import { ActiveSession } from '@/components/code-agent/ActiveSession';
 import { ChatBar } from '@/components/code-agent/ChatBar';
 import { ProjectList } from '@/components/code-agent/ProjectList';
-import { codeAgentAPI, CodeSession, ProjectResponse } from '@/utils/codeAgentApi';
+import { codeAgentAPI, CodeSession, ProjectResponse, SSEEvent } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CodeAgent() {
   const [sessions, setSessions] = useState<CodeSession[]>([]);
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectResponse | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<CodeSession | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -42,63 +59,112 @@ export default function CodeAgent() {
     }
   };
 
-  const handleCreateSession = async (sessionData: { name: string; workingDirectory: string; configuration?: any }) => {
-    try {
-      const newSession = await codeAgentAPI.createSession({
-        name: sessionData.name,
-        working_directory: sessionData.workingDirectory,
-        configuration: sessionData.configuration,
-      });
-      
-      setSessions(prev => [newSession, ...prev]);
-      setActiveSessionId(newSession.session_id);
-      setShowCreateModal(false);
-      
-      toast({
-        title: "Success",
-        description: "Code session created successfully!",
-      });
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create session. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleCreateProject = async (description: string) => {
     setIsCreatingProject(true);
+    
     try {
-      // Create project using real API
-      const newProject = await codeAgentAPI.createProjectFromDescription({ description });
+      // Create project using streaming SSE API
+      const cleanup = codeAgentAPI.createProjectFromDescriptionSSE(
+        { description },
+        (event) => {
+          console.log('🎯 Project creation event:', event.event_type, event.data);
+          
+          // Handle project_created event - navigate immediately
+          if (event.event_type === 'project_created') {
+            const projectData = event.data;
+            console.log('🚀 Project created, navigating to:', projectData.project_id);
+            
+            // Navigate to the coding view immediately
+            navigate(`/code/agent/${projectData.project_id}`);
+            
+            toast({
+              title: "Success",
+              description: "Project created successfully! Redirecting to coding view...",
+            });
+          }
+          
+          // Handle other events for progress updates
+          if (event.event_type === 'execution_init') {
+            console.log('📋 Project creation initialized');
+          }
+          
+          if (event.event_type === 'tool_call') {
+            console.log('🔧 Creating files:', event.data.tool_name);
+          }
+        },
+        (error) => {
+          console.error('❌ Failed to create project:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create project. Please try again.",
+            variant: "destructive",
+          });
+          setIsCreatingProject(false);
+        },
+        () => {
+          console.log('✅ Project creation completed');
+          setIsCreatingProject(false);
+        }
+      );
       
-      // Add to projects state
-      setProjects(prev => [newProject, ...prev]);
-      
-      toast({
-        title: "Success",
-        description: "Project created successfully!",
-      });
-      
-      // Navigate to the project (using existing agent detail page)
-      navigate(`/code/agent/${newProject.id}`);
+      // Store cleanup function for potential cancellation
+      // (Could be used to cancel if user navigates away)
       
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('Failed to start project creation:', error);
       toast({
         title: "Error",
-        description: "Failed to create project. Please try again.",
+        description: "Failed to start project creation. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsCreatingProject(false);
     }
   };
 
   const handleProjectSelect = (project: ProjectResponse) => {
     navigate(`/code/agent/${project.id}`);
+  };
+
+  const handleProjectDelete = (project: ProjectResponse) => {
+    setProjectToDelete(project);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSessionDelete = (session: CodeSession) => {
+    setSessionToDelete(session);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      if (projectToDelete) {
+        await codeAgentAPI.deleteAgent(projectToDelete.id);
+        setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+        toast({
+          title: "Success",
+          description: "Project deleted successfully",
+        });
+      } else if (sessionToDelete) {
+        await codeAgentAPI.deleteAgent(sessionToDelete.agent_id);
+        setSessions(prev => prev.filter(s => s.session_id !== sessionToDelete.session_id));
+        toast({
+          title: "Success", 
+          description: "Session deleted successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
+      setSessionToDelete(null);
+    }
   };
 
   const activeSession = sessions.find(s => s.session_id === activeSessionId);
@@ -129,10 +195,6 @@ export default function CodeAgent() {
               </p>
             </div>
           </div>
-          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            New Session (Legacy)
-          </Button>
         </div>
       </div>
 
@@ -187,6 +249,7 @@ export default function CodeAgent() {
                 <ProjectList 
                   projects={projects}
                   onProjectSelect={handleProjectSelect}
+                  onProjectDelete={handleProjectDelete}
                 />
               </div>
             )}
@@ -194,7 +257,6 @@ export default function CodeAgent() {
             {/* Legacy Sessions Section */}
             {sessions.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold mb-4">Legacy Sessions</h2>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {sessions.map((session) => (
                     <Card 
@@ -204,11 +266,37 @@ export default function CodeAgent() {
                         state: { session } 
                       })}
                     >
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <FolderOpen className="h-5 w-5" />
-                          {session.working_directory.split('/').pop() || 'Agent Session'}
-                        </CardTitle>
+                      <CardHeader className="relative">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <FolderOpen className="h-5 w-5" />
+                            {session.working_directory.split('/').pop() || 'Agent Session'}
+                          </CardTitle>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-32">
+                              <DropdownMenuItem 
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSessionDelete(session);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                         <CardDescription>{session.working_directory}</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -244,12 +332,28 @@ export default function CodeAgent() {
         />
       </div>
 
-      {/* Session Creation Modal (keep for backward compatibility) */}
-      <SessionCreationModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onCreateSession={handleCreateSession}
-      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {projectToDelete ? 'Project' : 'Session'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name || sessionToDelete?.working_directory?.split('/').pop()}"? 
+              This action cannot be undone and will permanently remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 
@@ -259,7 +363,6 @@ export default function CodeAgent() {
       <ActiveSession 
         session={activeSession}
         onBack={() => setActiveSessionId(null)}
-        onCreateNew={() => setShowCreateModal(true)}
       />
     );
   }

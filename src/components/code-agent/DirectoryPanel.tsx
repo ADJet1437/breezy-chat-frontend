@@ -1,19 +1,16 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { FolderOpen, Camera } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import { DirectoryExplorer } from './DirectoryExplorer';
 import { CodeSession } from '@/utils/codeAgentApi';
 
 interface DirectoryPanelProps {
   session: CodeSession;
   onFileClick?: (filePath: string) => void;
-  onCreateSnapshot?: () => void;
 }
 
 export function DirectoryPanel({ 
   session, 
-  onFileClick, 
-  onCreateSnapshot 
+  onFileClick 
 }: DirectoryPanelProps) {
   return (
     <div className="w-80 border-r flex flex-col overflow-hidden">
@@ -34,18 +31,6 @@ export function DirectoryPanel({
         />
       </div>
 
-      {/* Fixed Create Snapshot Button */}
-      <div className="flex-shrink-0 p-4 border-t">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="w-full"
-          onClick={onCreateSnapshot}
-        >
-          <Camera className="h-4 w-4 mr-2" />
-          Create Snapshot
-        </Button>
-      </div>
     </div>
   );
 }

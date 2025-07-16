@@ -166,7 +166,6 @@ export default function AgentDetail() {
         <DirectoryPanel 
           session={session}
           onFileClick={handleFileClick}
-          onCreateSnapshot={handleCreateSnapshot}
         />
 
         {/* Conversation Panel */}
