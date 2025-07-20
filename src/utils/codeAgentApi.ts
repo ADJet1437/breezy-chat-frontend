@@ -603,6 +603,25 @@ class CodeAgentAPI {
       throw new Error(`Failed to delete agent: ${response.statusText}`);
     }
   }
+
+  // Build and Preview
+  async buildAndServeProject(agentId: string): Promise<{
+    success: boolean;
+    project_type: string;
+    preview_url: string;
+    entry_point: string;
+    message: string;
+  }> {
+    const response = await authenticatedFetch(`${this.getApiUrl(`/agents/${agentId}/preview`)}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to build project: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const codeAgentAPI = new CodeAgentAPI();

@@ -11,6 +11,11 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Load from localStorage on initial render
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
     const checkMobile = () => {
@@ -25,6 +30,11 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    // Save sidebar state to localStorage
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -37,11 +47,20 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
         <div className="flex pt-16 min-h-screen">
           {/* Fixed Sidebar */}
           <div className="fixed left-0 top-16 bottom-0 z-40">
-            <AppSidebar />
+            <AppSidebar 
+              collapsed={sidebarCollapsed} 
+              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            />
           </div>
           
           {/* Main content area */}
-          <div className={`flex-1 flex flex-col ${!isMobile ? 'ml-0 md:ml-64' : ''}`}>
+          <div className={`flex-1 flex flex-col transition-all duration-300 ${
+            !isMobile 
+              ? sidebarCollapsed 
+                ? 'ml-0 md:ml-16' // Collapsed sidebar width
+                : 'ml-0 md:ml-64' // Expanded sidebar width
+              : ''
+          }`}>
             {/* Mobile sidebar trigger */}
             <div className="md:hidden p-2 border-b bg-white/80 backdrop-blur-sm">
               <SidebarTrigger />
