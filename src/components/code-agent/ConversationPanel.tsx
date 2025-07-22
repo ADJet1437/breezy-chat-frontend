@@ -189,14 +189,6 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
           canCancel: true,
         }));
         
-        // Add system message showing initialization
-        const initMessage: Message = {
-          id: `init-${Date.now()}`,
-          type: 'system',
-          content: `🤖 Starting code agent in: ${event.data.working_directory}`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, initMessage]);
         break;
 
       case 'execution_progress':
