@@ -99,7 +99,7 @@ export function ActiveSession({ session, onBack }: ActiveSessionProps) {
     try {
       // Use real SSE connection
       const cleanup = codeAgentAPI.executePromptSSE(
-        session.session_id,
+        session.agent_id,
         { prompt },
         (event: SSEEvent) => {
           handleSSEEvent(event);

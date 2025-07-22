@@ -313,7 +313,7 @@ class CodeAgentAPI {
 
   // Execution - Simplified non-streaming approach
   executePromptSSE(
-    sessionId: string,
+    agentId: string,
     request: ExecutePromptRequest,
     onEvent: (event: SSEEvent) => void,
     onError: (error: Error) => void,
@@ -326,7 +326,7 @@ class CodeAgentAPI {
         console.log('🚀 Starting execution request...');
         
         // Send POST request and wait for complete response
-        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${sessionId}/execute`), {
+        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${agentId}/execute`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
