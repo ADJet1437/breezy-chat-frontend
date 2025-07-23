@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FolderOpen, Code, Database, Globe, Terminal, MoreVertical, Trash2 } from 'lucide-react';
+import { FolderOpen, Code, Database, Globe, Terminal, MoreVertical, Trash2, ExternalLink } from 'lucide-react';
 import { ProjectResponse } from '@/utils/codeAgentApi';
 
 interface ProjectCardProps {
@@ -36,13 +36,13 @@ export function ProjectCard({ project, onClick, onDelete }: ProjectCardProps) {
 
   return (
     <Card 
-      className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 bg-white"
+      className="group cursor-pointer border border-gray-200 bg-white transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu"
       onClick={onClick}
     >
       <CardHeader className="pb-3 relative">
         <div className="flex items-center justify-between mb-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeInfo.color}`}>
-            <Icon className="h-3 w-3 inline mr-1" />
+            <Icon className="h-3 w-3 inline mr-1 group-hover:text-blue-500 transition-colors duration-300" />
             {typeInfo.label}
           </span>
           <div className="flex items-center gap-2">
@@ -74,13 +74,13 @@ export function ProjectCard({ project, onClick, onDelete }: ProjectCardProps) {
           </div>
         </div>
         
-        <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-1">
+        <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-700 transition-colors duration-300">
           {project.name}
         </CardTitle>
       </CardHeader>
       
       <CardContent>
-        <CardDescription className="text-gray-600 text-sm mb-4 line-clamp-2">
+        <CardDescription className="text-gray-600 text-sm mb-4 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
           {description}
         </CardDescription>
 
@@ -96,6 +96,16 @@ export function ProjectCard({ project, onClick, onDelete }: ProjectCardProps) {
             </span>
           </div>
           
+          <Button
+            className="w-full mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-lg group-hover:scale-105 transition-transform duration-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Open Project
+          </Button>
         </div>
       </CardContent>
     </Card>

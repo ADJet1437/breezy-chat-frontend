@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FolderOpen, Bot, Code, Terminal, FileText, MoreVertical, Trash2 } from 'lucide-react';
+import { FolderOpen, Code, Terminal, FileText, MoreVertical, Trash2, Bot, Loader2 } from 'lucide-react';
 import { ActiveSession } from '@/components/code-agent/ActiveSession';
 import { ChatBar } from '@/components/code-agent/ChatBar';
 import { ProjectList } from '@/components/code-agent/ProjectList';
@@ -183,21 +183,6 @@ export default function CodeAgent() {
   // Main view - show projects and sessions
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="border-b p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bot className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">Code Projects</h1>
-              <p className="text-muted-foreground">
-                {projects.length + sessions.length} projects • Create and manage your coding projects
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Projects List */}
       <div className="flex-1 p-6">
         {projects.length === 0 && sessions.length === 0 ? (
@@ -257,19 +242,19 @@ export default function CodeAgent() {
             {/* Legacy Sessions Section */}
             {sessions.length > 0 && (
               <div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-visible p-4">
                   {sessions.map((session) => (
                     <Card 
                       key={session.session_id}
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="group cursor-pointer border border-gray-200 transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu"
                       onClick={() => navigate(`/code/agent/${session.agent_id}`, { 
                         state: { session } 
                       })}
                     >
                       <CardHeader className="relative">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <FolderOpen className="h-5 w-5" />
+                          <CardTitle className="text-lg flex items-center gap-2 group-hover:text-blue-700 transition-colors duration-300">
+                            <FolderOpen className="h-5 w-5 group-hover:text-blue-500 transition-colors duration-300" />
                             {session.working_directory.split('/').pop() || 'Agent Session'}
                           </CardTitle>
                           <DropdownMenu>

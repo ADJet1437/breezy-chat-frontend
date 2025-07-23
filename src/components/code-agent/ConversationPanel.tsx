@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Bot, Send, Loader2 } from 'lucide-react';
 import { ConversationMessage } from './ConversationMessage';
-import { ExecutionProgress } from './ExecutionProgress';
 import { codeAgentAPI, CodeSession, SSEEvent } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,7 +37,7 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const cancelExecutionRef = useRef<(() => void) | null>(null);
   const { toast } = useToast();
 
@@ -428,12 +427,37 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
     });
   };
 
+  // Auto-height adjustment for textarea (like missions chat)
+  const adjustTextareaHeight = () => {
+    const textarea = inputRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const scrollHeight = textarea.scrollHeight;
+      const minHeight = 36; // Minimum single line height (reduced)
+      const maxHeight = 120; // Maximum height before scrolling
+      const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+      textarea.style.height = `${newHeight}px`;
+      textarea.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
+
+  // Handle input change with auto-height adjustment
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    adjustTextareaHeight();
+  };
+
+  // Set initial textarea height on mount
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, []);
 
   const examplePrompts = [
     "Add user authentication to this project",
@@ -446,14 +470,27 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Fixed Execution Progress - When active */}
+      {/* Loading indicator - When active */}
       {executionState.isExecuting && (
-        <div className="flex-shrink-0">
-          <ExecutionProgress 
-            progress={executionState.progress}
-            currentStep={executionState.currentStep}
-            onCancel={executionState.canCancel ? handleCancelExecution : undefined}
-          />
+        <div className="flex-shrink-0 px-4 py-2 border-b bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+              </div>
+              <span className="text-sm text-gray-600">Processing your request...</span>
+            </div>
+            {executionState.canCancel && (
+              <button
+                onClick={handleCancelExecution}
+                className="px-3 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded border border-red-300 hover:border-red-400 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -489,18 +526,19 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
       {/* Fixed Chat Input Area */}
       <div className="flex-shrink-0 p-4 border-t bg-background">
         <div className="flex gap-2">
-          <Input
+          <Textarea
             ref={inputRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="What would you like me to code?"
             disabled={executionState.isExecuting || isLoadingHistory}
-            className="flex-1"
+            className="flex-1 min-h-[36px] max-h-[120px] resize-none"
+            style={{ height: '36px' }}
           />
           <Button 
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || executionState.isExecuting || isLoadingHistory}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6 transition-all duration-200"
           >
             {executionState.isExecuting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

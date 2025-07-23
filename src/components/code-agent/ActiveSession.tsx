@@ -20,7 +20,6 @@ import {
 import { CodeSession, codeAgentAPI, SSEEvent } from '@/utils/codeAgentApi';
 import { DirectoryExplorer } from './DirectoryExplorer';
 import { ConversationMessage } from './ConversationMessage';
-import { ExecutionProgress } from './ExecutionProgress';
 import { useToast } from '@/hooks/use-toast';
 
 interface ActiveSessionProps {
@@ -488,14 +487,27 @@ export function ActiveSession({ session, onBack }: ActiveSessionProps) {
 
         {/* Conversation Area */}
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Execution Progress */}
+          {/* Loading indicator */}
           {executionState.isExecuting && (
-            <div className="flex-shrink-0">
-              <ExecutionProgress 
-                progress={executionState.progress}
-                currentStep={executionState.currentStep}
-                onCancel={executionState.canCancel ? handleCancelExecution : undefined}
-              />
+            <div className="flex-shrink-0 px-4 py-2 border-b bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                  </div>
+                  <span className="text-sm text-gray-600">Processing your request...</span>
+                </div>
+                {executionState.canCancel && (
+                  <button
+                    onClick={handleCancelExecution}
+                    className="px-3 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded border border-red-300 hover:border-red-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -556,6 +568,7 @@ export function ActiveSession({ session, onBack }: ActiveSessionProps) {
                 <Button 
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || executionState.isExecuting}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6 transition-all duration-200"
                 >
                   {executionState.isExecuting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
