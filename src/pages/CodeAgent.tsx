@@ -271,15 +271,15 @@ export default function CodeAgent() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                className="h-8 w-8 p-0 hover:bg-gray-100"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-32">
+                            <DropdownMenuContent align="end" className="z-50">
                               <DropdownMenuItem 
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSessionDelete(session);
