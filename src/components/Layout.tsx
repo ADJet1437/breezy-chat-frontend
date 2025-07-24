@@ -70,7 +70,17 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
         {/* Main layout with sidebar and content */}
         <div className="flex pt-16 min-h-screen">
           {/* Fixed Sidebar */}
-          <div className="fixed left-0 top-16 bottom-0 z-40">
+          <div className={`fixed left-0 top-16 bottom-0 transition-all duration-300 overflow-hidden ${
+            !isMobile 
+              ? sidebarCollapsed 
+                ? 'w-16 z-30 pointer-events-auto' // Collapsed: constrained interaction area  
+                : 'w-64 z-40 pointer-events-auto' // Expanded: full interaction area
+              : 'w-64 z-40 pointer-events-auto'
+          }`} 
+          style={{ 
+            // Temporary debug: add visible boundary in collapsed state
+            backgroundColor: sidebarCollapsed && !isMobile ? 'rgba(255, 0, 0, 0.1)' : 'transparent' 
+          }}>
             <AppSidebar 
               collapsed={sidebarCollapsed} 
               onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -78,12 +88,12 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           </div>
           
           {/* Main content area */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 ${
+          <div className={`flex-1 flex flex-col transition-all duration-300 pointer-events-auto ${
             !isMobile 
               ? sidebarCollapsed 
-                ? 'ml-0 md:ml-16' // Collapsed sidebar width
-                : 'ml-0 md:ml-64' // Expanded sidebar width
-              : ''
+                ? 'ml-0 md:ml-16 relative z-40' // Collapsed: higher z-index than sidebar to receive clicks
+                : 'ml-0 md:ml-64 relative z-20' // Expanded: lower z-index than sidebar
+              : 'relative z-20'
           }`}>
             {/* Mobile sidebar trigger */}
             <div className="md:hidden p-2 border-b bg-white/80 backdrop-blur-sm">
