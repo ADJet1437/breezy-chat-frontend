@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AgentHeader } from '@/components/code-agent/AgentHeader';
-import { DirectoryPanel } from '@/components/code-agent/DirectoryPanel';
 import { ConversationPanel } from '@/components/code-agent/ConversationPanel';
+import { RightPanel, ViewMode } from '@/components/code-agent/RightPanel';
 import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -28,6 +28,7 @@ export default function AgentDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('build');
 
   const handleBackToAgents = () => {
     navigate('/code');
@@ -157,20 +158,26 @@ export default function AgentDetail() {
           onBack={handleBackToAgents}
           onSettings={handleSettings}
           onDelete={handleDelete}
+          onFilesView={() => setViewMode('files')}
+          onBuildView={() => setViewMode('build')}
         />
       </div>
 
-      {/* Main Content Area - Scrollable panels */}
+      {/* Main Content Area - Split View: Chat (35%) | Build/Files (65%) */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Directory Panel */}
-        <DirectoryPanel 
-          session={session}
-          onFileClick={handleFileClick}
-          onCreateSnapshot={handleCreateSnapshot}
-        />
+        {/* Left Side: Chat Panel - 35% for conversation */}
+        <div className="w-[35%] flex flex-col border-r">
+          <ConversationPanel session={session} />
+        </div>
 
-        {/* Conversation Panel */}
-        <ConversationPanel session={session} />
+        {/* Right Side: Build/Files Panel - 65% for app viewing */}
+        <div className="w-[65%]">
+          <RightPanel 
+            session={session}
+            onFileClick={handleFileClick}
+            viewMode={viewMode}
+          />
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}

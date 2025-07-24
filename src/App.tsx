@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import { KnowledgeBase } from "./pages/KnowledgeBase";
 import { KnowledgeBaseDetail } from "./pages/KnowledgeBaseDetail";
 import CodeAgent from "./pages/CodeAgent";
+import CodeAgentChat from "./pages/CodeAgentChat";
 import AgentDetail from "./pages/AgentDetail";
 import { useEffect } from "react";
 
@@ -44,6 +45,7 @@ const AppInner = () => {
             <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
             <Route path="/knowledge-base/:id" element={<Layout><KnowledgeBaseDetail /></Layout>} />
             <Route path="/code" element={<Layout><CodeAgent /></Layout>} />
+            <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />

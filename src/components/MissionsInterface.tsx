@@ -112,10 +112,6 @@ const MissionsInterface = () => {
 
   const handleMissionSelect = (missionId: string) => {
     navigate(`/missions/${missionId}`);
-    toast({
-      description: "Mission loaded successfully!",
-      duration: 2000,
-    });
   };
 
   const formatDate = (dateString: string) => {
@@ -147,10 +143,6 @@ const MissionsInterface = () => {
       // Remove mission from local state (optimistic update)
       setMissions(prev => prev.filter(m => m.id !== missionToDelete.id));
       
-      toast({
-        description: "Mission deleted successfully!",
-        duration: 3000,
-      });
     } catch (error) {
       console.error('Error deleting mission:', error);
       toast({
@@ -201,10 +193,6 @@ const MissionsInterface = () => {
           : m
       ));
       
-      toast({
-        description: "Mission renamed successfully!",
-        duration: 3000,
-      });
     } catch (error) {
       console.error('Error renaming mission:', error);
       toast({

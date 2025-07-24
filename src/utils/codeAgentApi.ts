@@ -52,6 +52,21 @@ export interface CreateSessionRequest {
   configuration?: Record<string, any>;
 }
 
+export interface CreateProjectFromDescriptionRequest {
+  description: string;
+}
+
+export interface ProjectResponse {
+  id: string;
+  name: string;
+  description?: string;
+  directory_path: string;
+  created_at: string;
+  updated_at: string;
+  status: string;
+  settings: Record<string, any>;
+}
+
 export interface ExecutePromptRequest {
   prompt: string;
   execution_pattern?: string;
@@ -127,6 +142,144 @@ export interface DirectoryTreeResponse {
 class CodeAgentAPI {
   private getApiUrl(path: string): string {
     return buildApiUrl(`/api/v1/code-agent${path}`);
+  }
+
+  // Project Management
+  async createProjectFromDescription(request: CreateProjectFromDescriptionRequest): Promise<ProjectResponse> {
+    const response = await authenticatedFetch(this.getApiUrl('/projects'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create project: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Streaming project creation with SSE
+  createProjectFromDescriptionSSE(
+    request: CreateProjectFromDescriptionRequest,
+    onEvent: (event: SSEEvent) => void,
+    onError: (error: Error) => void,
+    onComplete: () => void
+  ): () => void {
+    let cancelled = false;
+    let abortController = new AbortController();
+
+    const executeRequest = async () => {
+      try {
+        console.log('🚀 Starting streaming project creation...');
+        
+        // Send POST request for SSE stream
+        const response = await authenticatedFetch(this.getApiUrl('/projects'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify(request),
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to create project: ${response.statusText}`);
+        }
+
+        console.log('📡 SSE response received, starting to read stream...');
+
+        // Check if response body exists
+        if (!response.body) {
+          throw new Error('Response body is null');
+        }
+
+        // Create a reader for the response stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (!cancelled) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              console.log('✅ SSE stream completed');
+              break;
+            }
+
+            // Decode the chunk and add to buffer
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            console.log('📦 Received SSE chunk:', chunk);
+
+            // Process complete lines in the buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (cancelled) break;
+              
+              const trimmedLine = line.trim();
+              console.log('🔍 Processing SSE line:', trimmedLine);
+
+              // Skip empty lines and comments
+              if (!trimmedLine || trimmedLine.startsWith(':')) {
+                continue;
+              }
+
+              // Process data lines
+              if (trimmedLine.startsWith('data: ')) {
+                const eventData = trimmedLine.substring(6).trim();
+                
+                // Skip empty data lines
+                if (!eventData) {
+                  console.log('🔍 Skipping empty data line');
+                  continue;
+                }
+
+                console.log('🔍 Parsing event data:', eventData);
+
+                try {
+                  const event: SSEEvent = JSON.parse(eventData);
+                  console.log('✅ Parsed SSE event:', event.event_type, event.data);
+                  onEvent(event);
+                } catch (parseError) {
+                  console.error('❌ Failed to parse SSE event:', eventData, parseError);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        if (!cancelled) {
+          console.log('✅ Project creation stream completed successfully');
+          onComplete();
+        }
+
+      } catch (error) {
+        console.error('❌ Project creation streaming error:', error);
+        if (!cancelled && error.name !== 'AbortError') {
+          onError(error as Error);
+        }
+      }
+    };
+
+    // Start the execution
+    executeRequest();
+
+    // Return cleanup function
+    return () => {
+      console.log('🛑 Cancelling project creation stream...');
+      cancelled = true;
+      abortController.abort();
+    };
   }
 
   // Session Management
@@ -210,7 +363,7 @@ class CodeAgentAPI {
 
   // Execution - Simplified non-streaming approach
   executePromptSSE(
-    sessionId: string,
+    agentId: string,
     request: ExecutePromptRequest,
     onEvent: (event: SSEEvent) => void,
     onError: (error: Error) => void,
@@ -223,7 +376,7 @@ class CodeAgentAPI {
         console.log('🚀 Starting execution request...');
         
         // Send POST request and wait for complete response
-        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${sessionId}/execute`), {
+        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${agentId}/execute`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -295,9 +448,13 @@ class CodeAgentAPI {
 
       // Process data lines - simple SSE parsing
       if (trimmedLine.startsWith('data: ')) {
-        const eventData = trimmedLine.substring(6); // Remove 'data: ' prefix
+        const eventData = trimmedLine.substring(6).trim(); // Remove 'data: ' prefix and trim
         
-        if (!eventData) continue;
+        // Skip empty data lines
+        if (!eventData) {
+          console.log('🔍 Skipping empty data line');
+          continue;
+        }
 
         console.log('🔍 Event data for parsing:', eventData);
 
@@ -499,6 +656,25 @@ class CodeAgentAPI {
     if (!response.ok) {
       throw new Error(`Failed to delete agent: ${response.statusText}`);
     }
+  }
+
+  // Build and Preview
+  async buildAndServeProject(agentId: string): Promise<{
+    success: boolean;
+    project_type: string;
+    preview_url: string;
+    entry_point: string;
+    message: string;
+  }> {
+    const response = await authenticatedFetch(`${this.getApiUrl(`/agents/${agentId}/preview`)}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to build project: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 }
 
