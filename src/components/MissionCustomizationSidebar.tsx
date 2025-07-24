@@ -51,10 +51,6 @@ const MissionCustomizationSidebar: React.FC<MissionCustomizationSidebarProps> = 
       if (response.ok) {
         const data = await response.json();
         onSystemPromptUpdate(data.system_prompt || '');
-        toast({
-          title: 'System prompt updated',
-          description: 'The system prompt has been saved successfully.',
-        });
         setHasChanges(false);
       } else {
         throw new Error('Failed to update system prompt');

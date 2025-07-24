@@ -81,10 +81,6 @@ export default function CodeAgent() {
             // Navigate to the coding view immediately
             navigate(`/code/agent/${projectData.project_id}`);
             
-            toast({
-              title: "Success",
-              description: "Project created successfully! Redirecting to coding view...",
-            });
           }
           
           // Handle other events for progress updates
@@ -146,10 +142,6 @@ export default function CodeAgent() {
       if (projectToDelete) {
         await codeAgentAPI.deleteAgent(projectToDelete.id);
         setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
-        toast({
-          title: "Success",
-          description: "Project deleted successfully",
-        });
       } else if (sessionToDelete) {
         await codeAgentAPI.deleteAgent(sessionToDelete.agent_id);
         setSessions(prev => prev.filter(s => s.session_id !== sessionToDelete.session_id));
