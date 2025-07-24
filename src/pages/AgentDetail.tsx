@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AgentHeader } from '@/components/code-agent/AgentHeader';
 import { ConversationPanel } from '@/components/code-agent/ConversationPanel';
-import { RightPanel } from '@/components/code-agent/RightPanel';
+import { RightPanel, ViewMode } from '@/components/code-agent/RightPanel';
 import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -28,6 +28,7 @@ export default function AgentDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('build');
 
   const handleBackToAgents = () => {
     navigate('/code');
@@ -157,6 +158,8 @@ export default function AgentDetail() {
           onBack={handleBackToAgents}
           onSettings={handleSettings}
           onDelete={handleDelete}
+          onFilesView={() => setViewMode('files')}
+          onBuildView={() => setViewMode('build')}
         />
       </div>
 
@@ -172,6 +175,7 @@ export default function AgentDetail() {
           <RightPanel 
             session={session}
             onFileClick={handleFileClick}
+            viewMode={viewMode}
           />
         </div>
       </div>

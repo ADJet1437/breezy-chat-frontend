@@ -35,6 +35,30 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
+  useEffect(() => {
+    // Listen for localStorage changes to handle programmatic sidebar collapse
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      if (saved) {
+        const newState = JSON.parse(saved);
+        if (newState !== sidebarCollapsed) {
+          setSidebarCollapsed(newState);
+        }
+      }
+    };
+
+    // Listen for storage events from other windows/tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check for changes periodically (for same-window changes)
+    const interval = setInterval(handleStorageChange, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [sidebarCollapsed]);
+
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100">

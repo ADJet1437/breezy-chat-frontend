@@ -1,5 +1,4 @@
 import React from 'react';
-import { Bot, User, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
 
@@ -19,44 +18,28 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getMessageIcon = () => {
-    switch (message.type) {
-      case 'user':
-        return <User className="h-4 w-4" />;
-      case 'assistant':
-        return <Bot className="h-4 w-4" />;
-      case 'system':
-        return <Info className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
 
   const getMessageStyles = () => {
     switch (message.type) {
       case 'user':
         return {
           container: 'ml-12',
-          card: 'bg-primary text-primary-foreground',
-          icon: 'bg-primary text-primary-foreground',
+          card: 'bg-card',
         };
       case 'assistant':
         return {
           container: 'mr-12',
           card: 'bg-card',
-          icon: 'bg-blue-500 text-white',
         };
       case 'system':
         return {
           container: 'mx-12',
           card: 'bg-muted',
-          icon: 'bg-gray-500 text-white',
         };
       default:
         return {
           container: '',
           card: 'bg-card',
-          icon: 'bg-gray-500 text-white',
         };
     }
   };
@@ -64,14 +47,9 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
   const styles = getMessageStyles();
 
   return (
-    <div className={`flex gap-3 ${styles.container}`}>
-      {/* Avatar */}
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${styles.icon}`}>
-        {getMessageIcon()}
-      </div>
-
+    <div className={`${styles.container}`}>
       {/* Message Content */}
-      <div className="flex-1 min-w-0">
+      <div className="w-full">
         <Card className={`${styles.card} shadow-sm`}>
           <CardContent className="p-3">
             {message.type === 'assistant' ? (

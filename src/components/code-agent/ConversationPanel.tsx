@@ -494,13 +494,6 @@ export function ConversationPanel({ session }: ConversationPanelProps) {
         </div>
       )}
 
-      {/* Fixed Conversation Header */}
-      <div className="flex-shrink-0 p-4 border-b">
-        <h3 className="font-medium flex items-center gap-2">
-          <Bot className="h-4 w-4" />
-          Conversation
-        </h3>
-      </div>
 
       {/* Scrollable Messages Area */}
       <div className="flex-1 overflow-y-auto scroll-smooth">

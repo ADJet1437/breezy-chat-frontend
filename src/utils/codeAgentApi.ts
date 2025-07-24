@@ -169,54 +169,103 @@ class CodeAgentAPI {
     onComplete: () => void
   ): () => void {
     let cancelled = false;
+    let abortController = new AbortController();
 
     const executeRequest = async () => {
       try {
         console.log('🚀 Starting streaming project creation...');
         
-        // Send POST request and wait for complete response
+        // Send POST request for SSE stream
         const response = await authenticatedFetch(this.getApiUrl('/projects'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
           },
           body: JSON.stringify(request),
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
           throw new Error(`Failed to create project: ${response.statusText}`);
         }
 
-        // Get the complete response text
-        const responseText = await response.text();
-        console.log('📥 Complete project creation response received:', responseText);
+        console.log('📡 SSE response received, starting to read stream...');
 
-        // Parse all SSE events from the response
-        const events = this.parseSSEResponse(responseText);
-        console.log('📋 Parsed project creation events:', events);
+        // Check if response body exists
+        if (!response.body) {
+          throw new Error('Response body is null');
+        }
 
-        if (cancelled) return;
+        // Create a reader for the response stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        // Process all events in sequence
-        for (const event of events) {
-          if (cancelled) break;
-          
-          console.log('🎯 Processing project creation event:', event.event_type);
-          onEvent(event);
-          
-          // Small delay to allow UI updates between events
-          await new Promise(resolve => setTimeout(resolve, 100));
+        try {
+          while (!cancelled) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              console.log('✅ SSE stream completed');
+              break;
+            }
+
+            // Decode the chunk and add to buffer
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            console.log('📦 Received SSE chunk:', chunk);
+
+            // Process complete lines in the buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (cancelled) break;
+              
+              const trimmedLine = line.trim();
+              console.log('🔍 Processing SSE line:', trimmedLine);
+
+              // Skip empty lines and comments
+              if (!trimmedLine || trimmedLine.startsWith(':')) {
+                continue;
+              }
+
+              // Process data lines
+              if (trimmedLine.startsWith('data: ')) {
+                const eventData = trimmedLine.substring(6).trim();
+                
+                // Skip empty data lines
+                if (!eventData) {
+                  console.log('🔍 Skipping empty data line');
+                  continue;
+                }
+
+                console.log('🔍 Parsing event data:', eventData);
+
+                try {
+                  const event: SSEEvent = JSON.parse(eventData);
+                  console.log('✅ Parsed SSE event:', event.event_type, event.data);
+                  onEvent(event);
+                } catch (parseError) {
+                  console.error('❌ Failed to parse SSE event:', eventData, parseError);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
         }
 
         if (!cancelled) {
-          console.log('✅ All project creation events processed, calling completion');
+          console.log('✅ Project creation stream completed successfully');
           onComplete();
         }
 
       } catch (error) {
-        console.error('❌ Project creation error:', error);
-        if (!cancelled) {
+        console.error('❌ Project creation streaming error:', error);
+        if (!cancelled && error.name !== 'AbortError') {
           onError(error as Error);
         }
       }
@@ -227,8 +276,9 @@ class CodeAgentAPI {
 
     // Return cleanup function
     return () => {
-      console.log('🛑 Cancelling project creation...');
+      console.log('🛑 Cancelling project creation stream...');
       cancelled = true;
+      abortController.abort();
     };
   }
 
@@ -398,9 +448,13 @@ class CodeAgentAPI {
 
       // Process data lines - simple SSE parsing
       if (trimmedLine.startsWith('data: ')) {
-        const eventData = trimmedLine.substring(6); // Remove 'data: ' prefix
+        const eventData = trimmedLine.substring(6).trim(); // Remove 'data: ' prefix and trim
         
-        if (!eventData) continue;
+        // Skip empty data lines
+        if (!eventData) {
+          console.log('🔍 Skipping empty data line');
+          continue;
+        }
 
         console.log('🔍 Event data for parsing:', eventData);
 

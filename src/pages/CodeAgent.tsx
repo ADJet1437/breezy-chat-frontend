@@ -75,6 +75,9 @@ export default function CodeAgent() {
             const projectData = event.data;
             console.log('🚀 Project created, navigating to:', projectData.project_id);
             
+            // Auto-collapse sidebar for better coding experience
+            localStorage.setItem('sidebarCollapsed', 'true');
+            
             // Navigate to the coding view immediately
             navigate(`/code/agent/${projectData.project_id}`);
             
@@ -123,6 +126,8 @@ export default function CodeAgent() {
   };
 
   const handleProjectSelect = (project: ProjectResponse) => {
+    // Auto-collapse sidebar for better coding experience
+    localStorage.setItem('sidebarCollapsed', 'true');
     navigate(`/code/agent/${project.id}`);
   };
 
@@ -247,9 +252,13 @@ export default function CodeAgent() {
                     <Card 
                       key={session.session_id}
                       className="group cursor-pointer border border-gray-200 transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu"
-                      onClick={() => navigate(`/code/agent/${session.agent_id}`, { 
-                        state: { session } 
-                      })}
+                      onClick={() => {
+                        // Auto-collapse sidebar for better coding experience
+                        localStorage.setItem('sidebarCollapsed', 'true');
+                        navigate(`/code/agent/${session.agent_id}`, { 
+                          state: { session } 
+                        });
+                      }}
                     >
                       <CardHeader className="relative">
                         <div className="flex items-center justify-between">
