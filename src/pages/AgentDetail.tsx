@@ -124,11 +124,6 @@ export default function AgentDetail() {
     try {
       await codeAgentAPI.deleteAgent(agentId);
       
-      toast({
-        title: "Agent Deleted",
-        description: "The agent and all its data have been permanently deleted.",
-        variant: "default",
-      });
       
       // Navigate back to agents list
       navigate('/code');

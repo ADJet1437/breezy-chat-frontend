@@ -145,10 +145,6 @@ export default function CodeAgent() {
       } else if (sessionToDelete) {
         await codeAgentAPI.deleteAgent(sessionToDelete.agent_id);
         setSessions(prev => prev.filter(s => s.session_id !== sessionToDelete.session_id));
-        toast({
-          title: "Success", 
-          description: "Session deleted successfully",
-        });
       }
     } catch (error) {
       console.error('Failed to delete:', error);
