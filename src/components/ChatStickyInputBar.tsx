@@ -19,6 +19,7 @@ interface ChatStickyInputBarProps {
   missionId?: string | null;
   currentMissionId?: string | null;
   rightSidebarVisible?: boolean;
+  sidebarCollapsed?: boolean;
 }
 
 export interface ChatStickyInputBarRef {
@@ -40,6 +41,7 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
   missionId,
   currentMissionId,
   rightSidebarVisible = false,
+  sidebarCollapsed = false,
 }, ref) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -112,7 +114,9 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
   return (
     <div 
       className={`fixed bottom-0 z-40 bg-white/80 backdrop-blur-sm border-t border-gray-200 transition-all duration-200 ${
-        !isMobile ? `left-0 md:left-64 right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` : 'left-0 right-0'
+        !isMobile 
+          ? `left-0 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'} right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` 
+          : 'left-0 right-0'
       }`}
       style={{ marginLeft: 'max(0px, env(safe-area-inset-left))', marginRight: 'max(0px, env(safe-area-inset-right))' }}
     >

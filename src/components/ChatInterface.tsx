@@ -46,6 +46,11 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Load from localStorage, same as Layout component
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
@@ -68,6 +73,30 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Listen for sidebar collapse state changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      if (saved) {
+        const newState = JSON.parse(saved);
+        if (newState !== sidebarCollapsed) {
+          setSidebarCollapsed(newState);
+        }
+      }
+    };
+
+    // Listen for localStorage changes (for programmatic sidebar collapse)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically in case localStorage is updated in same tab
+    const interval = setInterval(handleStorageChange, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [sidebarCollapsed]);
 
   // Load mission history when missionId changes
   useEffect(() => {
@@ -429,6 +458,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         missionId={missionId}
         currentMissionId={currentMissionId}
         rightSidebarVisible={rightSidebarVisible}
+        sidebarCollapsed={sidebarCollapsed}
       />
 
       {/* Subscription Dialog */}
