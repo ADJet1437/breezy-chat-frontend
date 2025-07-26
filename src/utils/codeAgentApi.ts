@@ -376,7 +376,7 @@ class CodeAgentAPI {
         console.log('🚀 Starting execution request...');
         
         // Send POST request and wait for complete response
-        const response = await authenticatedFetch(this.getApiUrl(`/sessions/${agentId}/execute`), {
+        const response = await authenticatedFetch(this.getApiUrl(`/agents/${agentId}/execute`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
