@@ -30,10 +30,6 @@ const Header = () => {
   const handleNewMission = () => {
     setCurrentMissionId(null);
     navigate('/');
-    toast({
-      description: "New mission started!",
-      duration: 2000,
-    });
   };
 
   const handleSignIn = () => {
