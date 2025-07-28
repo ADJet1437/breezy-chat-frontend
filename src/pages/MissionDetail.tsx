@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, Code, FileText } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
 import MissionCustomizationResponsive from '../components/MissionCustomizationResponsive';
 import Layout from '../components/Layout';
@@ -18,6 +18,9 @@ interface MissionDetails {
   llm_id: string;
   system_prompt?: string;
   task_messages: any[];
+  code_agent: {
+    id: string | null;
+  };
 }
 
 const MissionDetail = () => {
@@ -28,6 +31,8 @@ const MissionDetail = () => {
   const [missionDetails, setMissionDetails] = useState<MissionDetails | null>(null);
   const [isLoadingMission, setIsLoadingMission] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Update current mission context when viewing a specific mission
   useEffect(() => {
@@ -57,6 +62,23 @@ const MissionDetail = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Handle outside click to close secondary menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowSecondaryMenu(false);
+      }
+    };
+
+    if (showSecondaryMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSecondaryMenu]);
+
   const loadMissionDetails = async (missionId: string) => {
     setIsLoadingMission(true);
     try {
@@ -81,29 +103,95 @@ const MissionDetail = () => {
     }
   };
 
-  // Customize button with proper mobile-first responsive positioning
-  const CustomizeButton = () => (
-    <div 
-      className={`fixed z-50 transition-all duration-200 ${
-        isMobile 
-          ? 'bottom-32 right-6'  // Mobile: above input bar (32 = 8rem = 128px, clearing the input area)
-          : `bottom-20 ${showSidebar ? 'right-96' : 'right-6'}`  // Desktop: above input with sidebar adjustment
-      }`}
-      style={{ 
-        marginLeft: 'max(0px, env(safe-area-inset-left))', 
-        marginRight: 'max(0px, env(safe-area-inset-right))' 
-      }}
-    >
-      <Button
-        onClick={() => setShowSidebar(!showSidebar)}
-        size="lg"
-        className="rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-        title="Customize Mission"
+  // Contextual floating menu with Settings and Code options
+  const CustomizeButton = () => {
+    const hasCodeAgent = missionDetails?.code_agent?.id;
+    
+    return (
+      <div 
+        ref={menuRef}
+        className={`fixed z-50 transition-all duration-200 ${
+          isMobile 
+            ? 'bottom-32 right-6'  // Mobile: above input bar
+            : `bottom-20 ${showSidebar ? 'right-96' : 'right-6'}`  // Desktop: above input with sidebar adjustment
+        }`}
+        style={{ 
+          marginLeft: 'max(0px, env(safe-area-inset-left))', 
+          marginRight: 'max(0px, env(safe-area-inset-right))' 
+        }}
       >
-        <Settings className="h-5 w-5" />
-      </Button>
-    </div>
-  );
+        {/* Vertical Menu */}
+        {showSecondaryMenu && (
+          <div className="absolute bottom-16 right-0 flex flex-col space-y-3 pointer-events-none">
+            {/* Settings Option - Always visible */}
+            <div 
+              className="transition-all duration-300 ease-out pointer-events-auto"
+              style={{
+                transform: showSecondaryMenu 
+                  ? 'scale(1) translateY(0)' 
+                  : 'scale(0.3) translateY(20px)',
+                opacity: showSecondaryMenu ? 1 : 0,
+                transitionDelay: '50ms'
+              }}
+            >
+              <Button
+                onClick={() => {
+                  setShowSecondaryMenu(false);
+                  setShowSidebar(true);
+                }}
+                size="sm"
+                className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 border-2 border-white"
+                title="Mission Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Code Option - Only show if mission has code agent */}
+            {hasCodeAgent && (
+              <div 
+                className="transition-all duration-300 ease-out pointer-events-auto"
+                style={{
+                  transform: showSecondaryMenu 
+                    ? 'scale(1) translateY(0)' 
+                    : 'scale(0.3) translateY(20px)',
+                  opacity: showSecondaryMenu ? 1 : 0,
+                  transitionDelay: '100ms'
+                }}
+              >
+                <Button
+                  onClick={() => {
+                    setShowSecondaryMenu(false);
+                    // Trigger code view via ChatInterface
+                    const chatInterface = document.querySelector('[data-chat-interface]');
+                    if (chatInterface) {
+                      const event = new CustomEvent('toggleCodeView');
+                      chatInterface.dispatchEvent(event);
+                    }
+                  }}
+                  size="sm"
+                  className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-2 border-white"
+                  title="Code View"
+                >
+                  <Code className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Main Settings Button */}
+        <Button
+          onClick={() => setShowSecondaryMenu(!showSecondaryMenu)}
+          size="lg"
+          className="rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          title="Options"
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <Layout rightSidebar={showSidebar && id && missionDetails ? <div /> : undefined}>

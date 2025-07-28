@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +18,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FolderOpen, Code, Terminal, FileText, MoreVertical, Trash2, Bot, Loader2 } from 'lucide-react';
+import { FolderOpen, Code, MoreVertical, Trash2, Bot } from 'lucide-react';
 import { ActiveSession } from '@/components/code-agent/ActiveSession';
-import { ChatBar } from '@/components/code-agent/ChatBar';
 import { ProjectList } from '@/components/code-agent/ProjectList';
 import { codeAgentAPI, CodeSession, ProjectResponse, SSEEvent } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +29,6 @@ export default function CodeAgent() {
   const [projects, setProjects] = useState<ProjectResponse[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectResponse | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<CodeSession | null>(null);
@@ -60,66 +58,6 @@ export default function CodeAgent() {
   };
 
 
-  const handleCreateProject = async (description: string) => {
-    setIsCreatingProject(true);
-    
-    try {
-      // Create project using streaming SSE API
-      const cleanup = codeAgentAPI.createProjectFromDescriptionSSE(
-        { description },
-        (event) => {
-          console.log('🎯 Project creation event:', event.event_type, event.data);
-          
-          // Handle project_created event - navigate immediately
-          if (event.event_type === 'project_created') {
-            const projectData = event.data;
-            console.log('🚀 Project created, navigating to:', projectData.project_id);
-            
-            // Auto-collapse sidebar for better coding experience
-            localStorage.setItem('sidebarCollapsed', 'true');
-            
-            // Navigate to the coding view immediately
-            navigate(`/code/agent/${projectData.project_id}`);
-            
-          }
-          
-          // Handle other events for progress updates
-          if (event.event_type === 'execution_init') {
-            console.log('📋 Project creation initialized');
-          }
-          
-          if (event.event_type === 'tool_call') {
-            console.log('🔧 Creating files:', event.data.tool_name);
-          }
-        },
-        (error) => {
-          console.error('❌ Failed to create project:', error);
-          toast({
-            title: "Error",
-            description: "Failed to create project. Please try again.",
-            variant: "destructive",
-          });
-          setIsCreatingProject(false);
-        },
-        () => {
-          console.log('✅ Project creation completed');
-          setIsCreatingProject(false);
-        }
-      );
-      
-      // Store cleanup function for potential cancellation
-      // (Could be used to cancel if user navigates away)
-      
-    } catch (error) {
-      console.error('Failed to start project creation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start project creation. Please try again.",
-        variant: "destructive",
-      });
-      setIsCreatingProject(false);
-    }
-  };
 
   const handleProjectSelect = (project: ProjectResponse) => {
     // Auto-collapse sidebar for better coding experience
@@ -180,43 +118,9 @@ export default function CodeAgent() {
       <div className="flex-1 p-6">
         {projects.length === 0 && sessions.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <Card className="w-full max-w-2xl">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Code className="h-8 w-8 text-primary" />
-                </div>
-                <CardTitle className="text-xl">Welcome to Code Projects</CardTitle>
-                <CardDescription className="text-base">
-                  Your AI coding assistant that can read, analyze, and modify your codebase
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Read and analyze your codebase</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Code className="h-4 w-4 text-muted-foreground" />
-                    <span>Make file modifications</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-muted-foreground" />
-                    <span>Run commands and tests</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-4 w-4 text-muted-foreground" />
-                    <span>Implement features step-by-step</span>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
-                    No projects yet. Create your first project below.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="text-center">
+              <p className="text-lg text-gray-400">No projects yet, start a new mission to create coding projects!</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-8">
@@ -304,14 +208,6 @@ export default function CodeAgent() {
         )}
       </div>
 
-      {/* Chat Bar for New Projects */}
-      <div className="flex-shrink-0 p-6 border-t bg-gray-50">
-        <ChatBar 
-          onSubmit={handleCreateProject}
-          isLoading={isCreatingProject}
-          placeholder="What do you want to build? (e.g., 'React e-commerce with authentication')"
-        />
-      </div>
 
 
       {/* Delete Confirmation Dialog */}
