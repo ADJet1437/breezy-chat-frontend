@@ -188,7 +188,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   }, [missionId, currentMissionId]);
 
   const loadMissionHistory = async (missionId: string) => {
-    console.log('Loading mission history for:', missionId);
     setIsLoadingHistory(true);
     
     try {
@@ -199,12 +198,10 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       }
 
       const missionDetails: MissionDetails = await response.json();
-      console.log('Mission details loaded:', missionDetails);
 
       // Check if mission has a completed code agent and set up project data
       if (missionDetails.code_agent && missionDetails.code_agent.id) {
         const agentId = missionDetails.code_agent.id;
-        console.log('📝 Mission has code agent, setting up project data with agent_id:', agentId);
         
         // Set project data for right panel
         const projectInfo = {
@@ -247,10 +244,8 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       // Set the messages to the loaded history
       setMessages(historyMessages);
-      console.log('Mission history loaded successfully:', historyMessages.length, 'messages');
       
     } catch (error) {
-      console.error('Error loading mission history:', error);
       toast({
         description: "Failed to load mission history. Please try again.",
         variant: "destructive",
@@ -268,21 +263,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   const sendMessageToBackend = async (message: string) => {
     const effectiveMissionId = missionId || currentMissionId;
     let newMissionId: string | null = null; // Track new mission ID for navigation
-    console.log('🎯 === SENDING MESSAGE TO BACKEND ===');
-    console.log('🎯 Message:', message);
-    console.log('🎯 Effective mission ID:', effectiveMissionId);
-    
-    // Check authentication state before making API call
-    console.log('🔐 === AUTH STATE CHECK ===');
-    console.log('🔐 isAuthenticated:', isAuthenticated);
-    console.log('🔐 accessToken exists:', !!accessToken);
-    console.log('🔐 user:', user?.email);
-    
-    if (!isAuthenticated) {
-      console.log('🔐 ❌ NOT AUTHENTICATED - Request may fail');
-    } else {
-      console.log('🔐 ✅ AUTHENTICATED - Proceeding with request');
-    }
     
     try {
       // Prepare request payload - include mission_id only if we have one
@@ -294,18 +274,9 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       if (effectiveMissionId) {
         requestPayload.mission_id = effectiveMissionId;
-        console.log('Including mission_id in request:', effectiveMissionId);
-      } else {
-        console.log('No mission_id - this will create a new mission');
-      }
-
-      if (attachedFileIds.length > 0) {
-        console.log('Including file_ids in request:', attachedFileIds);
       }
 
       const response = await authenticatedPost(buildApiUrl('/api/v1/missions/complete'), requestPayload);
-
-      console.log('Response received:', response.status, response.ok);
 
       // Use handleApiError to properly throw PaymentRequiredError for 402 responses
       await handleApiError(response, 'Chat Message');
@@ -319,23 +290,19 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         timestamp: new Date(),
       };
 
-      console.log('Adding initial bot message with id:', botMessageId);
       setMessages(prev => [...prev, botMessage]);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
       if (reader) {
-        console.log('Starting to read stream...');
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
-            console.log('Stream reading completed');
             break;
           }
 
           const chunk = decoder.decode(value);
-          console.log('Received chunk:', chunk);
           const lines = chunk.split('\n');
 
           for (const line of lines) {
@@ -345,13 +312,11 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                 
                 // Skip empty data lines
                 if (!jsonStr) {
-                  console.log('Skipping empty data line');
                   continue;
                 }
                 
                 // Skip non-JSON data lines (like system reminders)
                 if (!jsonStr.startsWith('{')) {
-                  console.log('Skipping non-JSON data:', jsonStr.substring(0, 50) + '...');
                   continue;
                 }
                 
@@ -375,7 +340,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     setMissionPhase('project_created');
                     // Force close panel - project is still building
                     setShowRightPanel(false);
-                    console.log('📝 Project ID stored successfully:', projectInfo.project_id);
                   }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
@@ -410,16 +374,13 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   ));
                 }
               } catch (error) {
-                console.error('Error parsing JSON:', error);
+                // Skip invalid JSON
               }
             }
           }
         }
-      } else {
-        console.error('No reader available from response body');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
       
       if (error instanceof PaymentRequiredError) {
         // Handle 402 Payment Required errors
@@ -463,7 +424,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       
       // If we're on root route and created a new mission, navigate to mission detail
       if (!missionId && newMissionId) {
-        console.log('Navigating to new mission detail:', newMissionId);
         navigate(`/missions/${newMissionId}`);
       } else {
         // Focus input after streaming completes so user can immediately type next message
@@ -474,8 +434,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
-    console.log('Handling send message:', inputValue);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -494,7 +452,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     const messageToSend = inputValue;
     setInputValue('');
     setIsStreaming(true);
-    console.log('Set isStreaming to true');
 
     // Focus input immediately after clearing for immediate next message typing
     inputBarRef.current?.focusInput();
@@ -622,7 +579,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
           answer: "", // Empty answer for system messages
         });
       } catch (messageError) {
-        console.error('Failed to save deletion message:', messageError);
         // Don't fail the entire operation if message saving fails
       }
       
@@ -637,7 +593,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         duration: 3000,
       });
     } catch (error) {
-      console.error('Failed to delete project:', error);
       toast({
         title: "Delete Failed",
         description: "Failed to delete the project. Please try again.",
@@ -680,23 +635,12 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       // Get the blob from response - this preserves binary data
       const blob = await response.blob();
       
-      // Debug information
-      console.log('Download debug info:', {
-        responseStatus: response.status,
-        responseHeaders: Object.fromEntries(response.headers.entries()),
-        blobSize: blob.size,
-        blobType: blob.type,
-        contentLength: response.headers.get('content-length')
-      });
       
       // Verify we got a ZIP file
       if (blob.size === 0) {
         throw new Error('Downloaded file is empty');
       }
       
-      if (blob.type && !blob.type.includes('application/zip') && !blob.type.includes('application/octet-stream')) {
-        console.warn('Unexpected content type:', blob.type);
-      }
       
       // Get filename from Content-Disposition header or use default
       const contentDisposition = response.headers.get('Content-Disposition');
@@ -728,7 +672,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         description: "Success!",
       });
     } catch (error) {
-      console.error('Failed to download project:', error);
       toast({
         title: "Download Failed",
         description: "Failed to download the project. Please try again.",
