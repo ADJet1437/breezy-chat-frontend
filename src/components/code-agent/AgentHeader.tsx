@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,9 +10,12 @@ import {
   ArrowLeft, 
   Menu, 
   Trash2,
-  Download
+  Download,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
-import { CodeSession } from '@/utils/codeAgentApi';
+import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
+import { useToast } from '@/hooks/use-toast';
 
 interface AgentHeaderProps {
   session: CodeSession;
@@ -27,6 +30,35 @@ export function AgentHeader({
   onDelete,
   onDownload 
 }: AgentHeaderProps) {
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const { toast } = useToast();
+
+  const handleView = async () => {
+    setIsLoadingPreview(true);
+    try {
+      const response = await codeAgentAPI.buildAndServeProject(session.agent_id);
+      
+      if (response.success && response.preview_url) {
+        window.open(response.preview_url, '_blank');
+      } else {
+        toast({
+          title: "Preview Failed",
+          description: response.message || 'Failed to build project preview',
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to get preview URL:', error);
+      toast({
+        title: "Preview Failed",
+        description: "Failed to open project preview. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
   return (
     <div className="border-b p-4 flex-shrink-0">
       <div className="flex items-center justify-between">
@@ -41,6 +73,19 @@ export function AgentHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleView}
+            disabled={isLoadingPreview}
+          >
+            {isLoadingPreview ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+          </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 

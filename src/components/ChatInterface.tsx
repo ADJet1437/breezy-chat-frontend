@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Paperclip, Settings, Code, FileText, Trash2, Download, Menu } from 'lucide-react';
+import { Send, Paperclip, Settings, Code, FileText, Trash2, Download, Menu, ExternalLink, Loader2 } from 'lucide-react';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
@@ -95,6 +95,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   });
   const [viewMode, setViewMode] = useState<ViewMode>('build');
   const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const projectDataRef = useRef<ProjectData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
@@ -681,6 +682,33 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     }
   };
 
+  const handleView = async () => {
+    if (!projectData?.project_id) return;
+
+    setIsLoadingPreview(true);
+    try {
+      const response = await codeAgentAPI.buildAndServeProject(projectData.project_id);
+      
+      if (response.success && response.preview_url) {
+        window.open(response.preview_url, '_blank');
+      } else {
+        toast({
+          title: "Preview Failed",
+          description: response.message || 'Failed to build project preview',
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to get preview URL:', error);
+      toast({
+        title: "Preview Failed",
+        description: "Failed to open project preview. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
 
   // Show split layout when right panel is open
   if (showRightPanel && projectData?.project_id) {
@@ -777,12 +805,25 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         {/* Right Side: Project Preview - 65% */}
         <div className="w-[65%] flex flex-col overflow-hidden">
           {/* Fixed Header */}
-          <div className="flex-shrink-0 px-4 py-1.5 border-b flex items-center justify-between bg-background">
+          <div className="flex-shrink-0 px-4 py-1.5 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleView}
+                disabled={isLoadingPreview}
+              >
+                {isLoadingPreview ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-4 w-4" />
+                )}
+              </Button>
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     size="sm"
                   >
                     <Menu className="h-4 w-4" />
