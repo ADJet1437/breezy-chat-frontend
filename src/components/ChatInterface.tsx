@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { Send, Paperclip, Settings, Code, FileText, Trash2 } from 'lucide-react';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
@@ -9,9 +17,17 @@ import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
+import MissionProgressIndicator, { MissionPhase } from './MissionProgressIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
 import ChatStickyInputBar, { ChatStickyInputBarRef } from './ChatStickyInputBar';
+import FileUpload from './FileUpload';
 import { Message } from '../types/chat';
+import { BuildPreview } from './code-agent/BuildPreview';
+import { ViewModeToggle } from './code-agent/ViewModeToggle';
+import { DirectoryPanel } from './code-agent/DirectoryPanel';
+import { codeAgentAPI } from '../utils/codeAgentApi';
+
+type ViewMode = 'build' | 'files';
 
 interface TaskMessage {
   id: string;
@@ -36,11 +52,21 @@ interface MissionDetails {
   llm_id: string;
   system_prompt?: string;
   task_messages: TaskMessage[];
+  code_agent: {
+    id: string | null;
+  };
 }
 
 interface ChatInterfaceProps {
   missionId?: string;
   rightSidebarVisible?: boolean;
+}
+
+interface ProjectData {
+  project_id: string;
+  project_name: string;
+  project_path: string;
+  session_id: string;
 }
 
 const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterfaceProps) => {
@@ -58,6 +84,19 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [attachedFileIds, setAttachedFileIds] = useState<string[]>([]);
   const [attachedFileDetails, setAttachedFileDetails] = useState<any[]>([]);
+  const [missionPhase, setMissionPhase] = useState<MissionPhase>('init');
+  const [projectData, setProjectData] = useState<ProjectData | null>(null);
+  const [executionProgress, setExecutionProgress] = useState<number>(0);
+  const [currentStep, setCurrentStep] = useState<string>('');
+  const [showRightPanel, setShowRightPanel] = useState(() => {
+    // Load from localStorage on initial render
+    const saved = localStorage.getItem('missionCodeViewOpen');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [viewMode, setViewMode] = useState<ViewMode>('build');
+  const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
+  const projectDataRef = useRef<ProjectData | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
   const navigate = useNavigate();
@@ -98,6 +137,45 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     };
   }, [sidebarCollapsed]);
 
+  // Handle outside click to close secondary menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowSecondaryMenu(false);
+      }
+    };
+
+    if (showSecondaryMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSecondaryMenu]);
+
+  // Save showRightPanel state to localStorage
+  useEffect(() => {
+    localStorage.setItem('missionCodeViewOpen', JSON.stringify(showRightPanel));
+  }, [showRightPanel]);
+
+  // Listen for toggleCodeView custom event from MissionDetail
+  useEffect(() => {
+    const handleToggleCodeView = () => {
+      if (projectData?.project_id) {
+        setShowRightPanel(!showRightPanel);
+      }
+    };
+
+    const chatElement = document.querySelector('[data-chat-interface]');
+    if (chatElement) {
+      chatElement.addEventListener('toggleCodeView', handleToggleCodeView);
+      return () => {
+        chatElement.removeEventListener('toggleCodeView', handleToggleCodeView);
+      };
+    }
+  }, [showRightPanel, projectData]);
+
   // Load mission history when missionId changes
   useEffect(() => {
     const effectiveMissionId = missionId || currentMissionId;
@@ -122,6 +200,26 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       const missionDetails: MissionDetails = await response.json();
       console.log('Mission details loaded:', missionDetails);
+
+      // Check if mission has a completed code agent and set up project data
+      if (missionDetails.code_agent && missionDetails.code_agent.id) {
+        const agentId = missionDetails.code_agent.id;
+        console.log('📝 Mission has code agent, setting up project data with agent_id:', agentId);
+        
+        // Set project data for right panel
+        const projectInfo = {
+          project_id: agentId,
+          project_name: missionDetails.name,
+          project_path: '', // We don't have this from mission, but not needed for preview
+          session_id: agentId // Use agent_id as session_id for compatibility
+        };
+        
+        setProjectData(projectInfo);
+        projectDataRef.current = projectInfo;
+        
+        // Don't automatically show right panel on page load - respect saved state from localStorage
+        // The execution_complete event will still auto-show for new missions
+      }
 
       // Transform task_messages to Message format
       const historyMessages: Message[] = [];
@@ -246,17 +344,65 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const jsonStr = line.slice(6); // Remove 'data: ' prefix
-                console.log('Parsing JSON:', jsonStr);
+                const jsonStr = line.slice(6).trim(); // Remove 'data: ' prefix and trim
+                
+                // Skip empty data lines
+                if (!jsonStr) {
+                  console.log('Skipping empty data line');
+                  continue;
+                }
+                
+                // Skip non-JSON data lines (like system reminders)
+                if (!jsonStr.startsWith('{')) {
+                  console.log('Skipping non-JSON data:', jsonStr.substring(0, 50) + '...');
+                  continue;
+                }
+                
                 const data = JSON.parse(jsonStr);
-                console.log('Parsed data:', data);
                 
                 if (data.event_type === 'mission_init') {
-                  console.log('Received mission_init event with mission_id:', data.answer);
                   newMissionId = data.answer; // Store for navigation
                   setCurrentMissionId(data.answer);
+                  setMissionPhase('init');
+                } else if (data.event_type === 'project_created') {
+                  const projectInfo = data.data;
+                  if (projectInfo && projectInfo.project_id) {
+                    const newProjectData = {
+                      project_id: projectInfo.project_id,
+                      project_name: projectInfo.project_name,
+                      project_path: projectInfo.project_path,
+                      session_id: projectInfo.session_id
+                    };
+                    setProjectData(newProjectData);
+                    projectDataRef.current = newProjectData; // Store immediately in ref
+                    setMissionPhase('project_created');
+                    console.log('📝 Project ID stored successfully:', projectInfo.project_id);
+                  }
+                } else if (data.event_type === 'execution_init') {
+                  setMissionPhase('execution');
+                  setExecutionProgress(10);
+                  setCurrentStep('Starting development...');
+                } else if (data.event_type === 'tool_call') {
+                  const toolName = data.data.tool_name || 'unknown tool';
+                  setCurrentStep(`🔧 Using: ${toolName}`);
+                  setExecutionProgress(prev => Math.min(prev + 10, 85));
+                } else if (data.event_type === 'execution_reflection') {
+                  const message = data.data.message || 'Processing...';
+                  setCurrentStep(`💭 ${message}`);
+                  setExecutionProgress(prev => Math.min(prev + 5, 90));
+                } else if (data.event_type === 'execution_complete') {
+                  setMissionPhase('complete');
+                  setExecutionProgress(100);
+                  setCurrentStep('✅ Mission completed! Launching code agent...');
+                  
+                  // Auto show right panel with project preview
+                  const currentProjectData = projectDataRef.current || projectData;
+                  if (currentProjectData?.project_id) {
+                    setTimeout(() => {
+                      setShowRightPanel(true);
+                    }, 1000); // Brief delay for smooth UX
+                  }
                 } else if (data.event_type === 'mission_content') {
-                  console.log('Updating message content with:', data.answer);
                   // Update the bot message content by appending the new content
                   setMessages(prev => prev.map(msg => 
                     msg.id === botMessageId 
@@ -265,7 +411,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   ));
                 }
               } catch (error) {
-                console.error('Error parsing JSON:', error, 'Line:', line);
+                console.error('Error parsing JSON:', error);
               }
             }
           }
@@ -415,8 +561,245 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     setAttachedFileIds(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
+
+  const handleFileClick = (filePath: string) => {
+    toast({
+      description: `Selected: ${filePath}`,
+      duration: 2000,
+    });
+  };
+
+  const handleCloseRightPanel = () => {
+    setShowRightPanel(false);
+  };
+
+  const handleSecondaryMenuToggle = () => {
+    setShowSecondaryMenu(!showSecondaryMenu);
+  };
+
+  const handleSettingsClick = () => {
+    setShowSecondaryMenu(false);
+    setShowSidebar(true);
+  };
+
+  const handleCodeViewClick = () => {
+    setShowSecondaryMenu(false);
+    setShowRightPanel(!showRightPanel);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectData?.project_id) return;
+    
+    const confirmed = window.confirm('Are you sure you want to delete this project? This action cannot be undone.');
+    if (!confirmed) return;
+
+    const effectiveMissionId = missionId || currentMissionId;
+    if (!effectiveMissionId) {
+      toast({
+        title: "Error",
+        description: "No mission found to record deletion.",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      await codeAgentAPI.deleteAgent(projectData.project_id);
+      
+      // Add deletion message to chat
+      const deletionMessage: Message = {
+        id: Date.now().toString(),
+        content: `⎿ User deleted project ${projectData.project_id}`,
+        sender: 'system',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, deletionMessage]);
+      
+      // Save deletion message to task_messages table
+      try {
+        await authenticatedPost(buildApiUrl(`/api/v1/missions/${effectiveMissionId}/task-messages`), {
+          message: `⎿ User deleted project ${projectData.project_id}`,
+          answer: "", // Empty answer for system messages
+        });
+      } catch (messageError) {
+        console.error('Failed to save deletion message:', messageError);
+        // Don't fail the entire operation if message saving fails
+      }
+      
+      // Close the panel and clear project data
+      setShowRightPanel(false);
+      setProjectData(null);
+      projectDataRef.current = null;
+      
+      toast({
+        title: "Project Deleted",
+        description: "The project has been successfully deleted.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the project. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
+
+  // Show split layout when right panel is open
+  if (showRightPanel && projectData?.project_id) {
+    return (
+      <div className="h-[calc(100vh-4rem)] flex overflow-hidden" data-chat-interface>
+        {/* Left Side: Mission Chat - 35% */}
+        <div className="w-[35%] flex flex-col overflow-hidden">
+          {/* Scrollable Messages Area */}
+          <div className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
+            <div className="p-4">
+              {isLoadingHistory ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center">
+                    <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading mission history...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <MessageList messages={messages} />
+                  {isStreaming && missionPhase !== 'init' ? (
+                    <MissionProgressIndicator 
+                      phase={missionPhase}
+                      projectName={projectData?.project_name}
+                      currentStep={currentStep}
+                      progress={executionProgress}
+                    />
+                  ) : isStreaming ? (
+                    <TypingIndicator />
+                  ) : null}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fixed Input Bar */}
+          <div className="flex-shrink-0 p-4 border-t bg-background">
+            <div className="space-y-3">
+              {/* Attached Files Display */}
+              {attachedFileIds.length > 0 && (
+                <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <Paperclip className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800 font-medium">
+                    {attachedFileIds.length} file(s) attached
+                  </span>
+                  <button
+                    onClick={() => {
+                      setAttachedFileIds([]);
+                      setAttachedFileDetails([]);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 text-sm ml-auto"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Input Area */}
+              <div className="flex items-center space-x-3">
+                {/* Plus Button */}
+                <div className="flex-shrink-0">
+                  <FileUpload onFilesUploaded={handleFilesUploaded} />
+                </div>
+
+                {/* Textarea */}
+                <div className="flex-1 relative">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={isStreaming || isLoadingHistory ? "AI is thinking..." : "Type your message..."}
+                    disabled={isStreaming || isLoadingHistory}
+                    className="w-full resize-none border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-[120px]"
+                    rows={1}
+                  />
+                </div>
+
+                {/* Send Button */}
+                <div className="flex-shrink-0">
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl px-6 py-3 font-medium transition-all duration-200 flex items-center justify-center h-[44px]"
+                  >
+                    <Send className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Project Preview - 65% */}
+        <div className="w-[65%] flex flex-col overflow-hidden">
+          {/* Fixed Header */}
+          <div className="flex-shrink-0 px-4 py-1.5 border-b flex items-center justify-between bg-background">
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem 
+                    onClick={handleDeleteProject} 
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <button
+              onClick={handleCloseRightPanel}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Close panel"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <BuildPreview agentId={projectData.project_id} />
+          </div>
+        </div>
+
+        {/* Subscription Dialog */}
+        <SubscriptionDialog
+          open={showSubscriptionDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleSubscriptionCancel();
+            }
+          }}
+          onSubscribed={handleSubscriptionSuccess}
+          message={subscriptionMessage}
+        />
+      </div>
+    );
+  }
+
+  // Show full-width mission chat view
   return (
-    <>
+    <div data-chat-interface>
       {/* Messages Area with bottom padding for sticky input */}
       <div className="flex flex-col h-full pb-32">
         <div className="flex-1 min-h-0 p-6">
@@ -432,7 +815,16 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
               ) : (
                 <>
                   <MessageList messages={messages} />
-                  {isStreaming && <TypingIndicator />}
+                  {isStreaming && missionPhase !== 'init' ? (
+                    <MissionProgressIndicator 
+                      phase={missionPhase}
+                      projectName={projectData?.project_name}
+                      currentStep={currentStep}
+                      progress={executionProgress}
+                    />
+                  ) : isStreaming ? (
+                    <TypingIndicator />
+                  ) : null}
                 </>
               )}
               <div ref={messagesEndRef} />
@@ -472,7 +864,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         onSubscribed={handleSubscriptionSuccess}
         message={subscriptionMessage}
       />
-    </>
+    </div>
   );
 };
 
