@@ -89,7 +89,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>('');
   const [showRightPanel, setShowRightPanel] = useState(() => {
-    // Load from localStorage on initial render
+    // Load from localStorage on initial render for existing missions
     const saved = localStorage.getItem('missionCodeViewOpen');
     return saved ? JSON.parse(saved) : false;
   });
@@ -174,7 +174,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         chatElement.removeEventListener('toggleCodeView', handleToggleCodeView);
       };
     }
-  }, [showRightPanel, projectData]);
+  }, [projectData]);
 
   // Load mission history when missionId changes
   useEffect(() => {
@@ -216,9 +216,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         
         setProjectData(projectInfo);
         projectDataRef.current = projectInfo;
-        
-        // Don't automatically show right panel on page load - respect saved state from localStorage
-        // The execution_complete event will still auto-show for new missions
       }
 
       // Transform task_messages to Message format
@@ -376,6 +373,8 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     setProjectData(newProjectData);
                     projectDataRef.current = newProjectData; // Store immediately in ref
                     setMissionPhase('project_created');
+                    // Force close panel - project is still building
+                    setShowRightPanel(false);
                     console.log('📝 Project ID stored successfully:', projectInfo.project_id);
                   }
                 } else if (data.event_type === 'execution_init') {
