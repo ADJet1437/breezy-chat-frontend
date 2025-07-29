@@ -8,30 +8,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   ArrowLeft, 
-  Settings, 
+  Menu, 
   Trash2,
-  FolderOpen,
-  FileText,
-  Hammer
+  Download
 } from 'lucide-react';
 import { CodeSession } from '@/utils/codeAgentApi';
 
 interface AgentHeaderProps {
   session: CodeSession;
   onBack: () => void;
-  onSettings?: () => void;
   onDelete?: () => void;
-  onFilesView?: () => void;
-  onBuildView?: () => void;
+  onDownload?: () => void;
 }
 
 export function AgentHeader({ 
   session, 
   onBack, 
-  onSettings, 
   onDelete,
-  onFilesView,
-  onBuildView 
+  onDownload 
 }: AgentHeaderProps) {
   return (
     <div className="border-b p-4 flex-shrink-0">
@@ -53,32 +47,20 @@ export function AgentHeader({
                 variant="outline" 
                 size="sm"
               >
-                <Settings className="h-4 w-4" />
+                <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onBuildView && (
-                <DropdownMenuItem onClick={onBuildView}>
-                  <Hammer className="h-4 w-4 mr-2" />
-                  Build
-                </DropdownMenuItem>
-              )}
-              {onFilesView && (
-                <DropdownMenuItem onClick={onFilesView}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Files
-                </DropdownMenuItem>
-              )}
-              {onSettings && (
-                <DropdownMenuItem onClick={onSettings}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
+              {onDownload && (
+                <DropdownMenuItem onClick={onDownload}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
                 </DropdownMenuItem>
               )}
               {onDelete && (
                 <DropdownMenuItem onClick={onDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Project
+                  Delete
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
