@@ -5,6 +5,7 @@ import { ConversationPanel } from '@/components/code-agent/ConversationPanel';
 import { RightPanel, ViewMode } from '@/components/code-agent/RightPanel';
 import { CodeSession, codeAgentAPI } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
+import { buildApiUrl } from '@/utils/apiConfig';
 import { Loader2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -104,13 +105,82 @@ export default function AgentDetail() {
   };
 
 
-  const handleSettings = () => {
-    // TODO: Implement settings
-    console.log('Settings requested');
-    toast({
-      title: "Settings",
-      description: "Session settings will be implemented soon",
-    });
+  const handleDownload = async () => {
+    if (!agentId) return;
+    
+    try {
+      // Remove the preparing toast to simplify UX
+
+      // Create a custom fetch for binary download to avoid Content-Type issues
+      const token = localStorage.getItem('talosy_access_token');
+      const headers: HeadersInit = {
+        'Accept': 'application/zip, application/octet-stream, */*'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(
+        buildApiUrl(`/api/v1/code-agent/agents/${agentId}/download`),
+        {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Download failed: ${response.status} ${errorText}`);
+      }
+      
+      // Get the blob from response - this preserves binary data
+      const blob = await response.blob();
+      
+      // Verify we got a ZIP file
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `tls-project-${agentId}.zip`;
+      
+      if (contentDisposition && contentDisposition.includes('filename=')) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\\n]*=((['"]).*?\\2|[^;\\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup after a brief delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast({
+        description: "Success!",
+      });
+    } catch (error) {
+      console.error('Failed to download project:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the project. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   const handleDelete = () => {
@@ -151,10 +221,8 @@ export default function AgentDetail() {
         <AgentHeader 
           session={session}
           onBack={handleBackToAgents}
-          onSettings={handleSettings}
           onDelete={handleDelete}
-          onFilesView={() => setViewMode('files')}
-          onBuildView={() => setViewMode('build')}
+          onDownload={handleDownload}
         />
       </div>
 

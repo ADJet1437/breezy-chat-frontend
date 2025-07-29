@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Paperclip, Settings, Code, FileText, Trash2 } from 'lucide-react';
+import { Send, Paperclip, Settings, Code, FileText, Trash2, Download, Menu } from 'lucide-react';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
@@ -647,6 +647,97 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     }
   };
 
+  const handleDownloadProject = async () => {
+    if (!projectData?.project_id) return;
+    
+    try {
+      // Remove the preparing toast to simplify UX
+
+      // Create a custom fetch for binary download to avoid Content-Type issues
+      const token = user?.access_token || localStorage.getItem('talosy_access_token');
+      const headers: HeadersInit = {
+        'Accept': 'application/zip, application/octet-stream, */*'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(
+        buildApiUrl(`/api/v1/code-agent/agents/${projectData.project_id}/download`),
+        {
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Download failed: ${response.status} ${errorText}`);
+      }
+      
+      // Get the blob from response - this preserves binary data
+      const blob = await response.blob();
+      
+      // Debug information
+      console.log('Download debug info:', {
+        responseStatus: response.status,
+        responseHeaders: Object.fromEntries(response.headers.entries()),
+        blobSize: blob.size,
+        blobType: blob.type,
+        contentLength: response.headers.get('content-length')
+      });
+      
+      // Verify we got a ZIP file
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+      
+      if (blob.type && !blob.type.includes('application/zip') && !blob.type.includes('application/octet-stream')) {
+        console.warn('Unexpected content type:', blob.type);
+      }
+      
+      // Get filename from Content-Disposition header or use default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `tls-project-${projectData.project_id}.zip`;
+      
+      if (contentDisposition && contentDisposition.includes('filename=')) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup after a brief delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast({
+        description: "Success!",
+      });
+    } catch (error) {
+      console.error('Failed to download project:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download the project. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
+
 
   // Show split layout when right panel is open
   if (showRightPanel && projectData?.project_id) {
@@ -751,16 +842,20 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     variant="outline" 
                     size="sm"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Menu className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={handleDownloadProject}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={handleDeleteProject} 
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Project
+                    Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
