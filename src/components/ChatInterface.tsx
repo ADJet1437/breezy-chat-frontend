@@ -163,9 +163,12 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   // Listen for toggleCodeView custom event from MissionDetail
   useEffect(() => {
     const handleToggleCodeView = () => {
-      if (projectData?.project_id) {
-        setShowRightPanel(!showRightPanel);
-      }
+      // Use projectDataRef to get current value for more reliable state access
+      const currentProjectData = projectDataRef.current || projectData;
+      
+      // Always allow toggle if we're in a mission with code agent context
+      // The MissionDetail component already checks if hasCodeAgent before showing the button
+      setShowRightPanel(prev => !prev);
     };
 
     const chatElement = document.querySelector('[data-chat-interface]');
@@ -699,7 +702,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         });
       }
     } catch (error) {
-      console.error('Failed to get preview URL:', error);
       toast({
         title: "Preview Failed",
         description: "Failed to open project preview. Please try again.",
@@ -713,12 +715,12 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   // Show split layout when right panel is open
   if (showRightPanel && projectData?.project_id) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex overflow-hidden" data-chat-interface>
+      <div className="h-[calc(100vh-4rem)] w-full max-w-full flex overflow-hidden" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         {/* Left Side: Mission Chat - 35% */}
-        <div className="w-[35%] flex flex-col overflow-hidden">
+        <div className="w-[35%] max-w-[35%] flex flex-col overflow-hidden min-w-0" style={{ width: '35%', maxWidth: '35%', minWidth: '0' }}>
           {/* Scrollable Messages Area */}
-          <div className="flex-1 overflow-y-auto scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
-            <div className="p-4">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
+            <div className="p-4 min-w-0" style={{ maxWidth: '100%', overflow: 'hidden' }}>
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
@@ -727,7 +729,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                   <MessageList messages={messages} />
                   {isStreaming && missionPhase !== 'init' ? (
                     <MissionProgressIndicator 
@@ -803,7 +805,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         </div>
 
         {/* Right Side: Project Preview - 65% */}
-        <div className="w-[65%] flex flex-col overflow-hidden">
+        <div className="w-[65%] max-w-[65%] flex flex-col overflow-hidden min-w-0" style={{ width: '65%', maxWidth: '65%', minWidth: '0' }}>
           {/* Fixed Header */}
           <div className="flex-shrink-0 px-4 py-1.5 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">

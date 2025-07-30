@@ -53,10 +53,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} group`}>
-      <div className={`flex flex-col max-w-[80%] ${isBot ? 'items-start' : 'items-end'}`}>
+    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} group min-w-0`}>
+      <div className={`flex flex-col max-w-[85%] min-w-0 ${isBot ? 'items-start' : 'items-end'}`}>
           <div
-            className={`px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md ${
+            className={`px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md min-w-0 max-w-full ${
               isBot
                 ? 'bg-white border border-gray-200 text-gray-800'
                 : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'

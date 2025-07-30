@@ -32,6 +32,10 @@ const MissionDetail = () => {
   const [isLoadingMission, setIsLoadingMission] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
+  const [isCodeViewOpen, setIsCodeViewOpen] = useState(() => {
+    // Check initial state from localStorage
+    return localStorage.getItem('missionCodeViewOpen') === 'true';
+  });
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Update current mission context when viewing a specific mission
@@ -78,6 +82,25 @@ const MissionDetail = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showSecondaryMenu]);
+
+  // Listen for localStorage changes to update code view state
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const codeViewState = localStorage.getItem('missionCodeViewOpen') === 'true';
+      setIsCodeViewOpen(codeViewState);
+    };
+
+    // Listen for storage events from other windows/tabs
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check for changes periodically (for same-window changes)
+    const interval = setInterval(handleStorageChange, 100);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const loadMissionDetails = async (missionId: string) => {
     setIsLoadingMission(true);
@@ -147,8 +170,8 @@ const MissionDetail = () => {
               </Button>
             </div>
             
-            {/* Code Option - Only show if mission has code agent */}
-            {hasCodeAgent && (
+            {/* Code Option - Only show if mission has code agent AND code view is NOT open */}
+            {hasCodeAgent && !isCodeViewOpen && (
               <div 
                 className="transition-all duration-300 ease-out pointer-events-auto"
                 style={{

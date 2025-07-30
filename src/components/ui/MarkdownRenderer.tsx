@@ -15,7 +15,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   className
 }) => {
   const containerClasses = cn(
-    "prose prose-sm max-w-none",
+    "prose prose-sm max-w-none min-w-0",  
     "prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground",
     "prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground",
     "prose-blockquote:text-muted-foreground prose-blockquote:border-border",
@@ -28,7 +28,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   const processedContent = content
 
   return (
-    <div className={containerClasses}>
+    <div className={`${containerClasses} overflow-hidden`} style={{ maxWidth: '100%', minWidth: '0' }}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -39,22 +39,27 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             // If it has a language class, it's a code block
             if (match) {
               return (
-                <div className="relative">
-                  <SyntaxHighlighter
-                    style={oneDark as any}
-                    language={match[1]}
-                    PreTag="div"
-                    className="rounded-lg !my-2 max-h-96 overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500"
-                    customStyle={{
-                      margin: '0.5rem 0',
-                      fontSize: '0.875rem',
-                      maxHeight: '384px', // 24rem = 384px
-                      overflowX: 'auto',
-                      overflowY: 'auto',
-                    }}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
+                <div className="relative min-w-0 max-w-full overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <SyntaxHighlighter
+                      style={oneDark as any}
+                      language={match[1]}
+                      PreTag="div"
+                      className="rounded-lg !my-2 max-h-96 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500"
+                      customStyle={{
+                        margin: '0.5rem 0',
+                        fontSize: '0.875rem',
+                        maxHeight: '384px', // 24rem = 384px
+                        overflowX: 'auto',
+                        overflowY: 'auto',
+                        maxWidth: '100%',
+                        minWidth: 'fit-content',
+                      }}
+                      wrapLongLines={false}
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  </div>
                 </div>
               );
             }
@@ -109,8 +114,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             </blockquote>
           ),
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4 rounded-lg border border-border">
-              <table className="w-full border-collapse bg-background text-sm">
+            <div className="overflow-x-auto my-4 rounded-lg border border-border min-w-0 max-w-full">
+              <table className="w-full border-collapse bg-background text-sm min-w-0">
                 {children}
               </table>
             </div>
