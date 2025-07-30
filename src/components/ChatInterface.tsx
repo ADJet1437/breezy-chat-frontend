@@ -165,11 +165,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     const handleToggleCodeView = () => {
       // Use projectDataRef to get current value for more reliable state access
       const currentProjectData = projectDataRef.current || projectData;
-      console.log('Toggle code view triggered:', { 
-        hasProjectData: !!currentProjectData, 
-        projectId: currentProjectData?.project_id,
-        currentShowRightPanel: showRightPanel 
-      });
       
       // Always allow toggle if we're in a mission with code agent context
       // The MissionDetail component already checks if hasCodeAgent before showing the button
@@ -707,7 +702,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
         });
       }
     } catch (error) {
-      console.error('Failed to get preview URL:', error);
       toast({
         title: "Preview Failed",
         description: "Failed to open project preview. Please try again.",
