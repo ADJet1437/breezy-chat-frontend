@@ -350,8 +350,8 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   setExecutionProgress(10);
                   setCurrentStep('Starting development...');
                 } else if (data.event_type === 'tool_call') {
-                  const toolName = data.data.tool_name || 'unknown tool';
-                  setCurrentStep(`🔧 Using: ${toolName}`);
+                  const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
+                  setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
                 } else if (data.event_type === 'execution_reflection') {
                   const message = data.data.message || 'Processing...';
