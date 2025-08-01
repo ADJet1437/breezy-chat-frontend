@@ -4,14 +4,21 @@ export interface AttachedFile {
   name: string;
   size: number;
   type: string;
+  source?: string; // "upload" or "generated"
 }
 
 export interface Message {
   id: string;
   content: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'bot' | 'system';
   timestamp: Date;
+  type?: 'text' | 'image' | 'image-generating';
   attachedFiles?: AttachedFile[];
+  imageUrl?: string;
+  imageAlt?: string;
+  prompt?: string;
+  filename?: string;
+  isLoaded?: boolean;
 }
 
 export interface ChatState {
