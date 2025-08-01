@@ -99,3 +99,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Image fade-in animation */
+.image-fade-in {
+  opacity: 0;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.image-fade-in.loaded {
+  opacity: 1;
+}

@@ -17,6 +17,8 @@ import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
+import ImageMessage from './chat/ImageMessage';
+import ImageGeneratingMessage from './chat/ImageGeneratingMessage';
 import MissionProgressIndicator, { MissionPhase } from './MissionProgressIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
 import ChatStickyInputBar, { ChatStickyInputBarRef } from './ChatStickyInputBar';
@@ -41,6 +43,14 @@ interface TaskMessage {
     name: string;
     size: number;
     type: string;
+    source: string; // "upload" or "generated"
+  }[];
+  images?: {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    source: string; // "upload" or "generated"
   }[];
 }
 
@@ -223,11 +233,27 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       const historyMessages: Message[] = [];
       
       missionDetails.task_messages.forEach((taskMessage) => {
-        // Add user message with file attachments
+        // Add user message with only uploaded file attachments (exclude generated files)
         historyMessages.push({
           id: `${taskMessage.id}_user`,
           content: taskMessage.message,
           sender: 'user',
+          timestamp: new Date(taskMessage.created_at),
+          attachedFiles: taskMessage.files ? taskMessage.files
+            .filter(file => file.source === 'upload') // Only show uploaded files in user messages
+            .map(file => ({
+              id: file.id,
+              name: file.name,
+              size: file.size,
+              type: file.type
+            })) : undefined,
+        });
+
+        // Add bot response
+        historyMessages.push({
+          id: `${taskMessage.id}_bot`,
+          content: taskMessage.answer,
+          sender: 'bot',
           timestamp: new Date(taskMessage.created_at),
           attachedFiles: taskMessage.files ? taskMessage.files.map(file => ({
             id: file.id,
@@ -237,13 +263,23 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
           })) : undefined,
         });
 
-        // Add bot response
-        historyMessages.push({
-          id: `${taskMessage.id}_bot`,
-          content: taskMessage.answer,
-          sender: 'bot',
-          timestamp: new Date(taskMessage.created_at),
-        });
+        // Add separate ImageMessage for each image from the images field
+        if (taskMessage.images && taskMessage.images.length > 0) {
+          taskMessage.images.forEach(image => {
+            historyMessages.push({
+              id: `${taskMessage.id}_image_${image.id}`,
+              content: '',
+              sender: 'bot',
+              timestamp: new Date(taskMessage.created_at),
+              type: 'image',
+              imageUrl: buildApiUrl(`/api/v1/files/${image.id}`),
+              imageAlt: image.name,
+              filename: image.name,
+              prompt: taskMessage.message, // Use the original user message as prompt
+              isLoaded: true // Mark as loaded for existing images from history
+            });
+          });
+        }
       });
 
       // Set the messages to the loaded history
@@ -287,17 +323,24 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       // Create initial bot message with empty content
       const botMessageId = (Date.now() + 1).toString();
-      const botMessage: Message = {
-        id: botMessageId,
-        content: '',
-        sender: 'bot',
-        timestamp: new Date(),
+      let initialBotMessageCreated = false;
+      
+      const createInitialBotMessage = () => {
+        if (!initialBotMessageCreated) {
+          const botMessage: Message = {
+            id: botMessageId,
+            content: '',
+            sender: 'bot',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+          initialBotMessageCreated = true;
+        }
       };
-
-      setMessages(prev => [...prev, botMessage]);
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
+      let buffer = ''; // Buffer to accumulate incomplete JSON
 
       if (reader) {
         while (true) {
@@ -307,7 +350,11 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
           }
 
           const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          buffer += chunk; // Add to buffer
+          const lines = buffer.split('\n');
+          
+          // Keep the last line in buffer (might be incomplete)
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -324,7 +371,13 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   continue;
                 }
                 
+                // Special logging for tool_complete events
+                if (jsonStr.includes('tool_complete')) {
+                  console.log('🔍 Raw tool_complete JSON (first 500 chars):', jsonStr.substring(0, 500));
+                }
+                
                 const data = JSON.parse(jsonStr);
+                console.log('📨 All events:', data.event_type, data.data?.tool_name || '');
                 
                 if (data.event_type === 'mission_init') {
                   newMissionId = data.answer; // Store for navigation
@@ -353,6 +406,43 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
                   setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
+                } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_generation') {
+                  // For image generation, create skeleton instead of regular bot message
+                  const skeletonMessage: Message = {
+                    id: botMessageId, // Use the same ID as the bot message would have used
+                    content: data.data.message,
+                    sender: 'bot',
+                    timestamp: new Date(),
+                    type: 'image-generating',
+                    prompt: data.data.message.replace('🎨 Generating image: ', '').replace(/\.\.\..*$/, '')
+                  };
+                  setMessages(prev => [...prev, skeletonMessage]);
+                  initialBotMessageCreated = true; // Mark as created to prevent duplicate
+                } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_generation') {
+                  console.log('🔧 Image generation complete event received:', data);
+                  
+                  // Replace skeleton with actual image using the same message ID
+                  const result = data.data.result;
+                  if (result && result.base64_image) {
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === botMessageId && msg.type === 'image-generating'
+                        ? {
+                            ...msg,
+                            type: 'image',
+                            imageUrl: result.base64_image,
+                            imageAlt: result.image_filename,
+                            filename: result.image_filename,
+                            prompt: result.prompt,
+                            isLoaded: true
+                          }
+                        : msg
+                    ));
+                  }
+                } else if (data.event_type === 'tool_complete') {
+                  console.log('🔧 Tool complete event received:', data);
+                  console.log('🔧 Tool name:', data.data?.tool_name);
+                  
+                  // Handle other tool completions
                 } else if (data.event_type === 'execution_reflection') {
                   const message = data.data.message || 'Processing...';
                   setCurrentStep(`💭 ${message}`);
@@ -370,6 +460,9 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     }, 1000); // Brief delay for smooth UX
                   }
                 } else if (data.event_type === 'mission_content') {
+                  // Create bot message if it hasn't been created yet (for non-image-generation flows)
+                  createInitialBotMessage();
+                  
                   // Update the bot message content by appending the new content
                   setMessages(prev => prev.map(msg => 
                     msg.id === botMessageId 
@@ -378,7 +471,10 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   ));
                 }
               } catch (error) {
-                // Skip invalid JSON
+                console.error('Error parsing SSE data:', error, 'Line length:', line.length, 'First 200 chars:', line.substring(0, 200));
+                if (line.includes('tool_complete')) {
+                  console.error('🔍 Failed to parse tool_complete event');
+                }
               }
             }
           }
