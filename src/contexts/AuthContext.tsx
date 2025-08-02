@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile, AuthCallbackResponse, getCurrentUser, refreshAccessToken } from '../utils/authApi';
 import { getTokenExpiry, tokenExpiresWithin, getTokenInfo, isTokenExpired, getUserFromToken } from '../utils/tokenUtils';
 import { setAuthRefreshFunction, setAuthLogoutFunction, setAuthUICallbacks, setAccessTokenFunction } from '../utils/authenticatedFetch';
@@ -41,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   // Debug: Log authentication state changes
   useEffect(() => {
@@ -181,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // }
   }, []);
 
-  const logout = async (showMessage: boolean = true) => {
+  const logout = async () => {
     try {
       console.log('=== Logging Out ===');
       // Import dynamically to avoid circular dependency
@@ -189,19 +191,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await authenticatedPost(buildApiUrl('/api/v1/auth/logout'), undefined, {
         skipAuth: false // Use both cookies and headers for logout
       });
-      
-      if (showMessage) {
-        showSuccessMessage('Signed Out', 'You have been successfully signed out.');
-      }
     } catch (error) {
       console.error('Logout API call failed:', error);
       // Still proceed with local logout even if API fails
-      if (showMessage) {
-        showWarningMessage(
-          'Logout Warning', 
-          'You have been signed out locally, but there may have been an issue with the server.'
-        );
-      }
     } finally {
       console.log('Clearing auth state...');
       setIsAuthenticated(false);

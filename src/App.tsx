@@ -33,11 +33,11 @@ const AppInner = () => {
   }, [toast]);
   
   return (
-    <AuthProvider>
-      <MissionProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <MissionProvider>
+          <Toaster />
+          <Sonner />
           <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<Layout><Index /></Layout>} />
@@ -52,9 +52,9 @@ const AppInner = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
-        </BrowserRouter>
-      </MissionProvider>
-    </AuthProvider>
+        </MissionProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

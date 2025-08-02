@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Settings, Code, FileText } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Settings, Code, FileText, MessageSquare } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
 import MissionCustomizationResponsive from '../components/MissionCustomizationResponsive';
 import Layout from '../components/Layout';
@@ -26,7 +26,8 @@ interface MissionDetails {
 const MissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { setCurrentMissionId } = useMissionContext();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [showSidebar, setShowSidebar] = useState(false);
   const [missionDetails, setMissionDetails] = useState<MissionDetails | null>(null);
   const [isLoadingMission, setIsLoadingMission] = useState(false);
@@ -37,6 +38,8 @@ const MissionDetail = () => {
     return localStorage.getItem('missionCodeViewOpen') === 'true';
   });
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // No authentication redirect - show empty state instead
 
   // Update current mission context when viewing a specific mission
   useEffect(() => {
@@ -215,6 +218,39 @@ const MissionDetail = () => {
       </div>
     );
   };
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Authenticating...</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show sign-in required state if not authenticated
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <Layout>
+        <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">Sign in required</h3>
+              <p className="text-gray-500 mb-6">Please sign in to view mission details</p>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout rightSidebar={showSidebar && id && missionDetails ? <div /> : undefined}>
