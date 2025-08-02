@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import Header from './Header';
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { LogIn } from 'lucide-react';
+import LoginDialog from './LoginDialog';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,6 +19,8 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
   });
+  const { isAuthenticated } = useAuth();
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -59,40 +64,35 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     };
   }, [sidebarCollapsed]);
 
+  const handleSignIn = () => {
+    setLoginDialogOpen(true);
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* Fixed Header */}
-        <div className="fixed top-0 left-0 right-0 z-50 h-16">
-          <Header />
+        {/* Fixed Sidebar - Full Height */}
+        <div className={`fixed left-0 top-0 bottom-0 transition-all duration-300 overflow-hidden ${
+          !isMobile 
+            ? sidebarCollapsed 
+              ? 'w-16 z-50 pointer-events-auto' // Collapsed
+              : 'w-64 z-50 pointer-events-auto' // Expanded
+            : 'w-64 z-50 pointer-events-auto'
+        }`}>
+          <AppSidebar 
+            collapsed={sidebarCollapsed} 
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          />
         </div>
         
-        {/* Main layout with sidebar and content */}
-        <div className="flex pt-16 min-h-screen">
-          {/* Fixed Sidebar */}
-          <div className={`fixed left-0 top-16 bottom-0 transition-all duration-300 overflow-hidden ${
-            !isMobile 
-              ? sidebarCollapsed 
-                ? 'w-16 z-30 pointer-events-auto' // Collapsed: constrained interaction area  
-                : 'w-64 z-40 pointer-events-auto' // Expanded: full interaction area
-              : 'w-64 z-40 pointer-events-auto'
-          }`} 
-          style={{ 
-            // Temporary debug: add visible boundary in collapsed state
-            backgroundColor: sidebarCollapsed && !isMobile ? 'rgba(255, 0, 0, 0.1)' : 'transparent' 
-          }}>
-            <AppSidebar 
-              collapsed={sidebarCollapsed} 
-              onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            />
-          </div>
-          
+        {/* Main layout with content */}
+        <div className="flex min-h-screen">
           {/* Main content area */}
           <div className={`flex-1 flex flex-col transition-all duration-300 pointer-events-auto ${
             !isMobile 
               ? sidebarCollapsed 
-                ? 'ml-0 md:ml-16 relative z-40' // Collapsed: higher z-index than sidebar to receive clicks
-                : 'ml-0 md:ml-64 relative z-20' // Expanded: lower z-index than sidebar
+                ? 'ml-0 md:ml-16 relative z-40' // Collapsed
+                : 'ml-0 md:ml-64 relative z-20' // Expanded
               : 'relative z-20'
           }`}>
             {/* Mobile sidebar trigger */}
@@ -113,6 +113,25 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
             </div>
           )}
         </div>
+
+        {/* Floating Sign-In Button - Top Right */}
+        {!isAuthenticated && (
+          <div className="fixed top-4 right-4 z-50">
+            <Button
+              onClick={handleSignIn}
+              className="bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white text-gray-700 rounded-xl px-4 py-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          </div>
+        )}
+
+        {/* Login Dialog */}
+        <LoginDialog 
+          open={loginDialogOpen} 
+          onOpenChange={setLoginDialogOpen} 
+        />
       </div>
     </SidebarProvider>
   );
