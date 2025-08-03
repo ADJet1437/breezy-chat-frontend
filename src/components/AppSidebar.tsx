@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ProfileDialog from './ProfileDialog';
 import LoginDialog from './LoginDialog';
+import SettingsModal from './MissionSettingsModal';
 
 interface AppSidebarProps {
   collapsed?: boolean;
@@ -40,6 +41,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const { isAuthenticated, user, logout } = useAuth();
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
   const navigate = useNavigate();
 
   const navigationItems = [
@@ -214,7 +216,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                           </div>
                         </div>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
+                        <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
                           <User className="mr-2 h-4 w-4" />
                           Profile & Plans
                         </DropdownMenuItem>
@@ -249,7 +251,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent side="right" align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
+                    <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
                       <User className="mr-2 h-4 w-4" />
                       Profile & Plans
                     </DropdownMenuItem>
@@ -303,6 +305,11 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       <LoginDialog 
         open={loginDialogOpen} 
         onOpenChange={setLoginDialogOpen} 
+      />
+      <SettingsModal
+        isOpen={globalSettingsOpen}
+        onClose={() => setGlobalSettingsOpen(false)}
+        context="global"
       />
     </TooltipProvider>
   );

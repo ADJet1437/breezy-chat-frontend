@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, Code, FileText, MessageSquare } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
-import MissionCustomizationResponsive from '../components/MissionCustomizationResponsive';
+import SettingsModal from '../components/MissionSettingsModal';
 import Layout from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { useMissionContext } from '../contexts/MissionContext';
@@ -28,7 +28,7 @@ const MissionDetail = () => {
   const { setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [missionDetails, setMissionDetails] = useState<MissionDetails | null>(null);
   const [isLoadingMission, setIsLoadingMission] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -139,7 +139,7 @@ const MissionDetail = () => {
         className={`fixed z-50 transition-all duration-200 ${
           isMobile 
             ? 'bottom-32 right-6'  // Mobile: above input bar
-            : `bottom-20 ${showSidebar ? 'right-96' : 'right-6'}`  // Desktop: above input with sidebar adjustment
+            : 'bottom-20 right-6'  // Desktop: above input
         }`}
         style={{ 
           marginLeft: 'max(0px, env(safe-area-inset-left))', 
@@ -163,7 +163,7 @@ const MissionDetail = () => {
               <Button
                 onClick={() => {
                   setShowSecondaryMenu(false);
-                  setShowSidebar(true);
+                  setShowSettingsModal(true);
                 }}
                 size="sm"
                 className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 border-2 border-white"
@@ -253,15 +253,16 @@ const MissionDetail = () => {
   }
 
   return (
-    <Layout rightSidebar={showSidebar && id && missionDetails ? <div /> : undefined}>
-      <ChatInterface missionId={id} rightSidebarVisible={showSidebar} />
+    <Layout>
+      <ChatInterface missionId={id} />
       <CustomizeButton />
       
-      {/* Responsive Mission Customization */}
+      {/* Mission Settings Modal */}
       {id && missionDetails && (
-        <MissionCustomizationResponsive
-          isOpen={showSidebar}
-          onClose={() => setShowSidebar(false)}
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          context="mission"
           missionId={id}
           systemPrompt={missionDetails.system_prompt || ''}
           onSystemPromptUpdate={handleSystemPromptUpdate}
