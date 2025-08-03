@@ -152,3 +152,106 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
   
   return data as UserProfile;
 };
+
+// Email/Password Authentication
+
+export interface EmailLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface EmailRegisterRequest {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export const loginWithEmail = async (credentials: EmailLoginRequest): Promise<AuthCallbackResponse> => {
+  console.log('=== Email Login ===');
+  console.log('Making request to:', buildApiUrl('/api/v1/auth/login'));
+  
+  const response = await fetch(buildApiUrl('/api/v1/auth/login'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(credentials),
+  });
+
+  console.log('Login response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Email login failed:', errorText);
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.detail || errorData.message || 'Login failed');
+    } catch (parseError) {
+      if (response.status === 401) {
+        throw new Error('Invalid email or password');
+      } else if (response.status === 429) {
+        throw new Error('Too many login attempts. Please try again later.');
+      } else {
+        throw new Error(`Login failed with status ${response.status}`);
+      }
+    }
+  }
+
+  const data = await response.json();
+  console.log('Email login successful');
+  
+  // Validate response structure
+  if (!data.access_token || !data.user) {
+    console.error('Invalid login response structure:', data);
+    throw new Error('Invalid authentication response from server');
+  }
+  
+  return data as AuthCallbackResponse;
+};
+
+export const registerWithEmail = async (userData: EmailRegisterRequest): Promise<AuthCallbackResponse> => {
+  console.log('=== Email Registration ===');
+  console.log('Making request to:', buildApiUrl('/api/v1/auth/register'));
+  
+  const response = await fetch(buildApiUrl('/api/v1/auth/register'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(userData),
+  });
+
+  console.log('Registration response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Email registration failed:', errorText);
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.detail || errorData.message || 'Registration failed');
+    } catch (parseError) {
+      if (response.status === 409) {
+        throw new Error('An account with this email already exists');
+      } else if (response.status === 400) {
+        throw new Error('Invalid registration data. Please check your inputs.');
+      } else {
+        throw new Error(`Registration failed with status ${response.status}`);
+      }
+    }
+  }
+
+  const data = await response.json();
+  console.log('Email registration successful');
+  
+  // Validate response structure
+  if (!data.access_token || !data.user) {
+    console.error('Invalid registration response structure:', data);
+    throw new Error('Invalid authentication response from server');
+  }
+  
+  return data as AuthCallbackResponse;
+};

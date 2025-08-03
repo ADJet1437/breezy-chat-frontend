@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import LoginDialog from './LoginDialog';
+import { LoginDialog } from './login';
 import { SettingsModal } from './settings';
 
 interface AppSidebarProps {
@@ -87,6 +87,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
     setCurrentMissionId(null);
     navigate('/');
   };
+
 
   return (
     <TooltipProvider>

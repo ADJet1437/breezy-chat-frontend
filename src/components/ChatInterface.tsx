@@ -635,7 +635,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
   const handleSettingsClick = () => {
     setShowSecondaryMenu(false);
-    setShowSidebar(true);
+    // Settings functionality would be handled by parent component
   };
 
   const handleCodeViewClick = () => {
@@ -709,7 +709,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       // Remove the preparing toast to simplify UX
 
       // Create a custom fetch for binary download to avoid Content-Type issues
-      const token = user?.access_token || localStorage.getItem('talosy_access_token');
+      const token = accessToken || localStorage.getItem('talosy_access_token');
       const headers: HeadersInit = {
         'Accept': 'application/zip, application/octet-stream, */*'
       };

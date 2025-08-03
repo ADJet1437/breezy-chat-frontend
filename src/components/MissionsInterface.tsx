@@ -60,7 +60,7 @@ const MissionsInterface = () => {
   const [missionToRename, setMissionToRename] = useState<Mission | null>(null);
   const [newMissionName, setNewMissionName] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
-  const { setCurrentMissionId } = useMissionContext();
+  const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isLoading: authLoading, isAuthenticated, authFunctionsReady } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -142,6 +142,11 @@ const MissionsInterface = () => {
 
       // Remove mission from local state (optimistic update)
       setMissions(prev => prev.filter(m => m.id !== missionToDelete.id));
+      
+      // Clear current mission if the deleted mission was the current one
+      if (currentMissionId === missionToDelete.id) {
+        setCurrentMissionId(null);
+      }
       
     } catch (error) {
       console.error('Error deleting mission:', error);
