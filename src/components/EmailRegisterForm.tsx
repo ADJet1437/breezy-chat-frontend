@@ -9,6 +9,7 @@ interface EmailRegisterFormProps {
   onSwitchToLogin: () => void;
   onSubmit: (email: string, password: string, name?: string) => Promise<void>;
   isLoading?: boolean;
+  authError?: string;
 }
 
 interface PasswordRequirement {
@@ -27,7 +28,8 @@ const EmailRegisterForm: React.FC<EmailRegisterFormProps> = ({
   onBack,
   onSwitchToLogin,
   onSubmit,
-  isLoading = false
+  isLoading = false,
+  authError
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -134,6 +136,13 @@ const EmailRegisterForm: React.FC<EmailRegisterFormProps> = ({
           <p className="text-sm text-gray-500">Join Talosy to get started</p>
         </div>
       </div>
+
+      {/* Auth Error Display */}
+      {authError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-600 font-medium">{authError}</p>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -23,6 +23,7 @@ type AuthMethod = 'selection' | 'email-login' | 'email-register';
 const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [authMethod, setAuthMethod] = useState<AuthMethod>('selection');
+  const [authError, setAuthError] = useState<string>('');
   const { toast } = useToast();
   const { login, loginWithEmailPassword, registerWithEmailPassword } = useAuth();
 
@@ -31,6 +32,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
     if (open) {
       setAuthMethod('selection');
       setIsLoading(false);
+      setAuthError('');
     }
   }, [open]);
 
@@ -169,6 +171,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const handleEmailLogin = async (email: string, password: string, rememberMe: boolean) => {
     try {
       setIsLoading(true);
+      setAuthError(''); // Clear previous errors
       await loginWithEmailPassword({ email, password });
       onOpenChange(false);
       toast({
@@ -177,12 +180,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
         duration: 3000,
       });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign In Failed",
-        description: error instanceof Error ? error.message : "Unable to sign in. Please try again.",
-        duration: 5000,
-      });
+      // Display error in the form instead of toast
+      setAuthError(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +191,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   const handleEmailRegister = async (email: string, password: string, name?: string) => {
     try {
       setIsLoading(true);
+      setAuthError(''); // Clear previous errors
       await registerWithEmailPassword({ email, password, name });
       onOpenChange(false);
       toast({
@@ -200,12 +200,8 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
         duration: 3000,
       });
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "Unable to create account. Please try again.",
-        duration: 5000,
-      });
+      // Display error in the form instead of toast
+      setAuthError(error instanceof Error ? error.message : "Unable to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +217,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             onSwitchToRegister={() => setAuthMethod('email-register')}
             onSubmit={handleEmailLogin}
             isLoading={isLoading}
+            authError={authError}
           />
         );
       
@@ -231,6 +228,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
             onSwitchToLogin={() => setAuthMethod('email-login')}
             onSubmit={handleEmailRegister}
             isLoading={isLoading}
+            authError={authError}
           />
         );
       

@@ -10,13 +10,15 @@ interface EmailLoginFormProps {
   onSwitchToRegister: () => void;
   onSubmit: (email: string, password: string, rememberMe: boolean) => Promise<void>;
   isLoading?: boolean;
+  authError?: string;
 }
 
 const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
   onBack,
   onSwitchToRegister,
   onSubmit,
-  isLoading = false
+  isLoading = false,
+  authError
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,6 +81,13 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
           <p className="text-sm text-gray-500">Welcome back to Talosy</p>
         </div>
       </div>
+
+      {/* Auth Error Display */}
+      {authError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-red-600 font-medium">{authError}</p>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
