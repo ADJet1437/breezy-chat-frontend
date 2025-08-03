@@ -635,7 +635,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
   const handleSettingsClick = () => {
     setShowSecondaryMenu(false);
-    setShowSidebar(true);
+    // Settings functionality would be handled by parent component
   };
 
   const handleCodeViewClick = () => {

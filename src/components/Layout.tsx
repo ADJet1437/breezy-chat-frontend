@@ -5,7 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
-import LoginDialog from './LoginDialog';
+import { LoginDialog } from './login';
 
 interface LayoutProps {
   children: React.ReactNode;

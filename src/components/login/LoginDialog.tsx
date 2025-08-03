@@ -7,9 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { initiateGoogleAuth } from '../utils/authApi';
+import { initiateGoogleAuth } from '../../utils/authApi';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import EmailLoginForm from './EmailLoginForm';
 import EmailRegisterForm from './EmailRegisterForm';
 
