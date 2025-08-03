@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, AuthCallbackResponse, getCurrentUser, refreshAccessToken } from '../utils/authApi';
+import { UserProfile, AuthCallbackResponse, getCurrentUser, refreshAccessToken, loginWithEmail, registerWithEmail, EmailLoginRequest, EmailRegisterRequest } from '../utils/authApi';
 import { getTokenExpiry, tokenExpiresWithin, getTokenInfo, isTokenExpired, getUserFromToken } from '../utils/tokenUtils';
 import { setAuthRefreshFunction, setAuthLogoutFunction, setAuthUICallbacks, setAccessTokenFunction } from '../utils/authenticatedFetch';
 import { handleAuthError, AuthError, showSuccessMessage, showWarningMessage } from '../utils/errorHandler';
@@ -17,6 +17,8 @@ interface AuthContextType {
   accessToken: string | null;
   tokenExpiresAt: number | null;
   login: (authData: AuthCallbackResponse) => void;
+  loginWithEmailPassword: (credentials: EmailLoginRequest) => Promise<void>;
+  registerWithEmailPassword: (userData: EmailRegisterRequest) => Promise<void>;
   logout: () => void;
   checkAuthStatus: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -59,6 +61,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const expiryTime = getTokenExpiry(authData.access_token);
     setTokenExpiresAt(expiryTime);
   }, []);
+
+  const loginWithEmailPassword = useCallback(async (credentials: EmailLoginRequest) => {
+    try {
+      console.log('Starting email login...');
+      const authData = await loginWithEmail(credentials);
+      login(authData);
+      console.log('Email login successful');
+    } catch (error) {
+      console.error('Email login failed:', error);
+      throw error; // Re-throw to be handled by UI
+    }
+  }, [login]);
+
+  const registerWithEmailPassword = useCallback(async (userData: EmailRegisterRequest) => {
+    try {
+      console.log('Starting email registration...');
+      const authData = await registerWithEmail(userData);
+      login(authData);
+      console.log('Email registration successful');
+    } catch (error) {
+      console.error('Email registration failed:', error);
+      throw error; // Re-throw to be handled by UI
+    }
+  }, [login]);
 
   const getCurrentAccessToken = useCallback((): string | null => {
     return accessToken;
@@ -139,6 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       accessToken,
       tokenExpiresAt,
       login,
+      loginWithEmailPassword,
+      registerWithEmailPassword,
       logout,
       checkAuthStatus,
       refreshToken
