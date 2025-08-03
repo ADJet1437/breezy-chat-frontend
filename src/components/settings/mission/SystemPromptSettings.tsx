@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { authenticatedPatch } from '../utils/authenticatedFetch';
-import { buildApiUrl } from '../utils/apiConfig';
+import { authenticatedPatch } from '../../../utils/authenticatedFetch';
+import { buildApiUrl } from '../../../utils/apiConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SystemPromptSettingsProps {
@@ -87,7 +87,7 @@ const SystemPromptSettings: React.FC<SystemPromptSettingsProps> = ({
             id="system-prompt"
             value={currentSystemPrompt}
             onChange={(e) => setCurrentSystemPrompt(e.target.value)}
-            placeholder="Enter custom system prompt for this mission. Leave empty to use default behavior."
+            placeholder="You are a helpful assistant specialized in software development. You always respond with clear explanations and provide practical code examples when needed."
             className="min-h-[200px] resize-none bg-accent/20 border-border placeholder:text-muted-foreground"
             maxLength={2000}
           />
@@ -111,7 +111,7 @@ const SystemPromptSettings: React.FC<SystemPromptSettingsProps> = ({
           <Button
             onClick={handleSave}
             disabled={!hasChanges || isLoading}
-            className="w-full"
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700"
             size="sm"
           >
             <Save className="h-4 w-4 mr-2" />

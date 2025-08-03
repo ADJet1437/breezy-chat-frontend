@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, File, Image, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { authenticatedDelete, authenticatedGet } from '../utils/authenticatedFetch';
-import { buildApiUrl } from '../utils/apiConfig';
+import { authenticatedDelete, authenticatedGet } from '../../../utils/authenticatedFetch';
+import { buildApiUrl } from '../../../utils/apiConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,

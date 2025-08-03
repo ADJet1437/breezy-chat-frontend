@@ -130,10 +130,6 @@ const AuthCallback: React.FC = () => {
           }
         } else {
           console.log('📞 Running in main window - normal redirect');
-          toast({
-            description: "Successfully signed in!",
-            duration: 3000,
-          });
 
           // Wait a bit to show completion before redirect
           setTimeout(() => {

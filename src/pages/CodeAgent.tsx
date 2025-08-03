@@ -18,11 +18,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { FolderOpen, Code, MoreVertical, Trash2, Bot } from 'lucide-react';
+import { FolderOpen, Code, MoreVertical, Trash2, Bot, MessageSquare } from 'lucide-react';
 import { ActiveSession } from '@/components/code-agent/ActiveSession';
 import { ProjectList } from '@/components/code-agent/ProjectList';
 import { codeAgentAPI, CodeSession, ProjectResponse, SSEEvent } from '@/utils/codeAgentApi';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CodeAgent() {
   const [sessions, setSessions] = useState<CodeSession[]>([]);
@@ -34,11 +35,14 @@ export default function CodeAgent() {
   const [sessionToDelete, setSessionToDelete] = useState<CodeSession | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Load sessions on component mount
+  // Load sessions on component mount - only if authenticated
   useEffect(() => {
-    loadSessions();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      loadSessions();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const loadSessions = async () => {
     try {
@@ -47,11 +51,7 @@ export default function CodeAgent() {
       setSessions(response.sessions);
     } catch (error) {
       console.error('Failed to load sessions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load sessions. Please try again.",
-        variant: "destructive",
-      });
+      // No toast - silent failure
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +100,33 @@ export default function CodeAgent() {
 
   const activeSession = sessions.find(s => s.session_id === activeSessionId);
 
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show sign-in required state if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">Sign in required</h3>
+            <p className="text-gray-500 mb-6">Please sign in to start your coding projects</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -119,7 +146,9 @@ export default function CodeAgent() {
         {projects.length === 0 && sessions.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-lg text-gray-400">No projects yet, start a new mission to create coding projects!</p>
+              <Code className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">No code projects yet</h3>
+              <p className="text-gray-500 mb-6">Start a new mission to create coding projects</p>
             </div>
           </div>
         ) : (

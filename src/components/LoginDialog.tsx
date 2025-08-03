@@ -45,12 +45,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           onOpenChange(false);
           setIsLoading(false);
           
-          // Show success message
-          toast({
-            description: "Successfully signed in!",
-            duration: 3000,
-          });
-          
         } catch (error) {
           console.error('📨 Failed to process auth success:', error);
           setIsLoading(false);
