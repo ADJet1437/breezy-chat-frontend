@@ -255,3 +255,31 @@ export const registerWithEmail = async (userData: EmailRegisterRequest): Promise
   
   return data as AuthCallbackResponse;
 };
+
+export interface DeleteAccountResponse {
+  message: string;
+}
+
+export const deleteUserAccount = async (): Promise<DeleteAccountResponse> => {
+  // Import dynamically to avoid circular dependency
+  const { authenticatedDelete } = await import('./authenticatedFetch');
+  
+  const response = await authenticatedDelete(buildApiUrl('/api/v1/users/me/account'), {
+    skipAuth: false
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.detail || errorData.message || 'Account deletion failed');
+    } catch (parseError) {
+      throw new Error(`Account deletion failed with status ${response.status}`);
+    }
+  }
+
+  const data = await response.json();
+  
+  return data as DeleteAccountResponse;
+};

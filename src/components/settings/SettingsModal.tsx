@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, Lock, BarChart3 } from 'lucide-react';
+import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, Lock, BarChart3, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -10,10 +10,11 @@ import SystemPromptSettings from './mission/SystemPromptSettings';
 import FilesSettings from './mission/FilesSettings';
 import ProfileSettings from './global/ProfileSettings';
 import PlansSettings from './global/PlansSettings';
+import { AccountSettings } from './account';
 
 type SettingsContext = 'mission' | 'global';
 type MissionTab = 'systemPrompt' | 'files' | 'aiModel';
-type GlobalTab = 'profile' | 'plans' | 'preferences' | 'security' | 'usage';
+type GlobalTab = 'profile' | 'plans' | 'preferences' | 'security' | 'usage' | 'account';
 type SettingsTab = MissionTab | GlobalTab;
 
 interface SettingsModalProps {
@@ -68,6 +69,11 @@ const globalTabs = [
     id: 'usage' as GlobalTab,
     label: 'Usage',
     icon: BarChart3,
+  },
+  {
+    id: 'account' as GlobalTab,
+    label: 'Account',
+    icon: Shield,
   }
 ];
 
@@ -150,6 +156,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Usage & Analytics</h3>
               <p className="text-gray-600">Usage statistics and account limits will go here.</p>
+            </div>
+          );
+        
+        case 'account':
+          return (
+            <div className="p-6">
+              <AccountSettings />
             </div>
           );
       }
