@@ -88,6 +88,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
     navigate('/');
   };
 
+
   return (
     <TooltipProvider>
       <Sidebar className={`border-r bg-sidebar h-full transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
