@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { authenticatedPatch } from '../utils/authenticatedFetch';
-import { buildApiUrl } from '../utils/apiConfig';
+import { authenticatedPatch } from '../../../utils/authenticatedFetch';
+import { buildApiUrl } from '../../../utils/apiConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SystemPromptSettingsProps {

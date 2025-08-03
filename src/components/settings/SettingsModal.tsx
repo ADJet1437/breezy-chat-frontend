@@ -6,10 +6,10 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
-import SystemPromptSettings from './SystemPromptSettings';
-import FilesSettings from './FilesSettings';
-import ProfileSettings from './ProfileSettings';
-import PlansSettings from './PlansSettings';
+import SystemPromptSettings from './mission/SystemPromptSettings';
+import FilesSettings from './mission/FilesSettings';
+import ProfileSettings from './global/ProfileSettings';
+import PlansSettings from './global/PlansSettings';
 
 type SettingsContext = 'mission' | 'global';
 type MissionTab = 'systemPrompt' | 'files' | 'aiModel';

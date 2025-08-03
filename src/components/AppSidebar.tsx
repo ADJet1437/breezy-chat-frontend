@@ -24,9 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ProfileDialog from './ProfileDialog';
 import LoginDialog from './LoginDialog';
-import SettingsModal from './MissionSettingsModal';
+import { SettingsModal } from './settings';
 
 interface AppSidebarProps {
   collapsed?: boolean;
@@ -39,7 +38,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const currentPath = location.pathname;
   const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, user, logout } = useAuth();
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
   const navigate = useNavigate();
@@ -190,57 +188,50 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
             {isAuthenticated && user ? (
               collapsed ? (
                 // Collapsed view - just avatar with dropdown
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="w-full h-12 p-0 rounded-lg hover:bg-sidebar-accent">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                            <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-500 text-white text-sm">
-                              {getInitials(user.email, user.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="right" align="end" className="w-56">
-                        <div className="flex items-center justify-start gap-2 p-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                            <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-500 text-white text-sm">
-                              {getInitials(user.email, user.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
-                          </div>
-                        </div>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
-                          <User className="mr-2 h-4 w-4" />
-                          Profile & Plans
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={logout}>
-                          <LogOut className="mr-2 h-4 w-4" />
-                          Sign out
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{user.name || user.email}</p>
-                  </TooltipContent>
-                </Tooltip>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full h-12 p-0 rounded-lg hover:bg-sidebar-accent focus:outline-none focus:ring-0 focus:bg-transparent hover:bg-sidebar-accent/50">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                          {getInitials(user.email, user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="end" className="w-56">
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                          {getInitials(user.email, user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile & Plans
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 // Expanded view - full profile section
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start p-2 h-auto rounded-lg hover:bg-sidebar-accent">
+                    <Button variant="ghost" className="w-full justify-start p-2 h-auto rounded-lg hover:bg-sidebar-accent focus:outline-none focus:ring-0 focus:bg-transparent hover:bg-sidebar-accent/50">
                       <div className="flex items-center gap-3 w-full">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                          <AvatarFallback className="bg-gradient-to-br from-green-500 to-blue-500 text-white text-sm">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
                             {getInitials(user.email, user.name)}
                           </AvatarFallback>
                         </Avatar>
@@ -298,10 +289,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       </Sidebar>
       
       {/* Dialogs */}
-      <ProfileDialog 
-        open={profileDialogOpen} 
-        onOpenChange={setProfileDialogOpen} 
-      />
       <LoginDialog 
         open={loginDialogOpen} 
         onOpenChange={setLoginDialogOpen} 

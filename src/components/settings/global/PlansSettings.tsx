@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet } from '@/utils/authenticatedFetch';
 import { buildApiUrl } from '@/utils/apiConfig';
-import SubscriptionDialog from './SubscriptionDialog';
-import CancelSubscriptionDialog from './CancelSubscriptionDialog';
+import SubscriptionDialog from '../../SubscriptionDialog';
+import CancelSubscriptionDialog from '../../CancelSubscriptionDialog';
 
 interface UserSubscription {
   id: string;

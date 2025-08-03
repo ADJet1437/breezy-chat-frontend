@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Settings, Code, FileText, MessageSquare } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
-import SettingsModal from '../components/MissionSettingsModal';
+import { SettingsModal } from '../components/settings';
 import Layout from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { useMissionContext } from '../contexts/MissionContext';
