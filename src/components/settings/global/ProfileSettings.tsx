@@ -34,28 +34,28 @@ const ProfileSettings: React.FC = () => {
           </AvatarFallback>
         </Avatar>
         <div>
-          <h4 className="font-medium text-gray-900">{user.name || 'User'}</h4>
-          <p className="text-sm text-gray-500">Profile Picture</p>
+          <h4 className="font-medium text-foreground">{user.name || 'User'}</h4>
+          <p className="text-sm text-muted-foreground">Profile Picture</p>
         </div>
       </div>
 
       {/* User Information */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-          <User className="h-5 w-5 text-gray-600" />
+        <div className="flex items-center gap-3 p-4 bg-muted rounded-xl">
+          <User className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">Name</p>
-            <p className="text-sm text-gray-600 truncate">
+            <p className="text-sm font-medium text-foreground">Name</p>
+            <p className="text-sm text-muted-foreground truncate">
               {user.name || 'Not set'}
             </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-          <Mail className="h-5 w-5 text-gray-600" />
+        <div className="flex items-center gap-3 p-4 bg-muted rounded-xl">
+          <Mail className="h-5 w-5 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">Email</p>
-            <p className="text-sm text-gray-600 truncate">
+            <p className="text-sm font-medium text-foreground">Email</p>
+            <p className="text-sm text-muted-foreground truncate">
               {user.email}
             </p>
           </div>
@@ -63,11 +63,11 @@ const ProfileSettings: React.FC = () => {
       </div>
 
       {/* Sign Out Section */}
-      <div className="border-t pt-6">
+      <div className="border-t border-border pt-6">
         <Button
           onClick={logout}
           variant="outline"
-          className="w-full border-red-300 hover:bg-red-50 text-red-700 rounded-xl px-4 py-3 transition-all duration-200"
+          className="w-full border-destructive/50 hover:bg-destructive/10 text-destructive rounded-xl px-4 py-3 transition-all duration-200"
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
