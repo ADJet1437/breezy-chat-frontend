@@ -215,7 +215,7 @@ export default function AgentDetail() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Fixed Header - Always visible */}
       <div className="flex-shrink-0">
         <AgentHeader 

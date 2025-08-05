@@ -811,7 +811,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   // Show split layout when right panel is open
   if (showRightPanel && projectData?.project_id) {
     return (
-      <div className="h-[calc(100vh-4rem)] w-full max-w-full flex overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+      <div className="h-screen w-full max-w-full flex overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         {/* Left Side: Mission Chat - 35% */}
         <div className="w-[35%] max-w-[35%] flex flex-col overflow-hidden min-w-0" style={{ width: '35%', maxWidth: '35%', minWidth: '0' }}>
           {/* Scrollable Messages Area */}
