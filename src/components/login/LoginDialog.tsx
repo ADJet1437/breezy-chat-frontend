@@ -245,10 +245,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           <Shield className="h-8 w-8 text-white" />
         </div>
         <div className="text-center">
-          <DialogTitle className="text-2xl font-semibold text-gray-900 mb-2 text-center">
+          <DialogTitle className="text-2xl font-semibold text-foreground mb-2 text-center">
             Welcome to Talosy
           </DialogTitle>
-          <p className="text-gray-500 text-sm text-center">Sign in to your account</p>
+          <p className="text-muted-foreground text-sm text-center">Sign in to your account</p>
         </div>
       </DialogHeader>
       
@@ -258,7 +258,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           variant="outline"
-          className="w-full h-12 border-gray-200 hover:bg-gray-50 transition-colors"
+          className="w-full h-12 border-border hover:bg-accent transition-colors"
         >
           {isLoading && authMethod === 'selection' ? (
             <>
@@ -280,10 +280,10 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
         
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
+            <div className="w-full border-t border-border"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">or</span>
+            <span className="px-2 bg-background text-muted-foreground">or</span>
           </div>
         </div>
         
@@ -292,9 +292,9 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           onClick={() => setAuthMethod('email-login')}
           disabled={isLoading}
           variant="outline"
-          className="w-full h-12 border-gray-200 hover:bg-gray-50 transition-colors"
+          className="w-full h-12 border-border hover:bg-accent transition-colors"
         >
-          <Mail className="w-5 h-5 mr-3 text-gray-600" />
+          <Mail className="w-5 h-5 mr-3 text-muted-foreground" />
           Continue with Email
         </Button>
       </div>
@@ -302,30 +302,30 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       {/* Security Features */}
       <div className="flex justify-center space-x-8 pt-4">
         <div className="text-center">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <Shield className="h-5 w-5 text-green-600" />
+          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
-          <p className="text-xs text-gray-600 font-medium">Secure OAuth</p>
-          <p className="text-xs text-gray-500">2.0</p>
+          <p className="text-xs text-muted-foreground font-medium">Secure OAuth</p>
+          <p className="text-xs text-muted-foreground/70">2.0</p>
         </div>
         <div className="text-center">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <Eye className="h-5 w-5 text-green-600" />
+          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <Eye className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
-          <p className="text-xs text-gray-600 font-medium">Privacy</p>
-          <p className="text-xs text-gray-500">Protected</p>
+          <p className="text-xs text-muted-foreground font-medium">Privacy</p>
+          <p className="text-xs text-muted-foreground/70">Protected</p>
         </div>
         <div className="text-center">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <Key className="h-5 w-5 text-green-600" />
+          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+            <Key className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
-          <p className="text-xs text-gray-600 font-medium">Encrypted</p>
-          <p className="text-xs text-gray-500">Data</p>
+          <p className="text-xs text-muted-foreground font-medium">Encrypted</p>
+          <p className="text-xs text-muted-foreground/70">Data</p>
         </div>
       </div>
       
-      <div className="text-center pt-6 border-t border-gray-100">
-        <p className="text-xs text-gray-400">
+      <div className="text-center pt-6 border-t border-border/50">
+        <p className="text-xs text-muted-foreground/60">
           © 2025 Talosy
         </p>
       </div>
@@ -334,7 +334,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-sm border-0 shadow-2xl">
         {renderContent()}
       </DialogContent>
     </Dialog>
