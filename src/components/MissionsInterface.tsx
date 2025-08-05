@@ -276,7 +276,7 @@ const MissionsInterface = () => {
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg font-semibold text-card-foreground line-clamp-2 flex-1 pr-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">
+                      <CardTitle className="text-lg font-medium text-foreground dark:text-muted-foreground line-clamp-2 flex-1 pr-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">
                         {mission.name}
                       </CardTitle>
                       <DropdownMenu>
