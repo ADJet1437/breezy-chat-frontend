@@ -70,7 +70,7 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background">
         {/* Fixed Sidebar - Full Height */}
         <div className={`fixed left-0 top-0 bottom-0 transition-all duration-300 overflow-hidden ${
           !isMobile 
@@ -96,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
               : 'relative z-20'
           }`}>
             {/* Mobile sidebar trigger */}
-            <div className="md:hidden p-2 border-b bg-white/80 backdrop-blur-sm">
+            <div className="md:hidden p-2 border-b bg-background/80 backdrop-blur-sm">
               <SidebarTrigger />
             </div>
             
@@ -119,7 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           <div className="fixed top-4 right-4 z-50">
             <Button
               onClick={handleSignIn}
-              className="bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white text-gray-700 rounded-xl px-4 py-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="bg-background/90 backdrop-blur-sm border border-border hover:bg-background text-foreground rounded-xl px-4 py-2 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <LogIn className="h-4 w-4 mr-2" />
               Sign In

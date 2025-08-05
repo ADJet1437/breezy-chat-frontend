@@ -25,12 +25,12 @@ export const AccountSettings: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Email</label>
-              <p className="text-sm text-gray-900">{user?.email}</p>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p className="text-sm text-foreground">{user?.email}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Account Type</label>
-              <p className="text-sm text-gray-900">Personal Account</p>
+              <label className="text-sm font-medium text-muted-foreground">Account Type</label>
+              <p className="text-sm text-foreground">Personal Account</p>
             </div>
           </div>
         </CardContent>

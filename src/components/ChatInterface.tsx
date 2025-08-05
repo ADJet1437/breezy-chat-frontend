@@ -811,7 +811,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   // Show split layout when right panel is open
   if (showRightPanel && projectData?.project_id) {
     return (
-      <div className="h-[calc(100vh-4rem)] w-full max-w-full flex overflow-hidden" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+      <div className="h-screen w-full max-w-full flex overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         {/* Left Side: Mission Chat - 35% */}
         <div className="w-[35%] max-w-[35%] flex flex-col overflow-hidden min-w-0" style={{ width: '35%', maxWidth: '35%', minWidth: '0' }}>
           {/* Scrollable Messages Area */}
@@ -821,7 +821,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
                     <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Loading mission history...</p>
+                    <p className="text-sm text-muted-foreground">Loading mission history...</p>
                   </div>
                 </div>
               ) : (
@@ -848,9 +848,9 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
             <div className="space-y-3">
               {/* Attached Files Display */}
               {attachedFileIds.length > 0 && (
-                <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <Paperclip className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-blue-800 font-medium">
+                <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-chat-attachment-bg rounded-lg border border-blue-200 dark:border-border">
+                  <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
                     {attachedFileIds.length} file(s) attached
                   </span>
                   <button
@@ -880,7 +880,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     onKeyPress={handleKeyPress}
                     placeholder={isStreaming || isLoadingHistory ? "AI is thinking..." : "Type your message..."}
                     disabled={isStreaming || isLoadingHistory}
-                    className="w-full resize-none border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-[120px]"
+                    className="w-full resize-none border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground min-h-[44px] max-h-[120px]"
                     rows={1}
                   />
                 </div>
@@ -934,7 +934,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={handleDeleteProject} 
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -945,7 +945,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
             
             <button
               onClick={handleCloseRightPanel}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1 hover:bg-accent rounded-lg transition-colors"
               title="Close panel"
             >
               ✕
@@ -975,7 +975,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
   // Show full-width mission chat view
   return (
-    <div data-chat-interface>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface>
       {/* Messages Area with bottom padding for sticky input */}
       <div className="flex flex-col h-full pb-32">
         <div className="flex-1 min-h-0 p-6">
@@ -985,7 +985,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                 <div className="flex items-center justify-center h-32">
                   <div className="text-center">
                     <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-600">Loading mission history...</p>
+                    <p className="text-sm text-muted-foreground">Loading mission history...</p>
                   </div>
                 </div>
               ) : (

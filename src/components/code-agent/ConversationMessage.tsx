@@ -46,13 +46,13 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
         return {
           container: 'flex justify-end group',
           messageContainer: 'flex flex-col max-w-[80%] items-end',
-          card: 'bg-card',
+          card: 'bg-white/70 border border-blue-300/60 dark:bg-secondary dark:border-secondary',
         };
       case 'assistant':
         return {
           container: 'flex justify-start group',
           messageContainer: 'flex flex-col max-w-[80%] items-start',
-          card: 'bg-card',
+          card: 'bg-white/70 border border-blue-300/60 dark:bg-card dark:border-border',
         };
       case 'system':
         return {
@@ -75,7 +75,7 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
     <div className={`${styles.container}`}>
       <div className={`${styles.messageContainer}`}>
         <Card className={`${styles.card} shadow-sm`}>
-          <CardContent className="p-3">
+          <CardContent className="p-3 text-slate-800 dark:text-card-foreground">
             {message.type === 'assistant' ? (
               <MarkdownRenderer 
                 content={message.content}
@@ -98,7 +98,7 @@ export function ConversationMessage({ message }: ConversationMessageProps) {
             variant="ghost"
             size="sm"
             onClick={copyToClipboard}
-            className="h-6 w-6 p-0 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            className="h-6 w-6 p-0 hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             <Copy className="h-3 w-3" />
           </Button>

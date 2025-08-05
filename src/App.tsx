@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MissionProvider } from "./contexts/MissionContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { setGlobalToast } from "./utils/errorHandler";
 import Layout from "./components/Layout";
@@ -34,8 +35,9 @@ const AppInner = () => {
   
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <MissionProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MissionProvider>
           <Toaster />
           <Sonner />
           <Routes>
@@ -52,8 +54,9 @@ const AppInner = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
-        </MissionProvider>
-      </AuthProvider>
+          </MissionProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };
