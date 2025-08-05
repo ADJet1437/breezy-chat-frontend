@@ -880,7 +880,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                     onKeyPress={handleKeyPress}
                     placeholder={isStreaming || isLoadingHistory ? "AI is thinking..." : "Type your message..."}
                     disabled={isStreaming || isLoadingHistory}
-                    className="w-full resize-none border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-[120px]"
+                    className="w-full resize-none border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground min-h-[44px] max-h-[120px]"
                     rows={1}
                   />
                 </div>
