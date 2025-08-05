@@ -58,8 +58,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           <div
             className={`px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md min-w-0 max-w-full ${
               isBot
-                ? 'bg-card border border-border text-card-foreground'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 dark:bg-secondary dark:from-secondary dark:to-secondary text-white dark:text-secondary-foreground'
+                ? 'bg-white/70 border border-blue-300/60 text-slate-800 shadow-sm backdrop-blur-sm dark:bg-card dark:border-border dark:text-card-foreground'
+                : 'bg-white/70 border border-blue-300/60 text-slate-800 shadow-sm backdrop-blur-sm dark:bg-secondary dark:border-secondary dark:text-secondary-foreground'
             }`}
           >
             {isBot ? (
