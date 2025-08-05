@@ -78,7 +78,7 @@ export function ChatBar({ onSubmit, isLoading, placeholder }: ChatBarProps) {
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
           placeholder=""
-          className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl resize-none transition-all duration-200 ease-in-out min-h-[44px] max-h-[120px] overflow-y-hidden"
+          className="pr-12 border-border focus:border-ring focus:ring-ring rounded-xl resize-none transition-all duration-200 ease-in-out min-h-[44px] max-h-[120px] overflow-y-hidden"
           style={{ height: `${textareaHeight}px` }}
           disabled={isLoading}
           rows={1}

@@ -221,11 +221,11 @@ const MissionsInterface = () => {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+      <div className="flex flex-col h-full max-w-6xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {authLoading ? 'Authenticating...' : 'Loading missions...'}
             </p>
           </div>
@@ -236,12 +236,12 @@ const MissionsInterface = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col h-full max-w-6xl mx-auto p-6">
+      <div className="flex flex-col h-full max-w-6xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background">
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Sign in required</h3>
-            <p className="text-gray-500 mb-6">Please sign in to view your missions</p>
+            <MessageSquare className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">Sign in required</h3>
+            <p className="text-muted-foreground mb-6">Please sign in to view your missions</p>
           </div>
         </div>
       </div>
@@ -249,15 +249,15 @@ const MissionsInterface = () => {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-6xl mx-auto">
+    <div className="flex flex-col h-full max-w-6xl mx-auto bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background">
       {/* Missions List */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full p-6">
           {missions.length === 0 ? (
             <div className="text-center py-12">
-              <MessageSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">No missions yet</h3>
-              <p className="text-gray-500 mb-6">Start a new mission to begin your AI conversation</p>
+              <MessageSquare className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No missions yet</h3>
+              <p className="text-muted-foreground mb-6">Start a new mission to begin your AI conversation</p>
               <Button
                 onClick={() => navigate('/')}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl px-6 py-2"
@@ -271,12 +271,12 @@ const MissionsInterface = () => {
               {missions.map((mission) => (
                 <Card
                   key={mission.id}
-                  className="group cursor-pointer border border-gray-200 transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu"
+                  className="group cursor-pointer border border-border transition-all duration-300 ease-out hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/20 dark:hover:shadow-blue-400/20 hover:border-blue-300 dark:hover:border-blue-400 hover:-translate-y-2 hover:z-20 relative transform-gpu"
                   onClick={() => handleMissionSelect(mission.id)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2 flex-1 pr-2 group-hover:text-blue-700 transition-colors duration-300">
+                      <CardTitle className="text-lg font-semibold text-card-foreground line-clamp-2 flex-1 pr-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors duration-300">
                         {mission.name}
                       </CardTitle>
                       <DropdownMenu>
@@ -284,7 +284,7 @@ const MissionsInterface = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 hover:bg-gray-100"
+                            className="h-8 w-8 p-0 hover:bg-accent"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-4 w-4" />
@@ -315,11 +315,11 @@ const MissionsInterface = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                    <div className="flex items-center text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">
                       <Calendar className="h-4 w-4 mr-2 group-hover:text-blue-500 transition-colors duration-300" />
                       <span>Created: {formatDate(mission.created_at)}</span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+                    <div className="flex items-center text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">
                       <Clock className="h-4 w-4 mr-2 group-hover:text-blue-500 transition-colors duration-300" />
                       <span>Updated: {formatDate(mission.updated_at)}</span>
                     </div>

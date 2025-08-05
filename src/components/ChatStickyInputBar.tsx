@@ -113,7 +113,7 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
 
   return (
     <div 
-      className={`fixed bottom-0 z-40 bg-white/80 backdrop-blur-sm border-t border-gray-200 transition-all duration-200 ${
+      className={`fixed bottom-0 z-40 bg-background/80 backdrop-blur-sm border-t border-border transition-all duration-200 ${
         !isMobile 
           ? `left-0 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'} right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` 
           : 'left-0 right-0'
@@ -125,9 +125,9 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
         <div className="max-w-4xl mx-auto space-y-3">
           {/* Attached Files Display */}
           {attachedFileIds.length > 0 && (
-            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <Paperclip className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-blue-800 font-medium">
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-chat-attachment-bg rounded-lg border border-blue-200 dark:border-border">
+              <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
                 {attachedFileIds.length} file(s) attached
               </span>
               <Button
@@ -137,7 +137,7 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
                   setAttachedFileIds([]);
                   setAttachedFileDetails([]);
                 }}
-                className="ml-auto text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-secondary"
               >
                 Clear all
               </Button>

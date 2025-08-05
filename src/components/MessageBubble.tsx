@@ -58,8 +58,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           <div
             className={`px-4 py-3 rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md min-w-0 max-w-full ${
               isBot
-                ? 'bg-white border border-gray-200 text-gray-800'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                ? 'bg-card border border-border text-card-foreground'
+                : 'bg-gradient-to-r from-blue-500 to-purple-600 dark:bg-secondary dark:from-secondary dark:to-secondary text-white dark:text-secondary-foreground'
             }`}
           >
             {isBot ? (
@@ -82,7 +82,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 {message.attachedFiles && message.attachedFiles.length > 0 && (
                   <div className="mt-3">
                     {message.attachedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center space-x-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 mb-2">
+                      <div key={index} className="flex items-center space-x-2 text-xs text-muted-foreground bg-muted rounded-lg p-2 mb-2">
                         <span className="text-sm">{getFileIcon(file.type)}</span>
                         <span className="flex-1 truncate font-medium">{file.name}</span>
                         <span className="text-gray-500">{formatFileSize(file.size)}</span>

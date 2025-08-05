@@ -10,6 +10,7 @@ import SystemPromptSettings from './mission/SystemPromptSettings';
 import FilesSettings from './mission/FilesSettings';
 import ProfileSettings from './global/ProfileSettings';
 import PlansSettings from './global/PlansSettings';
+import { PreferencesSettings } from './global/PreferencesSettings';
 import { AccountSettings } from './account';
 
 type SettingsContext = 'mission' | 'global';
@@ -115,7 +116,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           return (
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">AI Model Settings</h3>
-              <p className="text-gray-600">AI model selection and parameters will go here.</p>
+              <p className="text-muted-foreground">AI model selection and parameters will go here.</p>
             </div>
           );
       }
@@ -138,8 +139,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         case 'preferences':
           return (
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Preferences</h3>
-              <p className="text-gray-600">Application-wide preferences and settings will go here.</p>
+              <PreferencesSettings />
             </div>
           );
         
@@ -147,7 +147,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           return (
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Security</h3>
-              <p className="text-gray-600">Password, two-factor authentication, and security settings will go here.</p>
+              <p className="text-muted-foreground">Password, two-factor authentication, and security settings will go here.</p>
             </div>
           );
         
@@ -155,7 +155,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           return (
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Usage & Analytics</h3>
-              <p className="text-gray-600">Usage statistics and account limits will go here.</p>
+              <p className="text-muted-foreground">Usage statistics and account limits will go here.</p>
             </div>
           );
         
@@ -176,7 +176,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       <DialogContent className="max-w-6xl w-[90vw] h-[85vh] p-0 gap-0">
         <div className="flex h-full">
           {/* Left Sidebar Navigation */}
-          <div className="w-64 border-r border-gray-200 bg-gray-50/50">
+          <div className="w-64 border-r border-border bg-muted/50">
             <ScrollArea className="h-full">
               <div className="p-4 space-y-2">
                 {tabs.map((tab) => {
@@ -189,12 +189,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 ${
                         isActive
-                          ? 'bg-gray-200 text-gray-800 shadow-sm'
-                          : 'hover:bg-gray-100 text-gray-700'
+                          ? 'bg-accent text-accent-foreground shadow-sm'
+                          : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground'
                       }`}
                     >
-                      <Icon className={`h-5 w-5 ${isActive ? 'text-gray-600' : 'text-gray-500'}`} />
-                      <div className={`font-medium text-sm ${isActive ? 'text-gray-800' : 'text-gray-900'}`}>
+                      <Icon className={`h-5 w-5 ${isActive ? 'text-accent-foreground' : 'text-muted-foreground'}`} />
+                      <div className={`font-medium text-sm ${isActive ? 'text-accent-foreground' : 'text-muted-foreground'}`}>
                         {tab.label}
                       </div>
                     </button>
@@ -205,7 +205,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 bg-white">
+          <div className="flex-1 bg-background">
             <ScrollArea className="h-full">
               <div className="pt-12">
                 {renderTabContent()}
