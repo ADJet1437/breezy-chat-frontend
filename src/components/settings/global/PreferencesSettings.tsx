@@ -12,16 +12,7 @@ export const PreferencesSettings: React.FC = () => {
     <div className="space-y-6">
       {/* Theme Settings */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Appearance
-          </CardTitle>
-          <CardDescription>
-            Choose how the interface appears to you
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <div className="space-y-3">
             <Label className="text-sm font-medium">Theme</Label>
             <RadioGroup
@@ -37,9 +28,6 @@ export const PreferencesSettings: React.FC = () => {
                     <Label htmlFor="light" className="cursor-pointer font-medium">
                       Light
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Clean and bright interface
-                    </p>
                   </div>
                 </div>
               </div>
@@ -52,9 +40,6 @@ export const PreferencesSettings: React.FC = () => {
                     <Label htmlFor="dark" className="cursor-pointer font-medium">
                       Dark
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Easy on the eyes in low light
-                    </p>
                   </div>
                 </div>
               </div>

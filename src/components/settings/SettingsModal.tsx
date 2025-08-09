@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, BarChart3, Shield } from 'lucide-react';
+import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, BarChart3, Shield, Database, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -14,10 +14,11 @@ import PlansSettings from './global/PlansSettings';
 import { PreferencesSettings } from './global/PreferencesSettings';
 import { AccountSettings } from './account';
 import { UsageStatsCard } from './UsageStatsCard';
+import { KnowledgeBaseSettings } from './global/KnowledgeBaseSettings';
 
 type SettingsContext = 'mission' | 'global';
 type MissionTab = 'systemPrompt' | 'files' | 'aiModel';
-type GlobalTab = 'profile' | 'plans' | 'preferences' | 'usage' | 'account';
+type GlobalTab = 'profile' | 'plans' | 'preferences' | 'usage' | 'account' | 'knowledgeBase';
 type SettingsTab = MissionTab | GlobalTab;
 
 interface SettingsModalProps {
@@ -27,6 +28,7 @@ interface SettingsModalProps {
   missionId?: string;
   systemPrompt?: string;
   onSystemPromptUpdate?: (newPrompt: string) => void;
+  initialTab?: SettingsTab;
 }
 
 const missionTabs = [
@@ -60,8 +62,8 @@ const globalTabs = [
   },
   {
     id: 'preferences' as GlobalTab,
-    label: 'Preferences',
-    icon: Settings,
+    label: 'Theme',
+    icon: Palette,
   },
   {
     id: 'usage' as GlobalTab,
@@ -72,6 +74,11 @@ const globalTabs = [
     id: 'account' as GlobalTab,
     label: 'Account',
     icon: Shield,
+  },
+  {
+    id: 'knowledgeBase' as GlobalTab,
+    label: 'Knowledge',
+    icon: Database,
   }
 ];
 
@@ -82,11 +89,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   missionId,
   systemPrompt = '',
   onSystemPromptUpdate,
+  initialTab,
 }) => {
   const isMissionContext = context === 'mission';
   const tabs = isMissionContext ? missionTabs : globalTabs;
   const defaultTab = isMissionContext ? 'systemPrompt' : 'profile';
-  const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab);
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || defaultTab);
+
+  // Update active tab when initialTab changes
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const renderTabContent = () => {
     if (isMissionContext) {
@@ -155,6 +170,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           return (
             <div className="p-6">
               <AccountSettings />
+            </div>
+          );
+          
+        case 'knowledgeBase':
+          return (
+            <div className="p-6">
+              <KnowledgeBaseSettings />
             </div>
           );
       }

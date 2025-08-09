@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, List, BookOpen, Code, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus } from 'lucide-react';
+import { MessageSquare, List, BookOpen, Code, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,6 +40,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const { isAuthenticated, user, logout } = useAuth();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
 
   const navigationItems = [
@@ -52,11 +53,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       title: 'Missions',
       url: '/missions',
       icon: List,
-    },
-    {
-      title: 'Knowledge Base',
-      url: '/knowledge-base',
-      icon: BookOpen,
     },
     {
       title: 'Code',
@@ -86,6 +82,16 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const handleNewMission = () => {
     setCurrentMissionId(null);
     navigate('/');
+  };
+
+  const handlePreferencesClick = () => {
+    setSettingsInitialTab('preferences');
+    setGlobalSettingsOpen(true);
+  };
+
+  const handleKnowledgeBaseClick = () => {
+    setSettingsInitialTab('knowledgeBase');
+    setGlobalSettingsOpen(true);
   };
 
 
@@ -217,6 +223,14 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                       <User className="mr-2 h-4 w-4" />
                       Profile & Plans
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handlePreferencesClick}>
+                      <Palette className="mr-2 h-4 w-4" />
+                      Theme
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleKnowledgeBaseClick}>
+                      <Database className="mr-2 h-4 w-4" />
+                      Knowledge
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
                       <LogOut className="mr-2 h-4 w-4" />
@@ -246,6 +260,14 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                     <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
                       <User className="mr-2 h-4 w-4" />
                       Profile & Plans
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handlePreferencesClick}>
+                      <Palette className="mr-2 h-4 w-4" />
+                      Theme
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleKnowledgeBaseClick}>
+                      <Database className="mr-2 h-4 w-4" />
+                      Knowledge
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
@@ -296,8 +318,12 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       />
       <SettingsModal
         isOpen={globalSettingsOpen}
-        onClose={() => setGlobalSettingsOpen(false)}
+        onClose={() => {
+          setGlobalSettingsOpen(false);
+          setSettingsInitialTab(undefined);
+        }}
         context="global"
+        initialTab={settingsInitialTab as any}
       />
     </TooltipProvider>
   );
