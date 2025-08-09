@@ -15,8 +15,6 @@ import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
-import { KnowledgeBase } from "./pages/KnowledgeBase";
-import { KnowledgeBaseDetail } from "./pages/KnowledgeBaseDetail";
 import CodeAgent from "./pages/CodeAgent";
 import CodeAgentChat from "./pages/CodeAgentChat";
 import AgentDetail from "./pages/AgentDetail";
@@ -45,8 +43,6 @@ const AppInner = () => {
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/missions" element={<Layout><Missions /></Layout>} />
             <Route path="/missions/:id" element={<MissionDetail />} />
-            <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
-            <Route path="/knowledge-base/:id" element={<Layout><KnowledgeBaseDetail /></Layout>} />
             <Route path="/code" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
