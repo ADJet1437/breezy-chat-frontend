@@ -1,4 +1,5 @@
 import React from 'react'
+import styles from './CircularProgress.module.css'
 
 interface CircularProgressProps {
   percentage: number
@@ -96,7 +97,7 @@ export const CircularProgress = ({
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
           filter={percentage > 80 ? "url(#glow)" : undefined}
-          className="transition-all duration-1000 ease-out animate-progress-fill"
+          className={`transition-all duration-1000 ease-out ${styles.progressFill}`}
           style={{
             '--stroke-dasharray': strokeDasharray,
             '--stroke-dashoffset-final': strokeDashoffset,
@@ -109,7 +110,7 @@ export const CircularProgress = ({
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
           <div 
-            className="text-2xl font-bold text-gray-900 dark:text-white animate-fadeInScale"
+            className={`text-2xl font-bold text-gray-900 dark:text-white ${styles.fadeInScale}`}
           >
             {percentage}%
           </div>

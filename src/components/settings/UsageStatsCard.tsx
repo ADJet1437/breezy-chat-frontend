@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Calendar, CreditCard, TrendingUp, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import styles from './UsageStatsCard.module.css'
 
 export const UsageStatsCard = () => {
   const { data: usageStats, isLoading, error, refetch, isRefetching } = useUsageStats()
@@ -88,7 +89,7 @@ export const UsageStatsCard = () => {
           {/* Usage Details */}
           <div className="flex-1 space-y-4 w-full">
             {/* Credits Used */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg animate-slideInRight delay-200">
+            <div className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg ${styles.slideInRight} ${styles.delay200}`}>
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -106,7 +107,7 @@ export const UsageStatsCard = () => {
             </div>
 
             {/* Remaining Credits */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg animate-slideInRight delay-300">
+            <div className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg ${styles.slideInRight} ${styles.delay300}`}>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -124,7 +125,7 @@ export const UsageStatsCard = () => {
             </div>
 
             {/* Plan Info & Reset Date */}
-            <div className="flex items-center justify-between text-sm animate-slideInRight delay-400">
+            <div className={`flex items-center justify-between text-sm ${styles.slideInRight} ${styles.delay400}`}>
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Calendar className="h-4 w-4" />
                 <span>{stats.plan_name} Plan</span>
@@ -141,7 +142,7 @@ export const UsageStatsCard = () => {
 
         {/* Usage Warning */}
         {stats.status === 'high' && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-slideInUp delay-600">
+          <div className={`mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg ${styles.slideInUp} ${styles.delay600}`}>
             <div className="flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
               <div className="text-sm">
