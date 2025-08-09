@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, Lock, BarChart3, Shield } from 'lucide-react';
+import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, BarChart3, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import SystemPromptSettings from './mission/SystemPromptSettings';
 import FilesSettings from './mission/FilesSettings';
@@ -12,10 +13,11 @@ import ProfileSettings from './global/ProfileSettings';
 import PlansSettings from './global/PlansSettings';
 import { PreferencesSettings } from './global/PreferencesSettings';
 import { AccountSettings } from './account';
+import { UsageStatsCard } from './UsageStatsCard';
 
 type SettingsContext = 'mission' | 'global';
 type MissionTab = 'systemPrompt' | 'files' | 'aiModel';
-type GlobalTab = 'profile' | 'plans' | 'preferences' | 'security' | 'usage' | 'account';
+type GlobalTab = 'profile' | 'plans' | 'preferences' | 'usage' | 'account';
 type SettingsTab = MissionTab | GlobalTab;
 
 interface SettingsModalProps {
@@ -60,11 +62,6 @@ const globalTabs = [
     id: 'preferences' as GlobalTab,
     label: 'Preferences',
     icon: Settings,
-  },
-  {
-    id: 'security' as GlobalTab,
-    label: 'Security',
-    icon: Lock,
   },
   {
     id: 'usage' as GlobalTab,
@@ -143,19 +140,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           );
         
-        case 'security':
-          return (
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Security</h3>
-              <p className="text-muted-foreground">Password, two-factor authentication, and security settings will go here.</p>
-            </div>
-          );
         
         case 'usage':
           return (
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Usage & Analytics</h3>
-              <p className="text-muted-foreground">Usage statistics and account limits will go here.</p>
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Usage & Analytics</h3>
+              </div>
+              <UsageStatsCard />
             </div>
           );
         
@@ -174,6 +166,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-[90vw] h-[85vh] p-0 gap-0">
+        <DialogTitle className="sr-only">
+          {isMissionContext ? 'Mission Settings' : 'Settings'}
+        </DialogTitle>
         <div className="flex h-full">
           {/* Left Sidebar Navigation */}
           <div className="w-64 border-r border-border bg-muted/50">
