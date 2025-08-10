@@ -8,6 +8,7 @@ interface PayPalSubscriptionButtonProps {
   providerPlanId: string;
   onSuccess?: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 declare global {
@@ -20,7 +21,8 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
   planId,
   providerPlanId,
   onSuccess,
-  disabled = false
+  disabled = false,
+  compact = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,6 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
     return new Promise((resolve, reject) => {
       // Check if PayPal is already loaded
       if (window.paypal) {
-        console.log('PayPal SDK already loaded');
         resolve();
         return;
       }
@@ -82,18 +83,15 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
       // Check if script already exists
       const existingScript = document.querySelector(`script[src="${src}"]`);
       if (existingScript) {
-        console.log('PayPal script already exists, waiting for load');
         existingScript.addEventListener('load', () => resolve());
         existingScript.addEventListener('error', () => reject(new Error('Failed to load PayPal script')));
         return;
       }
 
-      console.log('Loading PayPal script:', src);
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
       script.onload = () => {
-        console.log('PayPal script loaded successfully');
         // Wait a bit for PayPal to initialize
         setTimeout(resolve, 100);
       };
@@ -103,10 +101,6 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
   };
 
   const initializePayPalButton = () => {
-    console.log('Initializing PayPal button...');
-    console.log('window.paypal:', !!window.paypal);
-    console.log('containerRef.current:', !!containerRef.current);
-    
     if (!window.paypal) {
       console.error('PayPal SDK not loaded');
       setError('PayPal SDK not loaded');
@@ -119,11 +113,9 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
     
     const tryInitialize = () => {
       attempts++;
-      console.log(`Attempt ${attempts} to find container`);
       
       if (!containerRef.current) {
         if (attempts < maxAttempts) {
-          console.log('Container not ready, retrying in 50ms...');
           setTimeout(tryInitialize, 50);
           return;
         } else {
@@ -135,7 +127,6 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
 
       // Clear any existing buttons
       containerRef.current.innerHTML = '';
-      console.log('Creating PayPal button with plan ID:', providerPlanId);
 
       // Continue with button creation
       createPayPalButton();
@@ -145,70 +136,105 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
   };
 
   const createPayPalButton = () => {
-    window.paypal.Buttons({
-      style: {
-        shape: 'pill',
-        color: 'gold',
-        layout: 'vertical',
-        label: 'subscribe'
-      },
-      createSubscription: function(data: any, actions: any) {
-        console.log('Creating subscription with plan ID:', providerPlanId);
-        return actions.subscription.create({
-          plan_id: providerPlanId
+    // Common handlers for both PayPal and Card payments
+    const handleApprove = async (data: any, actions: any) => {
+      try {
+        // Verify subscription with our backend
+        const response = await authenticatedPost(buildApiUrl('/api/v1/paypal/subscription/verify'), {
+          subscription_id: data.subscriptionID,
+          plan_id: planId
         });
-      },
-      onApprove: async function(data: any, actions: any) {
-        console.log('PayPal subscription approved:', data);
-        
-        try {
-          // Verify subscription with our backend
-          const response = await authenticatedPost(buildApiUrl('/api/v1/paypal/subscription/verify'), {
-            subscription_id: data.subscriptionID,
-            plan_id: planId
-          });
 
-          if (response.ok) {
-            const result = await response.json();
-            toast({
-              title: "Success!",
-              description: result.message || "Subscription activated successfully!",
-            });
-            onSuccess?.();
-          } else {
-            const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-            throw new Error(errorData.detail || 'Failed to verify subscription');
-          }
-        } catch (error: any) {
-          console.error('Error verifying subscription:', error);
+        if (response.ok) {
+          const result = await response.json();
           toast({
-            title: "Verification Failed",
-            description: error.message || "Failed to verify your subscription. Please contact support.",
-            variant: "destructive",
+            title: "Success!",
+            description: result.message || "Subscription activated successfully!",
           });
+          onSuccess?.();
+        } else {
+          const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+          throw new Error(errorData.detail || 'Failed to verify subscription');
         }
-      },
-      onError: function(err: any) {
-        console.error('PayPal subscription error:', err);
+      } catch (error: any) {
+        console.error('Error verifying subscription:', error);
         toast({
-          title: "Payment Error",
-          description: "There was an error processing your payment. Please try again.",
+          title: "Verification Failed",
+          description: error.message || "Failed to verify your subscription. Please contact support.",
           variant: "destructive",
         });
-      },
-      onCancel: function() {
-        console.log('PayPal subscription cancelled by user');
-        toast({
-          title: "Payment Cancelled",
-          description: "You cancelled the payment process.",
-        });
       }
-    }).render(containerRef.current);
+    };
+
+    const handleError = (err: any) => {
+      console.error('Payment error:', err);
+      toast({
+        title: "Payment Error",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    };
+
+    const handleCancel = () => {
+      toast({
+        title: "Payment Cancelled",
+        description: "You cancelled the payment process.",
+      });
+    };
+
+    const createSubscription = (data: any, actions: any) => {
+      return actions.subscription.create({
+        plan_id: providerPlanId
+      });
+    };
+
+    // Create container for multiple buttons
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = compact ? 'space-y-1' : 'space-y-2';
+    
+    // PayPal Button
+    const paypalContainer = document.createElement('div');
+    window.paypal.Buttons({
+      style: {
+        shape: compact ? 'rect' : 'pill',
+        color: 'blue',
+        layout: 'horizontal',
+        label: 'subscribe',
+        height: compact ? 30 : 40
+      },
+      fundingSource: window.paypal.FUNDING.PAYPAL,
+      createSubscription,
+      onApprove: handleApprove,
+      onError: handleError,
+      onCancel: handleCancel
+    }).render(paypalContainer);
+
+    // Card Button
+    const cardContainer = document.createElement('div');
+    window.paypal.Buttons({
+      style: {
+        shape: compact ? 'rect' : 'pill',
+        color: 'black',
+        layout: 'horizontal',
+        label: 'subscribe',
+        height: compact ? 30 : 40
+      },
+      fundingSource: window.paypal.FUNDING.CARD,
+      createSubscription,
+      onApprove: handleApprove,
+      onError: handleError,
+      onCancel: handleCancel
+    }).render(cardContainer);
+
+    // Add both containers to the main container
+    buttonsContainer.appendChild(paypalContainer);
+    buttonsContainer.appendChild(cardContainer);
+    containerRef.current?.appendChild(buttonsContainer);
   };
 
   if (disabled) {
     return (
-      <div className="w-full py-3 px-6 rounded-xl bg-gray-100 text-gray-500 border border-gray-300 text-center">
+      <div className={`w-full ${compact ? 'py-2 px-4 text-sm' : 'py-3 px-6'} rounded-xl bg-gray-100 text-gray-500 border border-gray-300 text-center`}>
         PayPal Payment Unavailable
       </div>
     );
@@ -216,7 +242,7 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full py-3 px-6 rounded-xl bg-gray-100 text-gray-600 border border-gray-300 text-center">
+      <div className={`w-full ${compact ? 'py-2 px-4 text-sm' : 'py-3 px-6'} rounded-xl bg-gray-100 text-gray-600 border border-gray-300 text-center`}>
         Loading PayPal...
       </div>
     );
@@ -224,7 +250,7 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
 
   if (error) {
     return (
-      <div className="w-full py-3 px-6 rounded-xl bg-red-50 text-red-600 border border-red-300 text-center">
+      <div className={`w-full ${compact ? 'py-2 px-4 text-sm' : 'py-3 px-6'} rounded-xl bg-red-50 text-red-600 border border-red-300 text-center`}>
         PayPal Error: {error}
       </div>
     );
@@ -234,7 +260,7 @@ const PayPalSubscriptionButton: React.FC<PayPalSubscriptionButtonProps> = ({
     <div 
       ref={containerRef} 
       className="w-full"
-      style={{ minHeight: '50px' }}
+      style={{ minHeight: compact ? '65px' : '90px' }}
     />
   );
 };
