@@ -20,7 +20,9 @@ interface Plan {
   billing_interval: string;
   features: string[];
   is_active: boolean;
+  is_subscriable: boolean;
   provider_plan_id: string | null;
+  display_order: number;
 }
 
 interface SubscriptionDialogProps {
@@ -134,9 +136,11 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
           <DialogTitle className="text-3xl font-bold text-gray-900">
             Choose Your Plan
           </DialogTitle>
-          <p className="text-gray-600">
-            {message || "Select the perfect plan for your needs."}
-          </p>
+          {message && (
+            <p className="text-gray-600">
+              {message}
+            </p>
+          )}
         </DialogHeader>
         
         {loading ? (
@@ -190,35 +194,41 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
                     ))}
                   </ul>
                   
-                  {plan.name === 'Basic' && plan.provider_plan_id ? (
-                    <PayPalSubscriptionButton
-                      planId={plan.id}
-                      providerPlanId={plan.provider_plan_id}
-                      onSuccess={() => {
-                        onSubscribed?.();
-                        onOpenChange(false);
-                      }}
-                      disabled={subscribing !== null}
-                    />
+                  {plan.is_subscriable ? (
+                    plan.name === 'Basic' && plan.provider_plan_id ? (
+                      <PayPalSubscriptionButton
+                        planId={plan.id}
+                        providerPlanId={plan.provider_plan_id}
+                        onSuccess={() => {
+                          onSubscribed?.();
+                          onOpenChange(false);
+                        }}
+                        disabled={subscribing !== null}
+                      />
+                    ) : (
+                      <Button
+                        onClick={() => handleSubscribe(plan.id, plan.name)}
+                        disabled={subscribing !== null}
+                        className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
+                          plan.name === 'Basic'
+                            ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
+                        }`}
+                      >
+                        {subscribing === plan.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Subscribing...
+                          </>
+                        ) : (
+                          `Subscribe to ${plan.name}`
+                        )}
+                      </Button>
+                    )
                   ) : (
-                    <Button
-                      onClick={() => handleSubscribe(plan.id, plan.name)}
-                      disabled={subscribing !== null}
-                      className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
-                        plan.name === 'Basic'
-                          ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl'
-                          : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
-                      }`}
-                    >
-                      {subscribing === plan.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Subscribing...
-                        </>
-                      ) : (
-                        `Subscribe to ${plan.name}`
-                      )}
-                    </Button>
+                    <div className="w-full py-3 px-6 rounded-xl font-medium text-center bg-gray-50 text-gray-500 border border-gray-200">
+                      Default Plan
+                    </div>
                   )}
                 </div>
               </div>
