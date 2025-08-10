@@ -57,7 +57,7 @@ const globalTabs = [
   },
   {
     id: 'plans' as GlobalTab,
-    label: 'Plans & Billing',
+    label: 'Subscription',
     icon: CreditCard,
   },
   {

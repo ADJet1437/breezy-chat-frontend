@@ -152,7 +152,7 @@ const PlansSettings: React.FC = () => {
   return (
     <>
       <div className="space-y-8">
-        <h3 className="text-lg font-semibold">Plans & Billing</h3>
+        <h3 className="text-lg font-semibold">Subscription</h3>
         
         {/* Current Plan Section */}
         {loadingSubscription ? (
