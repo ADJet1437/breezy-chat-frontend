@@ -150,7 +150,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {plans.map((plan) => (
+            {plans.filter(plan => plan.name !== 'Trial').map((plan) => (
               <div
                 key={plan.id}
                 className={`relative p-6 rounded-2xl border-2 transition-all duration-200 ${
@@ -195,7 +195,7 @@ const SubscriptionDialog: React.FC<SubscriptionDialogProps> = ({ open, onOpenCha
                   </ul>
                   
                   {plan.is_subscriable ? (
-                    plan.name === 'Basic' && plan.provider_plan_id ? (
+                    plan.provider_plan_id ? (
                       <PayPalSubscriptionButton
                         planId={plan.id}
                         providerPlanId={plan.provider_plan_id}
