@@ -3,6 +3,7 @@ import React from 'react';
 import MessageBubble from './MessageBubble';
 import ImageMessage from './chat/ImageMessage';
 import ImageGeneratingMessage from './chat/ImageGeneratingMessage';
+import ImageEditingMessage from './chat/ImageEditingMessage';
 import { Message } from '../types/chat';
 
 interface MessageListProps {
@@ -16,6 +17,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
         if (message.type === 'image-generating') {
           return (
             <ImageGeneratingMessage
+              key={message.id}
+              message={message}
+            />
+          );
+        }
+        if (message.type === 'image-editing') {
+          return (
+            <ImageEditingMessage
               key={message.id}
               message={message}
             />

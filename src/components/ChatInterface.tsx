@@ -19,6 +19,7 @@ import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
 import ImageMessage from './chat/ImageMessage';
 import ImageGeneratingMessage from './chat/ImageGeneratingMessage';
+import ImageEditingMessage from './chat/ImageEditingMessage';
 import MissionProgressIndicator, { MissionPhase } from './MissionProgressIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
 import ChatStickyInputBar, { ChatStickyInputBarRef } from './ChatStickyInputBar';
@@ -418,6 +419,18 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   };
                   setMessages(prev => [...prev, skeletonMessage]);
                   initialBotMessageCreated = true; // Mark as created to prevent duplicate
+                } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_editing') {
+                  // For image editing, create skeleton instead of regular bot message
+                  const skeletonMessage: Message = {
+                    id: botMessageId, // Use the same ID as the bot message would have used
+                    content: data.data.message,
+                    sender: 'bot',
+                    timestamp: new Date(),
+                    type: 'image-editing',
+                    prompt: data.data.message.replace('✏️ Editing image: ', '').replace(/\.\.\..*$/, '')
+                  };
+                  setMessages(prev => [...prev, skeletonMessage]);
+                  initialBotMessageCreated = true; // Mark as created to prevent duplicate
                 } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_generation') {
                   console.log('🔧 Image generation complete event received:', data);
                   
@@ -426,6 +439,26 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
                   if (result && result.base64_image) {
                     setMessages(prev => prev.map(msg => 
                       msg.id === botMessageId && msg.type === 'image-generating'
+                        ? {
+                            ...msg,
+                            type: 'image',
+                            imageUrl: result.base64_image,
+                            imageAlt: result.image_filename,
+                            filename: result.image_filename,
+                            prompt: result.prompt,
+                            isLoaded: true
+                          }
+                        : msg
+                    ));
+                  }
+                } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_editing') {
+                  console.log('🔧 Image editing complete event received:', data);
+                  
+                  // Replace skeleton with actual edited image using the same message ID
+                  const result = data.data.result;
+                  if (result && result.base64_image) {
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === botMessageId && msg.type === 'image-editing'
                         ? {
                             ...msg,
                             type: 'image',
