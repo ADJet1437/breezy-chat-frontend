@@ -234,18 +234,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent side="right" align="end" className="w-56">
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                        <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm">
-                          {getInitials(user.email, user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
                       <User className="mr-2 h-4 w-4" />
                       Profile & Plans
