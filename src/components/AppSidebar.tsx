@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, List, BookOpen, Code, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database } from 'lucide-react';
+import { MessageSquare, List, BookOpen, Code, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Settings } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -99,46 +99,73 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
     <TooltipProvider>
       <Sidebar className={`border-r bg-sidebar h-full transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
         <SidebarContent className="flex flex-col h-full">
-          {/* Top Bar with New Mission and Toggle */}
-          <div className="flex items-center justify-between p-2">
+          {/* Top Bar with Clean Separated Design */}
+          <div className="px-2 pt-2 pb-1 space-y-1">
             {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleNewMission}
-                    size="sm"
-                    className="h-8 w-8 p-0 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white transition-all duration-200 shadow-sm hover:shadow-md"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>New Mission</p>
-                </TooltipContent>
-              </Tooltip>
+              /* Collapsed: Separate toggle and new mission buttons */
+              <>
+                {/* Expand toggle button */}
+                <div className="flex justify-center">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onToggleCollapse}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Expand Sidebar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                
+                {/* New Mission button on its own line */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleNewMission}
+                      variant="ghost"
+                      className="w-full h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 rounded-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>New Mission</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
             ) : (
-              <Button
-                onClick={handleNewMission}
-                size="sm"
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl px-3 py-2 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
-              >
-                <Plus className="h-4 w-4" />
-                New Mission
-              </Button>
+              /* Expanded: Traditional layout with toggle */
+              <div className="flex items-center justify-between">
+                <Button
+                  onClick={handleNewMission}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg px-3 py-2 transition-all duration-200 text-sm font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  New
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onToggleCollapse}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
             )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleCollapse}
-              className="h-8 w-8 p-0"
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
           </div>
 
           {/* Navigation Items */}
-          <SidebarGroup className="flex-1">
+          <SidebarGroup className="flex-1 pt-1">
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
@@ -147,11 +174,11 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                       // Collapsed view - icon only with tooltip
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <SidebarMenuButton asChild size="lg" className="w-full justify-center px-2">
+                          <SidebarMenuButton asChild size="default" className="w-full justify-center px-2">
                             <NavLink 
                               to={item.url} 
                               className={({ isActive }) =>
-                                `flex items-center justify-center p-3 text-base font-medium transition-colors ${
+                                `flex items-center justify-center py-2.5 text-base font-medium transition-colors ${
                                   isActive 
                                     ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
                                     : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
@@ -200,25 +227,13 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                     <Button variant="ghost" className="w-full h-12 p-0 rounded-lg hover:bg-sidebar-accent focus:outline-none focus:ring-0 focus:bg-transparent hover:bg-sidebar-accent/50">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                        <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm">
                           {getInitials(user.email, user.name)}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent side="right" align="end" className="w-56">
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
-                          {getInitials(user.email, user.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
                       <User className="mr-2 h-4 w-4" />
                       Profile & Plans
@@ -246,7 +261,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
                       <div className="flex items-center gap-3 w-full">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
+                          <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm">
                             {getInitials(user.email, user.name)}
                           </AvatarFallback>
                         </Avatar>

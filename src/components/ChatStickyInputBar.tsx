@@ -113,16 +113,16 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
 
   return (
     <div 
-      className={`fixed bottom-0 z-40 bg-background/80 backdrop-blur-sm border-t border-border transition-all duration-200 ${
+      className={`fixed bottom-6 z-40 transition-all duration-200 ${
         !isMobile 
-          ? `left-0 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'} right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` 
-          : 'left-0 right-0'
+          ? `left-8 ${sidebarCollapsed ? 'md:left-20' : 'md:left-64'} right-6 ${rightSidebarVisible ? 'md:right-86' : ''}` 
+          : 'left-4 right-4'
       }`}
       style={{ marginLeft: 'max(0px, env(safe-area-inset-left))', marginRight: 'max(0px, env(safe-area-inset-right))' }}
     >
-      {/* Remove the extra margin since positioning is handled by the container */}
-      <div className="p-6">
-        <div className="max-w-4xl mx-auto space-y-3">
+      {/* Floating container with shadow and rounded corners */}
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-background/70 backdrop-blur-xl border border-border/30 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-200 p-4 space-y-3">
           {/* Attached Files Display */}
           {attachedFileIds.length > 0 && (
             <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-chat-attachment-bg rounded-lg border border-blue-200 dark:border-border">
@@ -144,33 +144,41 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
             </div>
           )}
           
-          {/* Input Row */}
-          <div className="flex space-x-3">
-            <FileUpload
-              onFilesUploaded={onFilesUploaded}
-              disabled={isStreaming || isLoadingHistory}
-              missionId={missionId || currentMissionId}
-            />
-            <div className="flex-1 relative">
-              <Textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder=""
-                className="pr-12 border-border focus:border-ring focus:ring-ring rounded-xl resize-none transition-all duration-200 ease-in-out min-h-[44px] max-h-[120px] overflow-y-hidden bg-background text-foreground"
-                style={{ height: `${textareaHeight}px` }}
+          {/* Input Row - Integrated Design */}
+          <div className="flex-1 relative bg-muted/50 rounded-2xl p-1.5 backdrop-blur-sm">
+            {/* File Upload Button - Inside Input */}
+            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10">
+              <FileUpload
+                onFilesUploaded={onFilesUploaded}
                 disabled={isStreaming || isLoadingHistory}
-                rows={1}
+                missionId={missionId || currentMissionId}
               />
             </div>
-            <Button
-              onClick={onSendMessage}
-              disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-xl px-6"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            
+            {/* Textarea with integrated buttons */}
+            <Textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={isStreaming || isLoadingHistory ? "AI is thinking..." : "What is your mission?"}
+              className="pl-12 pr-14 border-0 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none rounded-xl resize-none min-h-[44px] max-h-[120px] overflow-y-hidden text-foreground placeholder:text-muted-foreground"
+              style={{ height: `${textareaHeight}px`, boxShadow: 'none !important' }}
+              disabled={isStreaming || isLoadingHistory}
+              rows={1}
+            />
+            
+            {/* Send Button - Inside Input */}
+            <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
+              <Button
+                onClick={onSendMessage}
+                disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
+                size="sm"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl h-9 w-9 p-0 flex items-center justify-center"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

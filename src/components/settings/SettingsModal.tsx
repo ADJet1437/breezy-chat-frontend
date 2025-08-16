@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MessageSquare, FolderOpen, Settings, Brain, Zap, User, CreditCard, BarChart3, Shield, Database, Palette } from 'lucide-react';
+import { X, MessageSquare, Settings, Brain, Zap, User, CreditCard, BarChart3, Shield, Database, Palette, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import SystemPromptSettings from './mission/SystemPromptSettings';
-import FilesSettings from './mission/FilesSettings';
+import AIModelSettings from './mission/AIModelSettings';
 import ProfileSettings from './global/ProfileSettings';
 import PlansSettings from './global/PlansSettings';
 import { PreferencesSettings } from './global/PreferencesSettings';
@@ -17,7 +17,7 @@ import { UsageStatsCard } from './UsageStatsCard';
 import { KnowledgeBaseSettings } from './global/KnowledgeBaseSettings';
 
 type SettingsContext = 'mission' | 'global';
-type MissionTab = 'systemPrompt' | 'files' | 'aiModel';
+type MissionTab = 'systemPrompt' | 'aiModel';
 type GlobalTab = 'profile' | 'plans' | 'preferences' | 'usage' | 'account' | 'knowledgeBase';
 type SettingsTab = MissionTab | GlobalTab;
 
@@ -38,14 +38,9 @@ const missionTabs = [
     icon: MessageSquare,
   },
   {
-    id: 'files' as MissionTab,
-    label: 'Files',
-    icon: FolderOpen,
-  },
-  {
     id: 'aiModel' as MissionTab,
     label: 'AI Model',
-    icon: Brain,
+    icon: Bot,
   }
 ];
 
@@ -117,18 +112,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           );
         
-        case 'files':
-          return (
-            <div className="p-6">
-              <FilesSettings missionId={missionId!} />
-            </div>
-          );
-        
         case 'aiModel':
           return (
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">AI Model Settings</h3>
-              <p className="text-muted-foreground">AI model selection and parameters will go here.</p>
+              <AIModelSettings />
             </div>
           );
       }
