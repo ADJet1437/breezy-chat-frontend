@@ -71,6 +71,8 @@ interface MissionDetails {
 interface ChatInterfaceProps {
   missionId?: string;
   rightSidebarVisible?: boolean;
+  missionData?: MissionDetails | null;
+  isParentLoading?: boolean;
 }
 
 interface ProjectData {
@@ -80,7 +82,7 @@ interface ProjectData {
   session_id: string;
 }
 
-const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterfaceProps) => {
+const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, isParentLoading = false }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -109,7 +111,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const projectDataRef = useRef<ProjectData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { currentMissionId, setCurrentMissionId } = useMissionContext();
+  const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
   const { isAuthenticated, accessToken, user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -191,49 +193,46 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
     }
   }, [projectData]);
 
-  // Load mission history when missionId changes
+  // Load mission history when missionId changes or missionData is provided
   useEffect(() => {
     const effectiveMissionId = missionId || currentMissionId;
-    if (effectiveMissionId) {
+    
+    if (missionData && missionData.id === effectiveMissionId) {
+      // Use provided mission data instead of fetching
+      processMissionData(missionData);
+    } else if (effectiveMissionId && !missionData && !isParentLoading) {
+      // Only fetch if we don't have mission data AND parent is not loading
       loadMissionHistory(effectiveMissionId);
-    } else {
+    } else if (!effectiveMissionId) {
       // Clear messages when starting a new mission
       setMessages([]);
     }
-  }, [missionId, currentMissionId]);
+  }, [missionId, currentMissionId, missionData, isParentLoading]);
 
-  const loadMissionHistory = async (missionId: string) => {
-    setIsLoadingHistory(true);
-    
-    try {
-      const response = await authenticatedGet(buildApiUrl(`/api/v1/missions/${missionId}`));
+  const processMissionData = (missionDetails: MissionDetails) => {
+    // Store mission data atomically in context
+    setMissionData(missionDetails.id, missionDetails.llm_id);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const missionDetails: MissionDetails = await response.json();
-
-      // Check if mission has a completed code agent and set up project data
-      if (missionDetails.code_agent && missionDetails.code_agent.id) {
-        const agentId = missionDetails.code_agent.id;
-        
-        // Set project data for right panel
-        const projectInfo = {
-          project_id: agentId,
-          project_name: missionDetails.name,
-          project_path: '', // We don't have this from mission, but not needed for preview
-          session_id: agentId // Use agent_id as session_id for compatibility
-        };
-        
-        setProjectData(projectInfo);
-        projectDataRef.current = projectInfo;
-      }
-
-      // Transform task_messages to Message format
-      const historyMessages: Message[] = [];
+    // Check if mission has a completed code agent and set up project data
+    if (missionDetails.code_agent && missionDetails.code_agent.id) {
+      const agentId = missionDetails.code_agent.id;
       
-      missionDetails.task_messages.forEach((taskMessage) => {
+      // Set project data for right panel
+      const projectInfo = {
+        project_id: agentId,
+        project_name: missionDetails.name,
+        project_path: '', // We don't have this from mission, but not needed for preview
+        session_id: agentId // Use agent_id as session_id for compatibility
+      };
+      
+      setProjectData(projectInfo);
+      projectDataRef.current = projectInfo;
+    }
+
+    // Transform task_messages to Message format
+    const historyMessages: Message[] = [];
+    
+    missionDetails.task_messages.forEach((taskMessage) => {
         // Add user message with only uploaded file attachments (exclude generated files)
         historyMessages.push({
           id: `${taskMessage.id}_user`,
@@ -285,6 +284,20 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
 
       // Set the messages to the loaded history
       setMessages(historyMessages);
+  };
+
+  const loadMissionHistory = async (missionId: string) => {
+    setIsLoadingHistory(true);
+    
+    try {
+      const response = await authenticatedGet(buildApiUrl(`/api/v1/missions/${missionId}`));
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const missionDetails: MissionDetails = await response.json();
+      processMissionData(missionDetails);
       
     } catch (error) {
       toast({
@@ -309,7 +322,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
       // Prepare request payload - include mission_id only if we have one
       const requestPayload: any = {
         message: message,
-        llm: 'gpt-4o',
         file_ids: attachedFileIds
       };
 

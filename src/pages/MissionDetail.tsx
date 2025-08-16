@@ -25,12 +25,12 @@ interface MissionDetails {
 
 const MissionDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { setCurrentMissionId } = useMissionContext();
+  const { setCurrentMissionId, setMissionData } = useMissionContext();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [missionDetails, setMissionDetails] = useState<MissionDetails | null>(null);
-  const [isLoadingMission, setIsLoadingMission] = useState(false);
+  const [isLoadingMission, setIsLoadingMission] = useState(true); // Start as true to prevent ChatInterface from fetching
   const [isMobile, setIsMobile] = useState(false);
   const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
   const [isCodeViewOpen, setIsCodeViewOpen] = useState(() => {
@@ -48,10 +48,13 @@ const MissionDetail = () => {
     }
   }, [id, setCurrentMissionId]);
 
-  // Load mission details to get system prompt
+  // Load mission details when entering mission - ALWAYS fetch newest data
   useEffect(() => {
     if (id && isAuthenticated) {
       loadMissionDetails(id);
+    } else if (!id || !isAuthenticated) {
+      // If no ID or not authenticated, stop loading
+      setIsLoadingMission(false);
     }
   }, [id, isAuthenticated]);
 
@@ -108,10 +111,16 @@ const MissionDetail = () => {
   const loadMissionDetails = async (missionId: string) => {
     setIsLoadingMission(true);
     try {
+      // ALWAYS fetch newest mission data when entering mission
       const response = await authenticatedGet(buildApiUrl(`/api/v1/missions/${missionId}`));
       if (response.ok) {
         const data = await response.json();
+        
+        // Set mission details for UI
         setMissionDetails(data);
+        
+        // Store in context atomically - this prevents ChatInterface from fetching again
+        setMissionData(data.id, data.llm_id);
       }
     } catch (error) {
       console.error('Error loading mission details:', error);
@@ -254,7 +263,7 @@ const MissionDetail = () => {
 
   return (
     <Layout>
-      <ChatInterface missionId={id} />
+      <ChatInterface missionId={id} missionData={missionDetails} isParentLoading={isLoadingMission} />
       <CustomizeButton />
       
       {/* Mission Settings Modal */}
