@@ -1009,8 +1009,8 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false }: ChatInterface
   // Show full-width mission chat view
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface>
-      {/* Messages Area with bottom padding for sticky input */}
-      <div className="flex flex-col h-full pb-32">
+      {/* Messages Area with bottom padding for floating input */}
+      <div className="flex flex-col h-full pb-24">
         <div className="flex-1 min-h-0 p-6">
           <div className="max-w-4xl mx-auto h-full flex flex-col">
             <ScrollArea className="flex-1">

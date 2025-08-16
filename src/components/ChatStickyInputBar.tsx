@@ -113,16 +113,16 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
 
   return (
     <div 
-      className={`fixed bottom-0 z-40 bg-background/80 backdrop-blur-sm border-t border-border transition-all duration-200 ${
+      className={`fixed bottom-6 z-40 transition-all duration-200 ${
         !isMobile 
-          ? `left-0 ${sidebarCollapsed ? 'md:left-16' : 'md:left-64'} right-0 ${rightSidebarVisible ? 'md:right-80' : ''}` 
-          : 'left-0 right-0'
+          ? `left-6 ${sidebarCollapsed ? 'md:left-22' : 'md:left-70'} right-6 ${rightSidebarVisible ? 'md:right-86' : ''}` 
+          : 'left-4 right-4'
       }`}
       style={{ marginLeft: 'max(0px, env(safe-area-inset-left))', marginRight: 'max(0px, env(safe-area-inset-right))' }}
     >
-      {/* Remove the extra margin since positioning is handled by the container */}
-      <div className="p-6">
-        <div className="max-w-4xl mx-auto space-y-3">
+      {/* Floating container with shadow and rounded corners */}
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 p-4 space-y-3">
           {/* Attached Files Display */}
           {attachedFileIds.length > 0 && (
             <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-chat-attachment-bg rounded-lg border border-blue-200 dark:border-border">
