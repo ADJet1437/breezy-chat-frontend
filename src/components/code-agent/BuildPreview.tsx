@@ -4,9 +4,10 @@ import { codeAgentAPI } from '@/utils/codeAgentApi';
 
 interface BuildPreviewProps {
   agentId: string;
+  refreshTrigger?: number;
 }
 
-export function BuildPreview({ agentId }: BuildPreviewProps) {
+export function BuildPreview({ agentId, refreshTrigger }: BuildPreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function BuildPreview({ agentId }: BuildPreviewProps) {
     };
 
     buildProject();
-  }, [agentId]);
+  }, [agentId, refreshTrigger]);
 
   if (isLoading) {
     return (

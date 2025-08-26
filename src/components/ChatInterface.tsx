@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Paperclip, Settings, Code, FileText, Trash2, Download, Menu, ExternalLink, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Trash2, Download, Menu, ExternalLink, Loader2 } from 'lucide-react';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
@@ -17,17 +17,12 @@ import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { buildApiUrl } from '../utils/apiConfig';
 import MessageList from './MessageList';
 import TypingIndicator from './TypingIndicator';
-import ImageMessage from './chat/ImageMessage';
-import ImageGeneratingMessage from './chat/ImageGeneratingMessage';
-import ImageEditingMessage from './chat/ImageEditingMessage';
 import MissionProgressIndicator, { MissionPhase } from './MissionProgressIndicator';
 import SubscriptionDialog from './SubscriptionDialog';
 import ChatStickyInputBar, { ChatStickyInputBarRef } from './ChatStickyInputBar';
 import FileUpload from './FileUpload';
 import { Message } from '../types/chat';
 import { BuildPreview } from './code-agent/BuildPreview';
-import { ViewModeToggle } from './code-agent/ViewModeToggle';
-import { DirectoryPanel } from './code-agent/DirectoryPanel';
 import { codeAgentAPI } from '../utils/codeAgentApi';
 
 type ViewMode = 'build' | 'files';
@@ -109,6 +104,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
   const [viewMode, setViewMode] = useState<ViewMode>('build');
   const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const projectDataRef = useRef<ProjectData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
@@ -384,13 +380,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   continue;
                 }
                 
-                // Special logging for tool_complete events
-                if (jsonStr.includes('tool_complete')) {
-                  console.log('🔍 Raw tool_complete JSON (first 500 chars):', jsonStr.substring(0, 500));
-                }
-                
                 const data = JSON.parse(jsonStr);
-                console.log('📨 All events:', data.event_type, data.data?.tool_name || '');
                 
                 if (data.event_type === 'mission_init') {
                   newMissionId = data.answer; // Store for navigation
@@ -419,6 +409,13 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
                   setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
+                  // Handle task_complete tool for auto preview refresh
+                  if (data.data?.tool_name === 'task_complete') {
+                    const requiresRefresh = data.data?.tool_result?.metadata?.requires_preview_refresh;
+                    if (requiresRefresh === true && showRightPanel && projectData?.project_id) {
+                      setRefreshTrigger(prev => prev + 1);
+                    }
+                  }
                 } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_generation') {
                   // For image generation, create skeleton instead of regular bot message
                   const skeletonMessage: Message = {
@@ -444,7 +441,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   setMessages(prev => [...prev, skeletonMessage]);
                   initialBotMessageCreated = true; // Mark as created to prevent duplicate
                 } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_generation') {
-                  console.log('🔧 Image generation complete event received:', data);
                   
                   // Replace skeleton with actual image using the same message ID
                   const result = data.data.result;
@@ -464,7 +460,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                     ));
                   }
                 } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_editing') {
-                  console.log('🔧 Image editing complete event received:', data);
                   
                   // Replace skeleton with actual edited image using the same message ID
                   const result = data.data.result;
@@ -484,10 +479,6 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                     ));
                   }
                 } else if (data.event_type === 'tool_complete') {
-                  console.log('🔧 Tool complete event received:', data);
-                  console.log('🔧 Tool name:', data.data?.tool_name);
-                  
-                  // Handle other tool completions
                 } else if (data.event_type === 'execution_reflection') {
                   const message = data.data.message || 'Processing...';
                   setCurrentStep(`💭 ${message}`);
@@ -999,7 +990,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
 
           {/* Scrollable Content */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            <BuildPreview agentId={projectData.project_id} />
+            <BuildPreview agentId={projectData.project_id} refreshTrigger={refreshTrigger} />
           </div>
         </div>
 

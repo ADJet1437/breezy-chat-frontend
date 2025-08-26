@@ -12,7 +12,7 @@ export interface Message {
   content: string;
   sender: 'user' | 'bot' | 'system';
   timestamp: Date;
-  type?: 'text' | 'image' | 'image-generating';
+  type?: 'text' | 'image' | 'image-generating' | 'image-editing';
   attachedFiles?: AttachedFile[];
   imageUrl?: string;
   imageAlt?: string;
