@@ -278,12 +278,12 @@ const Home: React.FC = () => {
                 `,
               }}
             >
-              AI-Powered
+              Your strategic
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> 
-                {" "}Intelligence
+                {" "}AI partner
               </span>
               <br />
-              for Modern Teams
+              for building missions
             </h1>
             
             <p 
@@ -467,9 +467,6 @@ const Home: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Why Choose BuiltX?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Built for modern teams who demand intelligence, efficiency, and results
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -546,8 +543,7 @@ const Home: React.FC = () => {
                 <Sparkles className="h-12 w-12 mb-6" />
                 <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  "To democratize artificial intelligence and make advanced AI capabilities 
-                  accessible to every team, regardless of their technical expertise or resources."
+                  "Empowering users to accomplish their missions effortlessly with AI."
                 </p>
                 <div className="mt-6 flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -648,10 +644,8 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Legal</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Terms of Service</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Cookie Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Security</a></li>
+                <li><a href="/privacy" className="text-gray-400 hover:text-white cursor-pointer">Privacy Policy</a></li>
+                <li><a href="/terms" className="text-gray-400 hover:text-white cursor-pointer">Terms of Service</a></li>
               </ul>
             </div>
           </div>
