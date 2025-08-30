@@ -245,9 +245,6 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
           <Shield className="h-8 w-8 text-white" />
         </div>
         <div className="text-center">
-          <DialogTitle className="text-2xl font-semibold text-foreground mb-2 text-center">
-            Welcome to Talosy
-          </DialogTitle>
           <p className="text-muted-foreground text-sm text-center">Sign in to your account</p>
         </div>
       </DialogHeader>
@@ -326,7 +323,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       
       <div className="text-center pt-6 border-t border-border/50">
         <p className="text-xs text-muted-foreground/60">
-          © 2025 Talosy
+          © 2025 BuiltX
         </p>
       </div>
     </div>

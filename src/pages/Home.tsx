@@ -120,7 +120,7 @@ const Home: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Bot className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">Talosy</span>
+              <span className="text-xl font-bold text-gray-900">BuiltX</span>
             </div>
 
             {/* Navigation Links */}
@@ -278,12 +278,12 @@ const Home: React.FC = () => {
                 `,
               }}
             >
-              AI-Powered
+              Your strategic
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> 
-                {" "}Intelligence
+                {" "}AI partner
               </span>
               <br />
-              for Modern Teams
+              for building missions
             </h1>
             
             <p 
@@ -353,7 +353,7 @@ const Home: React.FC = () => {
               Powerful Use Cases
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Discover how Talosy transforms different aspects of your workflow
+              Discover how BuiltX transforms different aspects of your workflow
             </p>
           </div>
 
@@ -465,11 +465,8 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose Talosy?
+              Why Choose BuiltX?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Built for modern teams who demand intelligence, efficiency, and results
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -518,7 +515,7 @@ const Home: React.FC = () => {
                 </span>
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed">
-                At Talosy, we believe that artificial intelligence should amplify human creativity, 
+                At BuiltX, we believe that artificial intelligence should amplify human creativity, 
                 not replace it. Our platform is designed to understand your unique workflow and 
                 provide intelligent assistance that feels natural and intuitive.
               </p>
@@ -546,15 +543,14 @@ const Home: React.FC = () => {
                 <Sparkles className="h-12 w-12 mb-6" />
                 <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  "To democratize artificial intelligence and make advanced AI capabilities 
-                  accessible to every team, regardless of their technical expertise or resources."
+                  "Empowering users to accomplish their missions effortlessly with AI."
                 </p>
                 <div className="mt-6 flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     <Bot className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="font-semibold">Talosy Team</div>
+                    <div className="font-semibold">BuiltX Team</div>
                     <div className="text-blue-200 text-sm">Building the Future</div>
                   </div>
                 </div>
@@ -571,7 +567,7 @@ const Home: React.FC = () => {
             Ready to Transform Your Workflow?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of teams already using Talosy to build better, faster, and smarter.
+            Join thousands of teams already using BuiltX to build better, faster, and smarter.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
@@ -604,7 +600,7 @@ const Home: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <Bot className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">Talosy</span>
+                <span className="text-xl font-bold">BuiltX</span>
               </div>
               <p className="text-gray-400 text-sm">
                 Intelligent AI platform for modern teams. Building the future of work, one mission at a time.
@@ -648,10 +644,8 @@ const Home: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Legal</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Terms of Service</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Cookie Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Security</a></li>
+                <li><a href="/privacy" className="text-gray-400 hover:text-white cursor-pointer">Privacy Policy</a></li>
+                <li><a href="/terms" className="text-gray-400 hover:text-white cursor-pointer">Terms of Service</a></li>
               </ul>
             </div>
           </div>
@@ -659,7 +653,7 @@ const Home: React.FC = () => {
           <div className="border-t border-gray-800 mt-8 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">
-                © 2024 Talosy. All rights reserved.
+                © 2025 BuiltX. All rights reserved.
               </p>
               <p className="text-gray-400 text-sm mt-2 md:mt-0">
                 Made with ❤️ for intelligent teams worldwide

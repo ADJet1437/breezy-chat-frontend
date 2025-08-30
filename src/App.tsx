@@ -19,6 +19,8 @@ import CodeAgent from "./pages/CodeAgent";
 import CodeAgentChat from "./pages/CodeAgentChat";
 import AgentDetail from "./pages/AgentDetail";
 import Home from "./pages/Home";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -47,6 +49,8 @@ const AppInner = () => {
             <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
             <Route path="/home" element={<Home />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
