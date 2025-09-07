@@ -21,6 +21,7 @@ import AgentDetail from "./pages/AgentDetail";
 import Home from "./pages/Home";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import UseCases from "./pages/UseCases";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const AppInner = () => {
             <Route path="/code" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
+            <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
             <Route path="/home" element={<Home />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
