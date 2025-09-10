@@ -40,7 +40,7 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ href, children, onClick
   </a>
 );
 
-const Home: React.FC = () => {
+const Overview: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('hero');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -879,4 +879,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default Overview;

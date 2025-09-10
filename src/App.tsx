@@ -18,7 +18,7 @@ import NotFound from "./pages/NotFound";
 import CodeAgent from "./pages/CodeAgent";
 import CodeAgentChat from "./pages/CodeAgentChat";
 import AgentDetail from "./pages/AgentDetail";
-import Home from "./pages/Home";
+import Overview from "./pages/Overview";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import UseCases from "./pages/UseCases";
@@ -50,7 +50,7 @@ const AppInner = () => {
             <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
-            <Route path="/overview" element={<Home />} />
+            <Route path="/overview" element={<Overview />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
