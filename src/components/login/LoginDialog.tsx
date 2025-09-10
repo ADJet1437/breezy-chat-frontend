@@ -323,7 +323,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
       
       <div className="text-center pt-6 border-t border-border/50">
         <p className="text-xs text-muted-foreground/60">
-          © 2025 BuiltX
+          © 2025 Talosy
         </p>
       </div>
     </div>
