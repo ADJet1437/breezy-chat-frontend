@@ -50,7 +50,7 @@ const AppInner = () => {
             <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
             <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
-            <Route path="/home" element={<Home />} />
+            <Route path="/overview" element={<Home />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
