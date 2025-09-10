@@ -13,7 +13,7 @@ const PrivacyPolicy: React.FC = () => {
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/overview')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -34,7 +34,7 @@ const PrivacyPolicy: React.FC = () => {
 
             <p className="mb-8 text-gray-700 dark:text-gray-300">
               This Privacy Policy describes how Talosy AB, a company incorporated in Sweden, 
-              collects, uses, and protects your information when you use BuiltX.
+              collects, uses, and protects your information when you use Talosy.
             </p>
 
             <section>
@@ -42,12 +42,12 @@ const PrivacyPolicy: React.FC = () => {
               
               <h3 className="text-xl font-medium mb-3">Account Information</h3>
               <p>
-                When you create a BuiltX account, we collect information such as your name, 
+                When you create a Talosy account, we collect information such as your name, 
                 email address, and authentication credentials through Google OAuth or email registration.
               </p>
 
               <h3 className="text-xl font-medium mb-3 mt-6">Usage Data</h3>
-              <p>We collect information about how you use BuiltX, including:</p>
+              <p>We collect information about how you use Talosy, including:</p>
               <ul className="list-disc pl-6 mt-2">
                 <li>Code prompts and generated content</li>
                 <li>Project configurations and build settings</li>
@@ -137,7 +137,7 @@ const PrivacyPolicy: React.FC = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">8. International Data Transfers</h2>
               <p>
-                BuiltX may store and process your information in countries other than your own. 
+                Talosy may store and process your information in countries other than your own. 
                 We ensure appropriate safeguards are in place to protect your information when it is transferred internationally.
               </p>
             </section>
@@ -146,7 +146,7 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-2xl font-semibold mb-4">9. Changes to This Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. We will notify you of significant changes 
-                via email or through our service. Your continued use of BuiltX after changes constitutes 
+                via email or through our service. Your continued use of Talosy after changes constitutes 
                 acceptance of the updated policy.
               </p>
             </section>

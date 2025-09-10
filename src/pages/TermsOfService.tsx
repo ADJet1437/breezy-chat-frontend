@@ -13,7 +13,7 @@ const TermsOfService: React.FC = () => {
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/overview')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -35,7 +35,7 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
               <p>
-                By accessing and using BuiltX ("we", "our", "us"), operated by Talosy AB, a company 
+                By accessing and using Talosy ("we", "our", "us"), operated by Talosy AB, a company 
                 incorporated in Sweden, you accept and agree to be bound by the terms and provision 
                 of this agreement.
               </p>
@@ -44,7 +44,7 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">2. Description of Service</h2>
               <p>
-                BuiltX is an AI-powered platform that provides code generation, project building, 
+                Talosy is an AI-powered platform that provides code generation, project building, 
                 and development assistance services. Our service includes but is not limited to:
               </p>
               <ul className="list-disc pl-6 mt-2">
@@ -66,7 +66,7 @@ const TermsOfService: React.FC = () => {
 
             <section>
               <h2 className="text-2xl font-semibold mb-4">4. Acceptable Use</h2>
-              <p>You agree not to use BuiltX to:</p>
+              <p>You agree not to use Talosy to:</p>
               <ul className="list-disc pl-6 mt-2">
                 <li>Generate malicious code or software intended to harm systems or users</li>
                 <li>Violate any applicable laws or regulations</li>
@@ -79,7 +79,7 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">5. Intellectual Property</h2>
               <p>
-                The code and content generated through BuiltX belongs to you. However, our underlying 
+                The code and content generated through Talosy belongs to you. However, our underlying 
                 AI models, algorithms, and platform technology remain our intellectual property. 
                 You retain ownership of any code you input or generate using our service.
               </p>
@@ -89,7 +89,7 @@ const TermsOfService: React.FC = () => {
               <h2 className="text-2xl font-semibold mb-4">6. Privacy and Data</h2>
               <p>
                 Your privacy is important to us. Please review our Privacy Policy, which also governs 
-                your use of BuiltX, to understand our practices regarding your personal information.
+                your use of Talosy, to understand our practices regarding your personal information.
               </p>
             </section>
 
@@ -105,7 +105,7 @@ const TermsOfService: React.FC = () => {
             <section>
               <h2 className="text-2xl font-semibold mb-4">8. Limitation of Liability</h2>
               <p>
-                BuiltX is provided "as is" without warranties of any kind. We shall not be liable 
+                Talosy is provided "as is" without warranties of any kind. We shall not be liable 
                 for any indirect, incidental, special, consequential, or punitive damages resulting 
                 from your use of our service.
               </p>
@@ -115,7 +115,7 @@ const TermsOfService: React.FC = () => {
               <h2 className="text-2xl font-semibold mb-4">9. Changes to Terms</h2>
               <p>
                 We reserve the right to modify these terms at any time. We will notify users of 
-                significant changes via email or through our service. Continued use of BuiltX 
+                significant changes via email or through our service. Continued use of Talosy 
                 after changes constitutes acceptance of the new terms.
               </p>
             </section>
