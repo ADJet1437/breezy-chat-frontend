@@ -18,7 +18,8 @@ import {
   MessageSquare,
   Terminal,
   FileText,
-  Palette
+  Palette,
+  Music
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,12 +40,27 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ href, children, onClick
   </a>
 );
 
-const Home: React.FC = () => {
+const Overview: React.FC = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('hero');
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
+
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      // If running on localhost, redirect to talosy.dev for use cases
+      if (origin.includes('localhost')) {
+        return 'http://talosy.dev';
+      }
+      return origin; // Production: uses actual domain
+    }
+    // Server-side fallback
+    return process.env.NODE_ENV === 'development' 
+      ? 'http://talosy.dev' 
+      : 'https://talosy.com';
+  };
 
   const scrollToSection = (sectionId: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,7 +116,7 @@ const Home: React.FC = () => {
       { threshold: 0.3 }
     );
 
-    const sections = ['hero', 'gallery', 'features', 'about', 'contact'];
+    const sections = ['hero', 'gallery', 'use-cases-showcase', 'features', 'about', 'contact'];
     sections.forEach((id) => {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
@@ -120,13 +136,16 @@ const Home: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Bot className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">BuiltX</span>
+              <span className="text-xl font-bold text-gray-900">Talosy</span>
             </div>
 
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
               <NavigationItem href="#gallery" onClick={scrollToSection('gallery')}>
-                Gallery
+                Solutions
+              </NavigationItem>
+              <NavigationItem href="#use-cases-showcase" onClick={scrollToSection('use-cases-showcase')}>
+                Use Cases
               </NavigationItem>
               <NavigationItem href="#features" onClick={scrollToSection('features')}>
                 Features
@@ -323,7 +342,7 @@ const Home: React.FC = () => {
                 onClick={scrollToSection('gallery')}
                 className="px-8 py-4 text-lg border-2 hover:bg-gray-50 backdrop-blur-sm bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                Explore Use Cases
+                Explore Solutions
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -345,15 +364,15 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Use Cases Gallery Section */}
+      {/* Solutions Gallery Section */}
       <section id="gallery" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Powerful Use Cases
+              Powerful Solutions
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Discover how BuiltX transforms different aspects of your workflow
+              Discover how Talosy transforms different aspects of your workflow with intelligent solutions
             </p>
           </div>
 
@@ -447,7 +466,7 @@ const Home: React.FC = () => {
                   <Palette className="h-6 w-6 text-white" />
                 </div>
                 <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-orange-700 transition-colors">
-                  Custom Solutions
+                  Business Custom Solution
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -460,12 +479,185 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Use Cases Showcase Section */}
+      <section id="use-cases-showcase" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Real-World Solutions
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Explore our collection of production-ready applications built with Talosy. 
+              From SaaS platforms to e-commerce stores, see what's possible.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {/* Swift Productivity SaaS */}
+            <a 
+              href={`${getBaseUrl()}/use-cases/swift-productivity-saas/`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group cursor-pointer"
+            >
+              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 overflow-hidden border border-gray-100">
+                <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 relative overflow-hidden">
+                  {/* Project Image Overlay */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
+                    style={{
+                      backgroundImage: `url(${getBaseUrl()}/use-cases/static/images/swift-productivity-saas.png)`
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute top-4 left-4 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="font-bold text-lg">Swift Productivity</h3>
+                    <p className="text-blue-100 text-sm">Team SaaS Platform</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Complete team management platform with task tracking, collaboration tools, and analytics dashboard.
+                  </p>
+                  <div className="mt-4 flex items-center text-blue-600 text-sm font-medium group-hover:text-purple-600 transition-colors">
+                    View Project <ArrowRight className="ml-1 h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Melodic Stream Hub */}
+            <a 
+              href={`${getBaseUrl()}/use-cases/melodic-stream-hub/`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group cursor-pointer"
+            >
+              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 overflow-hidden border border-gray-100">
+                <div className="h-48 bg-gradient-to-br from-purple-500 to-blue-600 relative overflow-hidden">
+                  {/* Project Image Overlay */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
+                    style={{
+                      backgroundImage: `url(${getBaseUrl()}/use-cases/static/images/melodic-stream-hub-1.png)`
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute top-4 left-4 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Music className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="font-bold text-lg">Melodic Stream</h3>
+                    <p className="text-purple-100 text-sm">Music Streaming</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Spotify-like music streaming platform with playlist creation, artist pages, and audio controls.
+                  </p>
+                  <div className="mt-4 flex items-center text-purple-600 text-sm font-medium group-hover:text-blue-600 transition-colors">
+                    View Project <ArrowRight className="ml-1 h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Swift Feast Delivery */}
+            <a 
+              href={`${getBaseUrl()}/use-cases/swift-feast-delivery/`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group cursor-pointer"
+            >
+              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 overflow-hidden border border-gray-100">
+                <div className="h-48 bg-gradient-to-br from-orange-500 to-red-600 relative overflow-hidden">
+                  {/* Project Image Overlay */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
+                    style={{
+                      backgroundImage: `url(${getBaseUrl()}/use-cases/static/images/swift-feast-delivery.png)`
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute top-4 left-4 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="font-bold text-lg">Swift Feast</h3>
+                    <p className="text-orange-100 text-sm">Food Delivery App</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Modern food delivery platform with real-time tracking, payment integration, and restaurant management.
+                  </p>
+                  <div className="mt-4 flex items-center text-orange-600 text-sm font-medium group-hover:text-red-600 transition-colors">
+                    View Project <ArrowRight className="ml-1 h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            </a>
+
+            {/* Sparkle Jewel Boutique */}
+            <a 
+              href={`${getBaseUrl()}/use-cases/sparkle-jewel-boutique/`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group cursor-pointer"
+            >
+              <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 overflow-hidden border border-gray-100">
+                <div className="h-48 bg-gradient-to-br from-pink-500 to-purple-600 relative overflow-hidden">
+                  {/* Project Image Overlay */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-50 mix-blend-overlay"
+                    style={{
+                      backgroundImage: `url(${getBaseUrl()}/use-cases/static/images/sparkle-jewel-boutique-1.png)`
+                    }}
+                  ></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute top-4 left-4 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="font-bold text-lg">Sparkle Jewel</h3>
+                    <p className="text-pink-100 text-sm">Luxury E-commerce</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    Elegant jewelry e-commerce store with 3D product visualization and premium shopping experience.
+                  </p>
+                  <div className="mt-4 flex items-center text-pink-600 text-sm font-medium group-hover:text-purple-600 transition-colors">
+                    View Project <ArrowRight className="ml-1 h-3 w-3" />
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          {/* CTA Section */}
+          <div className="text-center">
+            <Button
+              onClick={() => navigate('/use-cases')}
+              size="lg"
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              View All Use Cases
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose BuiltX?
+              Why Choose Talosy?
             </h2>
           </div>
 
@@ -515,7 +707,7 @@ const Home: React.FC = () => {
                 </span>
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed">
-                At BuiltX, we believe that artificial intelligence should amplify human creativity, 
+                At Talosy, we believe that artificial intelligence should amplify human creativity, 
                 not replace it. Our platform is designed to understand your unique workflow and 
                 provide intelligent assistance that feels natural and intuitive.
               </p>
@@ -532,10 +724,6 @@ const Home: React.FC = () => {
                   <div className="text-3xl font-bold text-purple-600">50k+</div>
                   <div className="text-sm text-gray-500">Projects Created</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">99.9%</div>
-                  <div className="text-sm text-gray-500">Uptime</div>
-                </div>
               </div>
             </div>
             <div className="relative">
@@ -543,15 +731,15 @@ const Home: React.FC = () => {
                 <Sparkles className="h-12 w-12 mb-6" />
                 <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  "Empowering users to accomplish their missions effortlessly with AI."
+                  "Empowering you to accomplish your missions effortlessly with AI."
                 </p>
                 <div className="mt-6 flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     <Bot className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="font-semibold">BuiltX Team</div>
-                    <div className="text-blue-200 text-sm">Building the Future</div>
+                    <div className="font-semibold">Talosy Team</div>
+                    <div className="text-blue-200 text-sm">Tailored operating system</div>
                   </div>
                 </div>
               </div>
@@ -567,7 +755,7 @@ const Home: React.FC = () => {
             Ready to Transform Your Workflow?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of teams already using BuiltX to build better, faster, and smarter.
+            Join thousands of teams already using Talosy to build better, faster, and smarter.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
@@ -577,14 +765,6 @@ const Home: React.FC = () => {
             >
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg"
-            >
-              <Mail className="mr-2 h-5 w-5" />
-              Contact Sales
             </Button>
           </div>
         </div>
@@ -600,11 +780,17 @@ const Home: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <Bot className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">BuiltX</span>
+                <span className="text-xl font-bold">Talosy</span>
               </div>
               <p className="text-gray-400 text-sm">
                 Intelligent AI platform for modern teams. Building the future of work, one mission at a time.
               </p>
+              <div className="mt-4">
+                <p className="text-gray-300 text-sm font-semibold">Business Inquiries:</p>
+                <a href="mailto:business@talosy.com" className="text-blue-400 hover:text-blue-300 text-sm">
+                  business@talosy.com
+                </a>
+              </div>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
                   <Twitter className="h-5 w-5" />
@@ -623,9 +809,8 @@ const Home: React.FC = () => {
               <h3 className="text-lg font-semibold">Product</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="text-gray-400 hover:text-white cursor-pointer">Features</a></li>
-                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Use Cases</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Solutions</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Pricing</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">API Docs</a></li>
               </ul>
             </div>
 
@@ -634,7 +819,7 @@ const Home: React.FC = () => {
               <h3 className="text-lg font-semibold">Company</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#about" className="text-gray-400 hover:text-white cursor-pointer">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Careers</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Business</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Blog</a></li>
                 <li><a href="#contact" className="text-gray-400 hover:text-white cursor-pointer">Contact</a></li>
               </ul>
@@ -653,10 +838,7 @@ const Home: React.FC = () => {
           <div className="border-t border-gray-800 mt-8 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">
-                © 2025 BuiltX. All rights reserved.
-              </p>
-              <p className="text-gray-400 text-sm mt-2 md:mt-0">
-                Made with ❤️ for intelligent teams worldwide
+                © 2025 Talosy. All rights reserved.
               </p>
             </div>
           </div>
@@ -697,4 +879,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default Overview;
