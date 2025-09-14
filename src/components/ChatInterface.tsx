@@ -296,11 +296,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
       processMissionData(missionDetails);
       
     } catch (error) {
-      toast({
-        description: "Failed to load mission history. Please try again.",
-        variant: "destructive",
-        duration: 3000,
-      });
+      // Silently fail mission history loading
       
       // Keep messages empty on error
       setMessages([]);
