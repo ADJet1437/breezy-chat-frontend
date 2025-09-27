@@ -29,8 +29,8 @@ type ViewMode = 'build' | 'files';
 
 interface TaskMessage {
   id: string;
-  message: string;
-  answer: string;
+  role: "user" | "assistant";
+  content: string;
   created_at: string;
   mission_id: string;
   file_ids: string[];
@@ -229,34 +229,20 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
     const historyMessages: Message[] = [];
     
     missionDetails.task_messages.forEach((taskMessage) => {
-        // Add user message with only uploaded file attachments (exclude generated files)
+        // Convert based on role
         historyMessages.push({
-          id: `${taskMessage.id}_user`,
-          content: taskMessage.message,
-          sender: 'user',
+          id: taskMessage.id,
+          content: taskMessage.content,
+          sender: taskMessage.role === 'user' ? 'user' : 'bot',
           timestamp: new Date(taskMessage.created_at),
           attachedFiles: taskMessage.files ? taskMessage.files
-            .filter(file => file.source === 'upload') // Only show uploaded files in user messages
+            .filter(file => taskMessage.role === 'user' ? file.source === 'upload' : true) // Only show uploaded files in user messages
             .map(file => ({
               id: file.id,
               name: file.name,
               size: file.size,
               type: file.type
             })) : undefined,
-        });
-
-        // Add bot response
-        historyMessages.push({
-          id: `${taskMessage.id}_bot`,
-          content: taskMessage.answer,
-          sender: 'bot',
-          timestamp: new Date(taskMessage.created_at),
-          attachedFiles: taskMessage.files ? taskMessage.files.map(file => ({
-            id: file.id,
-            name: file.name,
-            size: file.size,
-            type: file.type
-          })) : undefined,
         });
 
         // Add separate ImageMessage for each image from the images field
@@ -271,7 +257,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
               imageUrl: buildApiUrl(`/api/v1/files/${image.id}`),
               imageAlt: image.name,
               filename: image.name,
-              prompt: taskMessage.message, // Use the original user message as prompt
+              prompt: taskMessage.content, // Use the task message content as prompt
               isLoaded: true // Mark as loaded for existing images from history
             });
           });
@@ -707,8 +693,8 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
       // Save deletion message to task_messages table
       try {
         await authenticatedPost(buildApiUrl(`/api/v1/missions/${effectiveMissionId}/task-messages`), {
-          message: `⎿ User deleted project ${projectData.project_id}`,
-          answer: "", // Empty answer for system messages
+          role: "assistant",
+          content: `⎿ User deleted project ${projectData.project_id}`,
         });
       } catch (messageError) {
         // Don't fail the entire operation if message saving fails
