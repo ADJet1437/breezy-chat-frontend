@@ -1,15 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Code, 
-  Bot, 
-  Sparkles, 
-  Users, 
-  Zap, 
-  Globe, 
-  Twitter, 
-  Github, 
+
+// Calendly integration helper
+const openCalendly = () => {
+  if (typeof window !== 'undefined' && (window as any).Calendly) {
+    (window as any).Calendly.initPopupWidget({
+      url: 'https://calendly.com/zijie-liang-talosy/30min'
+    });
+  } else {
+    // Fallback to opening in new tab if widget not loaded
+    window.open('https://calendly.com/zijie-liang-talosy/30min', '_blank');
+  }
+};
+import {
+  ArrowRight,
+  Code,
+  Bot,
+  Sparkles,
+  Users,
+  Zap,
+  Globe,
+  Twitter,
+  Github,
   Linkedin,
   Mail,
   ChevronDown,
@@ -19,7 +31,15 @@ import {
   Terminal,
   FileText,
   Palette,
-  Music
+  Music,
+  Database,
+  GitBranch,
+  Server,
+  BarChart3,
+  Workflow,
+  Shield,
+  CheckCircle2,
+  Plug
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +66,24 @@ const Overview: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLElement>(null);
+
+  // Load Calendly widget script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://assets.calendly.com/assets/external/widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    const link = document.createElement('link');
+    link.href = 'https://assets.calendly.com/assets/external/widget.css';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    return () => {
+      document.body.removeChild(script);
+      document.head.removeChild(link);
+    };
+  }, []);
 
   const getBaseUrl = () => {
     if (typeof window !== 'undefined') {
@@ -142,13 +180,13 @@ const Overview: React.FC = () => {
             {/* Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
               <NavigationItem href="#gallery" onClick={scrollToSection('gallery')}>
-                Solutions
+                Services
               </NavigationItem>
               <NavigationItem href="#use-cases-showcase" onClick={scrollToSection('use-cases-showcase')}>
-                Use Cases
+                Case Studies
               </NavigationItem>
               <NavigationItem href="#features" onClick={scrollToSection('features')}>
-                Features
+                Why Us
               </NavigationItem>
               <NavigationItem href="#about" onClick={scrollToSection('about')}>
                 About
@@ -160,11 +198,11 @@ const Overview: React.FC = () => {
 
             {/* CTA Button */}
             <Button
-              onClick={handleGetStarted}
+              onClick={openCalendly}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6"
             >
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <Mail className="mr-2 h-4 w-4" />
+              Book Consultation
             </Button>
           </div>
         </div>
@@ -287,7 +325,7 @@ const Overview: React.FC = () => {
           }}
         >
           <div className="space-y-8 animate-fade-in">
-            <h1 
+            <h1
               className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight transform-gpu"
               style={{
                 transform: `translateZ(50px)`,
@@ -298,21 +336,21 @@ const Overview: React.FC = () => {
               }}
             >
               Your strategic
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> 
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}AI partner
               </span>
               <br />
               for building missions
             </h1>
-            
-            <p 
+
+            <p
               className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed transform-gpu"
               style={{
                 transform: `translateZ(30px)`,
               }}
             >
-              Transform your workflow with intelligent mission planning, 
-              advanced code assistance, and comprehensive knowledge management.
+              Expert software consultancy delivering RAG systems, agentic AI applications,
+              process automation, and enterprise integrations tailored to your needs.
             </p>
 
             <div 
@@ -322,7 +360,7 @@ const Overview: React.FC = () => {
               }}
             >
               <Button
-                onClick={handleGetStarted}
+                onClick={openCalendly}
                 size="lg"
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                 style={{
@@ -332,17 +370,17 @@ const Overview: React.FC = () => {
                   `,
                 }}
               >
-                <Play className="mr-2 h-5 w-5" />
-                Start Your Journey
+                <Mail className="mr-2 h-5 w-5" />
+                Book Free Consultation
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="lg"
                 onClick={scrollToSection('gallery')}
                 className="px-8 py-4 text-lg border-2 hover:bg-gray-50 backdrop-blur-sm bg-white/80 shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                Explore Solutions
+                View Our Services
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -364,117 +402,231 @@ const Overview: React.FC = () => {
         </div>
       </section>
 
-      {/* Solutions Gallery Section */}
+      {/* Core Services Value Proposition Section */}
       <section id="gallery" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Powerful Solutions
+              Expert System Development
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Discover how Talosy transforms different aspects of your workflow with intelligent solutions
+              We build intelligent systems that transform your business operations with cutting-edge AI technology
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 overflow-visible">
-            {/* Mission Planning Card */}
-            <Card className="group cursor-pointer border border-gray-200 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-300 hover:-translate-y-2 hover:z-20 relative transform-gpu bg-gradient-to-br from-blue-50 to-blue-100">
-              <CardHeader className="pb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <MessageSquare className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors">
-                  Mission Planning
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-gray-600 leading-relaxed">
-                  Intelligent conversation flows that help you plan, strategize, and execute complex projects with AI guidance.
-                </CardDescription>
-              </CardContent>
-            </Card>
+          {/* Services Value Table */}
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 md:p-12 shadow-xl mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Code Assistant Card - Larger */}
-            <Card className="group cursor-pointer border border-gray-200 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-green-500/20 hover:border-green-300 hover:-translate-y-2 hover:z-20 relative transform-gpu bg-gradient-to-br from-green-50 to-emerald-100 md:col-span-2 lg:col-span-1 lg:row-span-2">
-              <CardHeader className="pb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Code className="h-6 w-6 text-white" />
-                </div>
-                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">
-                  Code Assistant
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CardDescription className="text-gray-600 leading-relaxed">
-                  Advanced AI coding companion that reads, analyzes, and modifies your codebase. From debugging to feature implementation.
-                </CardDescription>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Terminal className="h-4 w-4 mr-2" />
-                    Run commands and tests
+              {/* RAG Systems */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Database className="h-7 w-7 text-white" />
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Analyze entire codebases
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Real-time modifications
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">RAG Systems</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      Retrieval-Augmented Generation systems that connect your AI to proprietary data sources.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span>Custom embedding strategies for your domain</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span>Vector database optimization & management</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span>Multi-source document ingestion pipelines</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span>Semantic search with contextual relevance</span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Knowledge Management Card */}
-            <Card className="group cursor-pointer border border-gray-200 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-300 hover:-translate-y-2 hover:z-20 relative transform-gpu bg-gradient-to-br from-purple-50 to-pink-100">
-              <CardHeader className="pb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <FileText className="h-6 w-6 text-white" />
+              {/* Agentic AI Applications */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <GitBranch className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">Agentic AI Coding</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      Autonomous AI agents that understand natural language prompts and build complete applications.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <span>Prompt-to-application development systems</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <span>Multi-agent orchestration frameworks</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <span>Automated testing & code review agents</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-purple-500 flex-shrink-0 mt-0.5" />
+                        <span>Self-healing & adaptive code systems</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-purple-700 transition-colors">
-                  Knowledge Base
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-gray-600 leading-relaxed">
-                  Centralized knowledge management with AI-powered search, document analysis, and intelligent insights.
-                </CardDescription>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Team Collaboration Card */}
-            <Card className="group cursor-pointer border border-gray-200 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/20 hover:border-indigo-300 hover:-translate-y-2 hover:z-20 relative transform-gpu bg-gradient-to-br from-indigo-50 to-cyan-100 md:col-span-2 lg:col-span-1">
-              <CardHeader className="pb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Users className="h-6 w-6 text-white" />
+              {/* Process Automation */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Workflow className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">Process Automation</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      End-to-end workflow automation that eliminates manual tasks and accelerates operations.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Business process analysis & redesign</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Intelligent workflow orchestration</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Document processing & data extraction</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span>Event-driven automation pipelines</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-indigo-700 transition-colors">
-                  Team Collaboration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-gray-600 leading-relaxed">
-                  Seamless team workflows with shared missions, collaborative coding sessions, and unified knowledge sharing.
-                </CardDescription>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Customization Card */}
-            <Card className="group cursor-pointer border border-gray-200 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-orange-500/20 hover:border-orange-300 hover:-translate-y-2 hover:z-20 relative transform-gpu bg-gradient-to-br from-orange-50 to-yellow-100">
-              <CardHeader className="pb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Palette className="h-6 w-6 text-white" />
+              {/* System Integrations */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Plug className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">Enterprise Integrations</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      Seamless connections between your existing tools, platforms, and data sources.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <span>API design & development</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <span>Legacy system modernization</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <span>Third-party service integration</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <span>Real-time data synchronization</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-orange-700 transition-colors">
-                  Business Custom Solution
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-gray-600 leading-relaxed">
-                  Tailored AI solutions that adapt to your specific industry needs and workflow requirements.
-                </CardDescription>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Data Analysis */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">Data Analysis & BI</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      Transform raw data into actionable insights with AI-powered analytics platforms.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span>Custom analytics dashboards</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span>Predictive modeling & forecasting</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span>Natural language query interfaces</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span>Automated reporting systems</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* On-Premises Deployment */}
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-r from-gray-700 to-gray-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Server className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">On-Premises Setup</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      Secure, private AI deployments within your infrastructure with full data sovereignty.
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-gray-700 flex-shrink-0 mt-0.5" />
+                        <span>Private cloud & on-prem installations</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-gray-700 flex-shrink-0 mt-0.5" />
+                        <span>Air-gapped environment support</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-gray-700 flex-shrink-0 mt-0.5" />
+                        <span>Compliance & security hardening</span>
+                      </li>
+                      <li className="flex items-start text-xs text-gray-600">
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-gray-700 flex-shrink-0 mt-0.5" />
+                        <span>Custom model fine-tuning & hosting</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Value Proposition Banner */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-center text-white">
+            <h3 className="text-2xl md:text-3xl font-bold mb-4">
+              End-to-End Implementation & Support
+            </h3>
+            <p className="text-blue-100 text-lg max-w-3xl mx-auto">
+              From initial consultation to deployment and maintenance, we deliver complete solutions that integrate seamlessly with your existing systems and scale with your business needs.
+            </p>
           </div>
         </div>
       </section>
@@ -659,36 +811,69 @@ const Overview: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               Why Choose Talosy?
             </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We combine technical excellence with business understanding to deliver solutions that drive real value
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto">
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                <Code className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Production-Ready Code</h3>
+              <p className="text-gray-600">
+                Clean, maintainable, and scalable solutions built following industry best practices and your team's standards
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mb-6">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Collaborative Approach</h3>
+              <p className="text-gray-600">
+                We work alongside your team, sharing knowledge and ensuring smooth handoffs with comprehensive documentation
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
                 <Zap className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Lightning Fast</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Rapid Prototyping</h3>
               <p className="text-gray-600">
-                Instant responses and real-time processing that keeps up with your pace
+                From concept to working prototype in weeks, not months. Test ideas quickly and iterate based on feedback
               </p>
             </div>
 
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto">
-                <Bot className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6">
+                <Shield className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">AI-Powered</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Security First</h3>
               <p className="text-gray-600">
-                Advanced AI models that understand context and deliver intelligent insights
+                Enterprise-grade security practices, compliance expertise, and data protection built into every solution
               </p>
             </div>
 
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto">
-                <Globe className="h-8 w-8 text-white" />
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center mb-6">
+                <BarChart3 className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Universal</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Measurable Results</h3>
               <p className="text-gray-600">
-                Works with any codebase, any language, and any workflow
+                Clear success metrics and KPIs established upfront. We track progress and demonstrate ROI throughout the project
+              </p>
+            </div>
+
+            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all">
+              <div className="w-16 h-16 bg-gradient-to-r from-gray-700 to-gray-900 rounded-2xl flex items-center justify-center mb-6">
+                <Server className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Flexible Deployment</h3>
+              <p className="text-gray-600">
+                Cloud, on-premises, or hybrid setups. We adapt to your infrastructure requirements and security policies
               </p>
             </div>
           </div>
@@ -701,45 +886,79 @@ const Overview: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-                Building the Future of
+                Your Trusted
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {" "}Intelligent Work
+                  {" "}AI Consultancy
                 </span>
+                <br />Partner
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed">
-                At Talosy, we believe that artificial intelligence should amplify human creativity, 
-                not replace it. Our platform is designed to understand your unique workflow and 
-                provide intelligent assistance that feels natural and intuitive.
+                We specialize in designing and implementing enterprise-grade AI solutions that solve real business problems.
+                Our team brings deep expertise in machine learning, distributed systems, and software architecture.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed">
-                From mission planning to code development, from knowledge management to team 
-                collaboration, we're building tools that help you achieve more while working smarter.
+                Whether you need a custom RAG system, intelligent automation, or a complete AI-powered platform,
+                we deliver production-ready solutions with comprehensive training and ongoing support.
               </p>
-              <div className="flex items-center space-x-6 pt-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">10k+</div>
-                  <div className="text-sm text-gray-500">Active Users</div>
+              <div className="grid grid-cols-2 gap-6 pt-4">
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <div className="text-2xl font-bold text-gray-900">100%</div>
+                  <div className="text-sm text-gray-600">Client Satisfaction</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">50k+</div>
-                  <div className="text-sm text-gray-500">Projects Created</div>
+                <div className="border-l-4 border-green-500 pl-4">
+                  <div className="text-2xl font-bold text-gray-900">24/7</div>
+                  <div className="text-sm text-gray-600">Support Available</div>
                 </div>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative space-y-6">
               <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white">
-                <Sparkles className="h-12 w-12 mb-6" />
-                <h3 className="text-2xl font-bold mb-4">Our Mission</h3>
-                <p className="text-blue-100 leading-relaxed">
-                  "Empowering you to accomplish your missions effortlessly with AI."
+                <Shield className="h-12 w-12 mb-6" />
+                <h3 className="text-2xl font-bold mb-4">Our Commitment</h3>
+                <p className="text-blue-100 leading-relaxed mb-4">
+                  "Delivering secure, scalable AI solutions that drive measurable business value."
                 </p>
-                <div className="mt-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <Bot className="h-5 w-5" />
+                <ul className="space-y-3">
+                  <li className="flex items-center text-blue-100">
+                    <CheckCircle2 className="h-5 w-5 mr-3 flex-shrink-0" />
+                    <span>Fixed-price projects or flexible retainers</span>
+                  </li>
+                  <li className="flex items-center text-blue-100">
+                    <CheckCircle2 className="h-5 w-5 mr-3 flex-shrink-0" />
+                    <span>Complete IP ownership transfer</span>
+                  </li>
+                  <li className="flex items-center text-blue-100">
+                    <CheckCircle2 className="h-5 w-5 mr-3 flex-shrink-0" />
+                    <span>Comprehensive documentation & training</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                <h4 className="font-bold text-gray-900 mb-3">Industries We Serve</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    Financial Services
                   </div>
-                  <div>
-                    <div className="font-semibold">Talosy Team</div>
-                    <div className="text-blue-200 text-sm">Tailored operating system</div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                    Retail
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    E-commerce
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                    SaaS & Tech
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
+                    Education
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-pink-500 rounded-full mr-2"></div>
+                    Marketing
                   </div>
                 </div>
               </div>
@@ -750,22 +969,65 @@ const Overview: React.FC = () => {
 
       {/* Contact/CTA Section */}
       <section id="contact" className="py-20 bg-gradient-to-r from-blue-500 to-purple-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Workflow?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of teams already using Talosy to build better, faster, and smarter.
-          </p>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Let's Build Something Extraordinary
+            </h2>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Schedule a free consultation to discuss your project requirements and discover how we can help you leverage AI to achieve your business goals.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <MessageSquare className="h-10 w-10 text-white mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-white mb-2">Free Consultation</h3>
+              <p className="text-blue-100 text-sm">
+                30-minute discovery call to understand your needs
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <FileText className="h-10 w-10 text-white mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-white mb-2">Custom Proposal</h3>
+              <p className="text-blue-100 text-sm">
+                Detailed project plan with timeline and pricing
+              </p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+              <Zap className="h-10 w-10 text-white mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-white mb-2">Rapid Delivery</h3>
+              <p className="text-blue-100 text-sm">
+                Agile development with regular progress updates
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              onClick={openCalendly}
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 text-lg font-semibold shadow-xl"
+            >
+              <Mail className="mr-2 h-5 w-5" />
+              Schedule Consultation
+            </Button>
             <Button
               onClick={handleGetStarted}
               size="lg"
-              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 text-lg font-semibold"
+              variant="outline"
+              className="bg-transparent border-2 border-white text-white hover:bg-white/10 px-8 py-4 text-lg font-semibold"
             >
-              Get Started Free
+              Try Our Platform
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+          </div>
+
+          <div className="mt-10 text-center">
+            <p className="text-blue-100 text-sm mb-2">Prefer email?</p>
+            <a href="mailto:support@talosy.com" className="text-white font-semibold text-lg hover:underline">
+              support@talosy.com
+            </a>
           </div>
         </div>
       </section>
@@ -783,34 +1045,29 @@ const Overview: React.FC = () => {
                 <span className="text-xl font-bold">Talosy</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Intelligent AI platform for modern teams. Building the future of work, one mission at a time.
+                Expert AI consultancy delivering custom software solutions. We transform your business with intelligent automation, RAG systems, and enterprise AI applications.
               </p>
               <div className="mt-4">
-                <p className="text-gray-300 text-sm font-semibold">Business Inquiries:</p>
-                <a href="mailto:business@talosy.com" className="text-blue-400 hover:text-blue-300 text-sm">
-                  business@talosy.com
+                <p className="text-gray-300 text-sm font-semibold">Let's Work Together:</p>
+                <a href="mailto:support@talosy.com" className="text-blue-400 hover:text-blue-300 text-sm">
+                  support@talosy.com
                 </a>
               </div>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  <Github className="h-5 w-5" />
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <a href="https://www.linkedin.com/company/talosy/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
                   <Linkedin className="h-5 w-5" />
                 </a>
               </div>
             </div>
 
-            {/* Product */}
+            {/* Services */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Product</h3>
+              <h3 className="text-lg font-semibold">Services</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#features" className="text-gray-400 hover:text-white cursor-pointer">Features</a></li>
-                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Solutions</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Pricing</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">RAG Systems</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Agentic AI Coding</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Process Automation</a></li>
+                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Enterprise Integration</a></li>
               </ul>
             </div>
 
@@ -819,9 +1076,9 @@ const Overview: React.FC = () => {
               <h3 className="text-lg font-semibold">Company</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#about" className="text-gray-400 hover:text-white cursor-pointer">About Us</a></li>
-                <li><a href="#gallery" className="text-gray-400 hover:text-white cursor-pointer">Business</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white cursor-pointer">Blog</a></li>
-                <li><a href="#contact" className="text-gray-400 hover:text-white cursor-pointer">Contact</a></li>
+                <li><a href="#use-cases-showcase" className="text-gray-400 hover:text-white cursor-pointer">Case Studies</a></li>
+                <li><a href="#contact" className="text-gray-400 hover:text-white cursor-pointer">Schedule Consultation</a></li>
+                <li><a href="mailto:support@talosy.com" className="text-gray-400 hover:text-white cursor-pointer">Contact</a></li>
               </ul>
             </div>
 
