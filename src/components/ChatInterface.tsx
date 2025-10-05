@@ -6,10 +6,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Paperclip, Trash2, Download, Menu, ExternalLink, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Trash2, Download, Menu, ExternalLink, Loader2, Presentation, Hammer, FileCode, Printer } from 'lucide-react';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
@@ -24,8 +25,9 @@ import FileUpload from './FileUpload';
 import { Message } from '../types/chat';
 import { BuildPreview } from './code-agent/BuildPreview';
 import { codeAgentAPI } from '../utils/codeAgentApi';
+import { PresentationPreview } from './presentation/PresentationPreview';
 
-type ViewMode = 'build' | 'files';
+type ViewMode = 'build' | 'files' | 'presentation';
 
 interface TaskMessage {
   id: string;
@@ -105,6 +107,13 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
   const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [presentations, setPresentations] = useState<Array<{
+    id: string;
+    created_at: string;
+  }>>([]);
+  const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
+  const [presentationHtml, setPresentationHtml] = useState<string>('');
+  const [isPresentationStreaming, setIsPresentationStreaming] = useState(false);
   const projectDataRef = useRef<ProjectData | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
@@ -223,6 +232,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
       
       setProjectData(projectInfo);
       projectDataRef.current = projectInfo;
+      setViewMode('build');
     }
 
     // Transform task_messages to Message format
@@ -280,7 +290,42 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
 
       const missionDetails: MissionDetails = await response.json();
       processMissionData(missionDetails);
-      
+
+      // Try to load presentations list
+      try {
+        const presentationsResponse = await authenticatedGet(
+          buildApiUrl(`/api/v1/missions/${missionId}/presentations`)
+        );
+
+        if (presentationsResponse.ok) {
+          const data = await presentationsResponse.json();
+          const presentationsList = data.presentations || [];
+
+          if (presentationsList.length > 0) {
+            // Set viewMode FIRST to avoid race condition with render
+            setViewMode('presentation');
+            setPresentations(presentationsList);
+
+            // Auto-select the latest presentation (first in list)
+            const latest = presentationsList[0];
+            setSelectedPresentationId(latest.id);
+
+            // Load the HTML for the latest presentation
+            const htmlResponse = await authenticatedGet(
+              buildApiUrl(`/api/v1/presentations/${latest.id}`)
+            );
+
+            if (htmlResponse.ok) {
+              const htmlData = await htmlResponse.json();
+              setPresentationHtml(htmlData.html_content);
+              setShowRightPanel(true);
+            }
+          }
+        }
+      } catch (presentationError) {
+        // No presentations exist, silently continue
+      }
+
     } catch (error) {
       // Silently fail mission history loading
       
@@ -391,6 +436,15 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
                   setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
+
+                  // Handle presentation tool
+                  if (data.data?.tool_name === 'create_presentation') {
+                    setPresentationHtml('');
+                    setIsPresentationStreaming(true);
+                    setViewMode('presentation');
+                    setShowRightPanel(true);
+                  }
+
                   // Handle task_complete tool for auto preview refresh
                   if (data.data?.tool_name === 'task_complete') {
                     const requiresRefresh = data.data?.tool_result?.metadata?.requires_preview_refresh;
@@ -465,17 +519,43 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   const message = data.data.message || 'Processing...';
                   setCurrentStep(`💭 ${message}`);
                   setExecutionProgress(prev => Math.min(prev + 5, 90));
+                } else if (data.event_type === 'presentation_content') {
+                  // Accumulate HTML chunks
+                  const htmlChunk = data.data.html_chunk || '';
+                  setPresentationHtml(prev => prev + htmlChunk);
                 } else if (data.event_type === 'execution_complete') {
                   setMissionPhase('complete');
                   setExecutionProgress(100);
-                  setCurrentStep('✅ Mission completed! Launching code agent...');
-                  
-                  // Auto show right panel with project preview
-                  const currentProjectData = projectDataRef.current || projectData;
-                  if (currentProjectData?.project_id) {
-                    setTimeout(() => {
-                      setShowRightPanel(true);
-                    }, 1000); // Brief delay for smooth UX
+
+                  // Check if this is presentation completion
+                  if (data.data.presentation_html && data.data.presentation_id) {
+                    // Add new presentation to the list
+                    const newPresentation = {
+                      id: data.data.presentation_id,
+                      created_at: new Date().toISOString(),
+                    };
+
+                    setPresentations(prev => [newPresentation, ...prev]);
+                    setSelectedPresentationId(data.data.presentation_id);
+                    setPresentationHtml(data.data.presentation_html);
+                    setViewMode('presentation');
+                    setCurrentStep('✅ Presentation created!');
+                    setShowRightPanel(true);
+                    setIsPresentationStreaming(false);
+
+                    // Prevent navigation in finally block - keep user on current page with presentation
+                    newMissionId = null;
+                  } else {
+                    setCurrentStep('✅ Mission completed! Launching code agent...');
+
+                    // Auto show right panel with project preview
+                    const currentProjectData = projectDataRef.current || projectData;
+                    if (currentProjectData?.project_id) {
+                      setViewMode('build');
+                      setTimeout(() => {
+                        setShowRightPanel(true);
+                      }, 1000); // Brief delay for smooth UX
+                    }
                   }
                 } else if (data.event_type === 'mission_content') {
                   // Create bot message if it hasn't been created yet (for non-image-generation flows)
@@ -571,6 +651,11 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
     setInputValue('');
     setIsStreaming(true);
 
+    // Clear presentation state for new message
+    setPresentationHtml('');
+    setSelectedPresentationId(null);
+    setIsPresentationStreaming(false);
+
     // Focus input immediately after clearing for immediate next message typing
     inputBarRef.current?.focusInput();
 
@@ -645,6 +730,7 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
 
   const handleCloseRightPanel = () => {
     setShowRightPanel(false);
+    setIsPresentationStreaming(false);
   };
 
   const handleSecondaryMenuToggle = () => {
@@ -826,8 +912,24 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
     }
   };
 
+  const handleExportPDF = () => {
+    if (!presentationHtml) return;
+
+    // Templates are already A4-optimized, just open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(presentationHtml);
+      printWindow.document.close();
+
+      // Wait for content to load, then print
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  };
+
   // Show split layout when right panel is open
-  if (showRightPanel && projectData?.project_id) {
+  if (showRightPanel && (projectData?.project_id || presentations.length > 0 || isPresentationStreaming)) {
     return (
       <div className="h-screen w-full max-w-full flex overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background" data-chat-interface style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         {/* Left Side: Mission Chat - 35% */}
@@ -946,17 +1048,77 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={handleDownloadProject}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleDeleteProject} 
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
+                  {/* View Mode Options */}
+                  {projectData?.project_id && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setViewMode('build')}
+                        className={viewMode === 'build' ? 'bg-accent' : ''}
+                      >
+                        <Hammer className="h-4 w-4 mr-2" />
+                        Build Preview
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setViewMode('files')}
+                        className={viewMode === 'files' ? 'bg-accent' : ''}
+                      >
+                        <FileCode className="h-4 w-4 mr-2" />
+                        Files View
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {/* Presentation List */}
+                  {presentations.map((presentation) => (
+                    <DropdownMenuItem
+                      key={presentation.id}
+                      onClick={async () => {
+                        setViewMode('presentation');
+                        setSelectedPresentationId(presentation.id);
+
+                        // Load HTML if not already loaded or different presentation selected
+                        const response = await authenticatedGet(
+                          buildApiUrl(`/api/v1/presentations/${presentation.id}`)
+                        );
+
+                        if (response.ok) {
+                          const data = await response.json();
+                          setPresentationHtml(data.html_content);
+                        }
+                      }}
+                      className={selectedPresentationId === presentation.id && viewMode === 'presentation' ? 'bg-accent' : ''}
+                    >
+                      <Presentation className="h-4 w-4 mr-2" />
+                      Presentation - {new Date(presentation.created_at).toLocaleString()}
+                    </DropdownMenuItem>
+                  ))}
+
+                  {/* Separator between view modes and actions */}
+                  {(projectData?.project_id || presentations.length > 0) && (
+                    <DropdownMenuSeparator />
+                  )}
+
+                  {/* Actions */}
+                  {presentations.length > 0 && viewMode === 'presentation' && (
+                    <DropdownMenuItem onClick={handleExportPDF}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Export to PDF
+                    </DropdownMenuItem>
+                  )}
+                  {projectData?.project_id && (
+                    <DropdownMenuItem onClick={handleDownloadProject}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </DropdownMenuItem>
+                  )}
+                  {projectData?.project_id && (
+                    <DropdownMenuItem
+                      onClick={handleDeleteProject}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -972,7 +1134,11 @@ const ChatInterface = ({ missionId, rightSidebarVisible = false, missionData, is
 
           {/* Scrollable Content */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            <BuildPreview agentId={projectData.project_id} refreshTrigger={refreshTrigger} />
+            {viewMode === 'presentation' ? (
+              <PresentationPreview htmlContent={presentationHtml} />
+            ) : projectData?.project_id ? (
+              <BuildPreview agentId={projectData.project_id} refreshTrigger={refreshTrigger} />
+            ) : null}
           </div>
         </div>
 
