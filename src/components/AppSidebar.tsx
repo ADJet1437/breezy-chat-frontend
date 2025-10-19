@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, List, BookOpen, Code, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Settings, Compass } from 'lucide-react';
+import { MessageSquare, List, BookOpen, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Settings, Compass } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,11 +53,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       title: 'Missions',
       url: '/missions',
       icon: List,
-    },
-    {
-      title: 'Code',
-      url: '/code',
-      icon: Code,
     },
     {
       title: 'Explore',

@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ExternalLink, Calendar, Globe, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { buildApiUrl } from '@/utils/apiConfig';
-import { codeAgentAPI } from '@/utils/codeAgentApi';
 
 interface UseCase {
   id: string;
