@@ -15,9 +15,6 @@ import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
-import CodeAgent from "./pages/CodeAgent";
-import CodeAgentChat from "./pages/CodeAgentChat";
-import AgentDetail from "./pages/AgentDetail";
 import Overview from "./pages/Overview";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -46,9 +43,6 @@ const AppInner = () => {
             <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/missions" element={<Layout><Missions /></Layout>} />
             <Route path="/missions/:id" element={<MissionDetail />} />
-            <Route path="/code" element={<Layout><CodeAgent /></Layout>} />
-            <Route path="/code/projects" element={<Layout><CodeAgent /></Layout>} />
-            <Route path="/code/agent/:agentId" element={<Layout><AgentDetail /></Layout>} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
             <Route path="/overview" element={<Overview />} />
             <Route path="/terms" element={<TermsOfService />} />
