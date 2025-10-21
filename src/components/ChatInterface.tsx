@@ -53,13 +53,17 @@ interface ChatInterfaceProps {
   rightSidebarVisible?: boolean;
   missionData?: MissionDetails | null;
   isParentLoading?: boolean;
+  initialMessage?: string;
+  initialFileIds?: string[];
 }
 
 const ChatInterface = ({
   missionId,
   rightSidebarVisible = false,
   missionData,
-  isParentLoading = false
+  isParentLoading = false,
+  initialMessage,
+  initialFileIds = []
 }: ChatInterfaceProps) => {
   // Context
   const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
@@ -167,6 +171,27 @@ const ChatInterface = ({
       };
     }
   }, [missionHook.projectData]);
+
+  // Auto-send initial message when creating new mission from HomePage
+  useEffect(() => {
+    // Only auto-send when we have initialMessage and no missionId (creating new mission)
+    if (initialMessage && !missionId) {
+      // Create user message for display
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: initialMessage,
+        sender: 'user',
+        timestamp: new Date(),
+      };
+
+      missionHook.setMessages(prev => [...prev, userMessage]);
+
+      // Send to backend with file IDs
+      streamingHook.sendMessageToBackend(initialMessage, initialFileIds);
+    }
+    // Only run once on mount when initialMessage is provided
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handlers
   const handleSendMessage = async () => {

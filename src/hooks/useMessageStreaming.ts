@@ -42,7 +42,7 @@ interface UseMessageStreamingReturn {
   currentStep: string;
   isPresentationStreaming: boolean;
   setIsPresentationStreaming: React.Dispatch<React.SetStateAction<boolean>>;
-  sendMessageToBackend: (message: string) => Promise<void>;
+  sendMessageToBackend: (message: string, overrideFileIds?: string[]) => Promise<void>;
   showSubscriptionDialog: boolean;
   setShowSubscriptionDialog: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionMessage: string;
@@ -84,7 +84,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
   const navigate = useNavigate();
 
-  const sendMessageToBackend = async (message: string) => {
+  const sendMessageToBackend = async (message: string, overrideFileIds?: string[]) => {
     const effectiveMissionId = missionId || currentMissionId;
     let newMissionId: string | null = null;
 
@@ -93,7 +93,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     try {
       const requestPayload: any = {
         message: message,
-        file_ids: attachedFileIds
+        file_ids: overrideFileIds !== undefined ? overrideFileIds : attachedFileIds
       };
 
       if (effectiveMissionId) {

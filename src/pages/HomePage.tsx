@@ -1,0 +1,181 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LoginDialog } from '../components/login';
+import { Header } from '../components/layout/Header';
+import { Footer } from '../components/layout/Footer';
+import { DynamicBackground } from '../components/hero/DynamicBackground';
+import { FloatingChatInput } from '../components/hero/FloatingChatInput';
+import { UseCasesSection } from '../components/sections/UseCasesSection';
+import { ServicesSection } from '../components/sections/ServicesSection';
+import { FeaturesSection } from '../components/sections/FeaturesSection';
+import { AboutSection } from '../components/sections/AboutSection';
+import { ContactSection } from '../components/sections/ContactSection';
+
+const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, accessToken } = useAuth();
+
+  // State for login dialog and pending message
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingFileIds, setPendingFileIds] = useState<string[]>([]);
+
+  // Load Calendly widget script for Header
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://assets.calendly.com/assets/external/widget.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    const link = document.createElement('link');
+    link.href = 'https://assets.calendly.com/assets/external/widget.css';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+      if (document.head.contains(link)) {
+        document.head.removeChild(link);
+      }
+    };
+  }, []);
+
+  // Auto-navigate to /chat when user logs in successfully with pending message
+  useEffect(() => {
+    if (isAuthenticated && accessToken && pendingMessage) {
+      // Close the login dialog
+      setShowLoginDialog(false);
+
+      // Navigate to /chat with the pending message
+      navigate('/chat', {
+        state: {
+          initialMessage: pendingMessage,
+          initialFileIds: pendingFileIds
+        }
+      });
+
+      // Clear pending state
+      setPendingMessage(null);
+      setPendingFileIds([]);
+    }
+  }, [isAuthenticated, accessToken, pendingMessage, pendingFileIds, navigate]);
+
+  const handleLoginDialogChange = (open: boolean) => {
+    setShowLoginDialog(open);
+
+    // If dialog is closed, check after state updates if user cancelled without logging in
+    if (!open) {
+      // Use setTimeout to ensure auth state has propagated before checking
+      setTimeout(() => {
+        // Only clear if still not authenticated (user cancelled, didn't log in)
+        if (!isAuthenticated && pendingMessage) {
+          setPendingMessage(null);
+          setPendingFileIds([]);
+        }
+      }, 100);
+    }
+  };
+
+  const handleCreateMission = async (message: string, fileIds: string[]) => {
+    // Check if user is authenticated
+    if (!isAuthenticated || !accessToken) {
+      // Store the message and files for later
+      setPendingMessage(message);
+      setPendingFileIds(fileIds);
+      // Show login dialog on HomePage
+      setShowLoginDialog(true);
+      return; // Don't navigate yet - stay on HomePage
+    }
+
+    // If authenticated, proceed to /chat route
+    // The ChatInterface will handle creating the mission and streaming the response
+    navigate('/chat', {
+      state: {
+        initialMessage: message,
+        initialFileIds: fileIds
+      }
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header showNavigation={true} />
+
+      {/* Hero Section with 3D Parallax */}
+      <section
+        className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100"
+        style={{
+          perspective: '1000px',
+        }}
+      >
+        <DynamicBackground />
+
+        {/* Main Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16">
+          <div className="space-y-8 animate-fade-in">
+            <h1
+              className="text-5xl md:text-7xl font-bold text-gray-900 leading-tight"
+              style={{
+                textShadow: `
+                  2px 2px 10px rgba(59, 130, 246, 0.1),
+                  -1px -1px 20px rgba(147, 51, 234, 0.1)
+                `,
+              }}
+            >
+              Build Anything with
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {" "}AI
+              </span>
+            </h1>
+
+            <FloatingChatInput
+              onSubmit={handleCreateMission}
+              placeholder="Describe your project: 'Build me a todo app with user authentication...'"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <UseCasesSection />
+
+      {/* Services Section */}
+      <ServicesSection />
+
+      {/* Features Section */}
+      <FeaturesSection />
+
+      {/* About Section */}
+      <AboutSection />
+
+      {/* Contact Section */}
+      <ContactSection />
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={handleLoginDialogChange}
+      />
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default HomePage;

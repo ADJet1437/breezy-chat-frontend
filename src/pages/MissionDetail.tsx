@@ -265,7 +265,7 @@ const MissionDetail = () => {
     <Layout>
       <ChatInterface missionId={id} missionData={missionDetails} isParentLoading={isLoadingMission} />
       <CustomizeButton />
-      
+
       {/* Mission Settings Modal */}
       {id && missionDetails && (
         <SettingsModal
