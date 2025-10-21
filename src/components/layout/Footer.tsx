@@ -14,9 +14,6 @@ export const Footer: React.FC = () => {
               </div>
               <span className="text-xl font-bold">Talosy</span>
             </div>
-            <p className="text-gray-400 text-sm">
-              Expert AI consultancy delivering custom software solutions. We transform your business with intelligent automation, RAG systems, and enterprise AI applications.
-            </p>
             <div className="mt-4">
               <p className="text-gray-300 text-sm font-semibold">Let's Work Together:</p>
               <a href="mailto:support@talosy.com" className="text-blue-400 hover:text-blue-300 text-sm">

@@ -5,6 +5,10 @@ import { Footer } from '../components/layout/Footer';
 import { DynamicBackground } from '../components/hero/DynamicBackground';
 import { FloatingChatInput } from '../components/hero/FloatingChatInput';
 import { UseCasesSection } from '../components/sections/UseCasesSection';
+import { ServicesSection } from '../components/sections/ServicesSection';
+import { FeaturesSection } from '../components/sections/FeaturesSection';
+import { AboutSection } from '../components/sections/AboutSection';
+import { ContactSection } from '../components/sections/ContactSection';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +48,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header showNavigation={false} />
+      <Header showNavigation={true} />
 
       {/* Hero Section with 3D Parallax */}
       <section
@@ -73,14 +77,9 @@ const HomePage: React.FC = () => {
               </span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              From idea to reality in minutes. Just describe what you want to build,
-              and our AI will create it for you.
-            </p>
-
             <FloatingChatInput
               onSubmit={handleCreateMission}
-              placeholder="Describe your project: 'Build me a todo app with React and Firebase...'"
+              placeholder="Describe your project: 'Build me a todo app with user authentication...'"
             />
           </div>
         </div>
@@ -88,6 +87,18 @@ const HomePage: React.FC = () => {
 
       {/* Use Cases Section */}
       <UseCasesSection />
+
+      {/* Services Section */}
+      <ServicesSection />
+
+      {/* Features Section */}
+      <FeaturesSection />
+
+      {/* About Section */}
+      <AboutSection />
+
+      {/* Contact Section */}
+      <ContactSection />
 
       {/* Footer */}
       <Footer />

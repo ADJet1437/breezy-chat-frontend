@@ -127,11 +127,6 @@ export const FloatingChatInput: React.FC<FloatingChatInputProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Helper text */}
-      <p className="text-center text-sm text-gray-500 mt-4">
-        Press <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Enter</kbd> to send, <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">Shift + Enter</kbd> for new line
-      </p>
     </div>
   );
 };

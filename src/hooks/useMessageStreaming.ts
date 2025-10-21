@@ -42,7 +42,7 @@ interface UseMessageStreamingReturn {
   currentStep: string;
   isPresentationStreaming: boolean;
   setIsPresentationStreaming: React.Dispatch<React.SetStateAction<boolean>>;
-  sendMessageToBackend: (message: string) => Promise<void>;
+  sendMessageToBackend: (message: string, overrideFileIds?: string[]) => Promise<void>;
   showSubscriptionDialog: boolean;
   setShowSubscriptionDialog: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionMessage: string;
