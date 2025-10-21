@@ -218,16 +218,6 @@ export const ServicesSection: React.FC = () => {
 
           </div>
         </div>
-
-        {/* Value Proposition Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-center text-white">
-          <h3 className="text-2xl md:text-3xl font-bold mb-4">
-            End-to-End Implementation & Support
-          </h3>
-          <p className="text-blue-100 text-lg max-w-3xl mx-auto">
-            From initial consultation to deployment and maintenance, we deliver complete solutions that integrate seamlessly with your existing systems and scale with your business needs.
-          </p>
-        </div>
       </div>
     </section>
   );

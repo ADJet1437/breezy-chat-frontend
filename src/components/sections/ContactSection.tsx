@@ -10,9 +10,6 @@ export const ContactSection: React.FC = () => {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Let's Build Something Extraordinary
           </h2>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Schedule a free consultation to discuss your project requirements and discover how we can help you leverage AI to achieve your business goals.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
