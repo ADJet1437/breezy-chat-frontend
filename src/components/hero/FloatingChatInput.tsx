@@ -37,6 +37,8 @@ export const FloatingChatInput: React.FC<FloatingChatInputProps> = ({
         variant: "destructive",
         duration: 3000,
       });
+    } finally {
+      // Always reset loading state, even if login dialog was shown
       setIsLoading(false);
     }
   };

@@ -1,4 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { LoginDialog } from '../login';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { User, LogOut } from 'lucide-react';
 
 interface NavigationItemProps {
   href: string;
@@ -21,6 +31,9 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
+  const { isAuthenticated, user, logout } = useAuth();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
   const scrollToSection = (sectionId: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     const element = document.getElementById(sectionId);
@@ -68,10 +81,46 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
               <NavigationItem href="#contact" onClick={scrollToSection('contact')}>
                 Contact
               </NavigationItem>
+
+              {/* Authentication Button */}
+              {isAuthenticated && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    >
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  onClick={() => setShowLoginDialog(true)}
+                  variant="default"
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                >
+                  Sign In
+                </Button>
+              )}
             </nav>
           )}
         </div>
       </div>
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+      />
     </header>
   );
 };

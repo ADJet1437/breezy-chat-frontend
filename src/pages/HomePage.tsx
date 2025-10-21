@@ -1,5 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LoginDialog } from '../components/login';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { DynamicBackground } from '../components/hero/DynamicBackground';
@@ -12,6 +14,12 @@ import { ContactSection } from '../components/sections/ContactSection';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, accessToken } = useAuth();
+
+  // State for login dialog and pending message
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingFileIds, setPendingFileIds] = useState<string[]>([]);
 
   // Load Calendly widget script for Header
   useEffect(() => {
@@ -35,8 +43,54 @@ const HomePage: React.FC = () => {
     };
   }, []);
 
+  // Auto-navigate to /chat when user logs in successfully with pending message
+  useEffect(() => {
+    if (isAuthenticated && accessToken && pendingMessage) {
+      // Close the login dialog
+      setShowLoginDialog(false);
+
+      // Navigate to /chat with the pending message
+      navigate('/chat', {
+        state: {
+          initialMessage: pendingMessage,
+          initialFileIds: pendingFileIds
+        }
+      });
+
+      // Clear pending state
+      setPendingMessage(null);
+      setPendingFileIds([]);
+    }
+  }, [isAuthenticated, accessToken, pendingMessage, pendingFileIds, navigate]);
+
+  const handleLoginDialogChange = (open: boolean) => {
+    setShowLoginDialog(open);
+
+    // If dialog is closed, check after state updates if user cancelled without logging in
+    if (!open) {
+      // Use setTimeout to ensure auth state has propagated before checking
+      setTimeout(() => {
+        // Only clear if still not authenticated (user cancelled, didn't log in)
+        if (!isAuthenticated && pendingMessage) {
+          setPendingMessage(null);
+          setPendingFileIds([]);
+        }
+      }, 100);
+    }
+  };
+
   const handleCreateMission = async (message: string, fileIds: string[]) => {
-    // Navigate to /chat route for new mission creation
+    // Check if user is authenticated
+    if (!isAuthenticated || !accessToken) {
+      // Store the message and files for later
+      setPendingMessage(message);
+      setPendingFileIds(fileIds);
+      // Show login dialog on HomePage
+      setShowLoginDialog(true);
+      return; // Don't navigate yet - stay on HomePage
+    }
+
+    // If authenticated, proceed to /chat route
     // The ChatInterface will handle creating the mission and streaming the response
     navigate('/chat', {
       state: {
@@ -102,6 +156,12 @@ const HomePage: React.FC = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Login Dialog */}
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={handleLoginDialogChange}
+      />
 
       {/* Custom CSS for animations */}
       <style jsx>{`
