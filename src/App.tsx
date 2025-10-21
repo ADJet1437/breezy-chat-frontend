@@ -10,9 +10,10 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { setGlobalToast } from "./utils/errorHandler";
 import Layout from "./components/Layout";
-import Index from "./pages/Index";
+import HomePage from "./pages/HomePage";
 import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
+import NewMission from "./pages/NewMission";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/Overview";
@@ -40,7 +41,8 @@ const AppInner = () => {
           <Sonner />
           <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/" element={<Layout><Index /></Layout>} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/chat" element={<NewMission />} />
             <Route path="/missions" element={<Layout><Missions /></Layout>} />
             <Route path="/missions/:id" element={<MissionDetail />} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />

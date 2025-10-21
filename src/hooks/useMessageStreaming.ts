@@ -84,7 +84,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
   const navigate = useNavigate();
 
-  const sendMessageToBackend = async (message: string) => {
+  const sendMessageToBackend = async (message: string, overrideFileIds?: string[]) => {
     const effectiveMissionId = missionId || currentMissionId;
     let newMissionId: string | null = null;
 
@@ -93,7 +93,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     try {
       const requestPayload: any = {
         message: message,
-        file_ids: attachedFileIds
+        file_ids: overrideFileIds !== undefined ? overrideFileIds : attachedFileIds
       };
 
       if (effectiveMissionId) {
