@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Linkedin } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -9,9 +9,7 @@ export const Footer: React.FC = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Bot className="h-5 w-5 text-white" />
-              </div>
+              <img src="/favicon-192x192.png" alt="Talosy" className="w-8 h-8 rounded-lg" />
               <span className="text-xl font-bold">Talosy</span>
             </div>
             <div className="mt-4">
