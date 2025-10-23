@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Menu, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface NavigationItemProps {
   href: string;
@@ -34,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
   const { isAuthenticated, user, logout } = useAuth();
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -78,6 +80,18 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
           {/* Desktop Navigation Links */}
           {showNavigation && (
             <nav className="hidden md:flex items-center space-x-8">
+              {/* Show "My Missions" button when authenticated */}
+              {isAuthenticated && (
+                <Button
+                  onClick={() => navigate('/missions')}
+                  variant="ghost"
+                  className="text-gray-600 hover:text-blue-600 transition-colors duration-200 font-medium"
+                >
+                  My Missions
+                </Button>
+              )}
+
+              {/* Always show marketing links */}
               <NavigationItem href="#use-cases-showcase" onClick={scrollToSection('use-cases-showcase')}>
                 Examples
               </NavigationItem>
@@ -131,6 +145,21 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
         {showNavigation && mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4">
             <nav className="flex flex-col space-y-4">
+              {/* Show "My Missions" button when authenticated */}
+              {isAuthenticated && (
+                <Button
+                  onClick={() => {
+                    navigate('/missions');
+                    setMobileMenuOpen(false);
+                  }}
+                  variant="ghost"
+                  className="text-gray-600 hover:text-blue-600 transition-colors duration-200 font-medium px-2 py-2 justify-start"
+                >
+                  My Missions
+                </Button>
+              )}
+
+              {/* Always show marketing links */}
               <a
                 href="#use-cases-showcase"
                 onClick={(e) => {
