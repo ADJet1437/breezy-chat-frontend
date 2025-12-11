@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
-import { MessageSquare, List, BookOpen, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Settings, Compass } from 'lucide-react';
+import { List, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Compass } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useMissionContext } from '../contexts/MissionContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Sidebar,
@@ -36,7 +35,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const { currentMissionId, setCurrentMissionId } = useMissionContext();
   const { isAuthenticated, user, logout } = useAuth();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
@@ -44,11 +42,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const navigate = useNavigate();
 
   const navigationItems = [
-    {
-      title: 'Current Mission',
-      url: currentMissionId ? `/missions/${currentMissionId}` : '/',
-      icon: MessageSquare,
-    },
     {
       title: 'Missions',
       url: '/missions',
@@ -80,7 +73,6 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   };
 
   const handleNewMission = () => {
-    setCurrentMissionId(null);
     navigate('/');
   };
 

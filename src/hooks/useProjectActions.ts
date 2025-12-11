@@ -54,7 +54,8 @@ export const useProjectActions = (props: UseProjectActionsProps): UseProjectActi
     const confirmed = window.confirm('Are you sure you want to delete this project? This action cannot be undone.');
     if (!confirmed) return;
 
-    const effectiveMissionId = missionId || currentMissionId;
+    // Use only explicit missionId prop - no fallback to avoid race conditions
+    const effectiveMissionId = missionId;
     if (!effectiveMissionId) {
       toast({
         title: "Error",

@@ -194,16 +194,18 @@ export const useMissionData = (
 
   // Load mission history when missionId changes
   useEffect(() => {
-    const effectiveMissionId = missionId || currentMissionId;
+    // Use only explicit missionId prop - no fallback to avoid race conditions
+    const effectiveMissionId = missionId;
 
     if (missionData && missionData.id === effectiveMissionId) {
       processMissionData(missionData);
     } else if (effectiveMissionId && !missionData && !isParentLoading) {
       loadMissionHistory(effectiveMissionId);
     } else if (!effectiveMissionId) {
+      // No mission ID - clear messages (new mission scenario)
       setMessages([]);
     }
-  }, [missionId, currentMissionId, missionData, isParentLoading]);
+  }, [missionId, missionData, isParentLoading]);
 
   return {
     messages,
