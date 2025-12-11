@@ -85,7 +85,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const navigate = useNavigate();
 
   const sendMessageToBackend = async (message: string, overrideFileIds?: string[]) => {
-    const effectiveMissionId = missionId || currentMissionId;
+    // Use only explicit missionId prop - no fallback to avoid race conditions
+    const effectiveMissionId = missionId;
     let newMissionId: string | null = null;
 
     setIsStreaming(true);
@@ -96,6 +97,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
         file_ids: overrideFileIds !== undefined ? overrideFileIds : attachedFileIds
       };
 
+      // Only include mission_id if explicitly provided (for continuing existing mission)
+      // If undefined, backend will create a new mission
       if (effectiveMissionId) {
         requestPayload.mission_id = effectiveMissionId;
       }

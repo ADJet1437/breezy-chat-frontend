@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useMissionContext } from '../../../contexts/MissionContext';
 import { clearAllCache } from '../../../utils/cacheUtils';
 
 interface DeleteAccountDialogProps {
@@ -31,7 +30,6 @@ export const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { toast } = useToast();
-  const { setCurrentMissionId } = useMissionContext();
 
   const isConfirmValid = confirmText === 'DELETE';
   const canDelete = isConfirmValid;
@@ -49,13 +47,10 @@ export const DeleteAccountDialog: React.FC<DeleteAccountDialogProps> = ({
       
       const { deleteUserAccount } = await import('../../../utils/authApi');
       await deleteUserAccount();
-      
+
       // Clear all browser storage after successful deletion
       clearAllCache();
-      
-      // Clear current mission ID
-      setCurrentMissionId(null);
-      
+
       // Close the popup
       onOpenChange(false);
 

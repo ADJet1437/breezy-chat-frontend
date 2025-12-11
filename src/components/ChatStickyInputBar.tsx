@@ -151,7 +151,7 @@ const ChatStickyInputBar = forwardRef<ChatStickyInputBarRef, ChatStickyInputBarP
               <FileUpload
                 onFilesUploaded={onFilesUploaded}
                 disabled={isStreaming || isLoadingHistory}
-                missionId={missionId || currentMissionId}
+                missionId={missionId}
               />
             </div>
             
