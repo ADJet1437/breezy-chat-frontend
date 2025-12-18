@@ -3,27 +3,39 @@ import { authenticatedGet } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 import { Message } from '../types/chat';
 
+interface TextBlockResponse {
+  id: string;
+  type: "text";
+  created_at: string;
+  text: string;
+}
+
+interface ToolUseBlockResponse {
+  id: string;
+  type: "tool_use";
+  created_at: string;
+  tool_name: string;
+  tool_call_id: string;
+  tool_input: any;
+  tool_output: any;
+}
+
+interface ImageBlockResponse {
+  id: string;
+  type: "image";
+  created_at: string;
+  image_url: string;
+  alt_text: string;
+}
+
+type ContentBlock = TextBlockResponse | ToolUseBlockResponse | ImageBlockResponse;
+
 interface TaskMessage {
   id: string;
   role: "user" | "assistant";
-  content: string;
   created_at: string;
   mission_id: string;
-  file_ids: string[];
-  files?: {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    source: string;
-  }[];
-  images?: {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    source: string;
-  }[];
+  content_blocks: ContentBlock[];
 }
 
 interface MissionDetails {
@@ -104,38 +116,42 @@ export const useMissionData = (
     const historyMessages: Message[] = [];
 
     missionDetails.task_messages.forEach((taskMessage) => {
-      historyMessages.push({
-        id: taskMessage.id,
-        content: taskMessage.content,
-        sender: taskMessage.role === 'user' ? 'user' : 'bot',
-        timestamp: new Date(taskMessage.created_at),
-        attachedFiles: taskMessage.files ? taskMessage.files
-          .filter(file => taskMessage.role === 'user' ? file.source === 'upload' : true)
-          .map(file => ({
-            id: file.id,
-            name: file.name,
-            size: file.size,
-            type: file.type
-          })) : undefined,
-      });
+      // Extract text content from TextBlocks
+      const textBlocks = taskMessage.content_blocks.filter(
+        (block): block is TextBlockResponse => block.type === 'text'
+      );
+      const textContent = textBlocks.map(block => block.text).join('\n');
 
-      // Add separate ImageMessage for each image
-      if (taskMessage.images && taskMessage.images.length > 0) {
-        taskMessage.images.forEach(image => {
-          historyMessages.push({
-            id: `${taskMessage.id}_image_${image.id}`,
-            content: '',
-            sender: 'bot',
-            timestamp: new Date(taskMessage.created_at),
-            type: 'image',
-            imageUrl: buildApiUrl(`/api/v1/files/${image.id}`),
-            imageAlt: image.name,
-            filename: image.name,
-            prompt: taskMessage.content,
-            isLoaded: true
-          });
+      // Extract image blocks
+      const imageBlocks = taskMessage.content_blocks.filter(
+        (block): block is ImageBlockResponse => block.type === 'image'
+      );
+
+      // Add main text message if there's text content
+      if (textContent) {
+        historyMessages.push({
+          id: taskMessage.id,
+          content: textContent,
+          sender: taskMessage.role === 'user' ? 'user' : 'bot',
+          timestamp: new Date(taskMessage.created_at),
         });
       }
+
+      // Add separate ImageMessage for each image block
+      imageBlocks.forEach(imageBlock => {
+        historyMessages.push({
+          id: `${taskMessage.id}_image_${imageBlock.id}`,
+          content: '',
+          sender: 'bot',
+          timestamp: new Date(taskMessage.created_at),
+          type: 'image',
+          imageUrl: imageBlock.image_url,
+          imageAlt: imageBlock.alt_text,
+          filename: imageBlock.alt_text,
+          prompt: textContent,
+          isLoaded: true
+        });
+      });
     });
 
     setMessages(historyMessages);
