@@ -71,6 +71,8 @@ interface UseMissionDataReturn {
   setSelectedPresentationId: React.Dispatch<React.SetStateAction<string | null>>;
   presentationHtml: string;
   setPresentationHtml: React.Dispatch<React.SetStateAction<string>>;
+  isProjectReady: boolean;
+  setIsProjectReady: React.Dispatch<React.SetStateAction<boolean>>;
   loadMissionHistory: (missionId: string) => Promise<void>;
   processMissionData: (missionDetails: MissionDetails) => void;
 }
@@ -90,6 +92,7 @@ export const useMissionData = (
   const [presentations, setPresentations] = useState<Array<{ id: string; created_at: string }>>([]);
   const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
   const [presentationHtml, setPresentationHtml] = useState<string>('');
+  const [isProjectReady, setIsProjectReady] = useState<boolean>(false);
   const projectDataRef = useRef<ProjectData | null>(null);
 
   const processMissionData = (missionDetails: MissionDetails) => {
@@ -110,6 +113,11 @@ export const useMissionData = (
       setProjectData(projectInfo);
       projectDataRef.current = projectInfo;
       setViewMode('build');
+      // For existing missions loaded from backend, project is already complete and ready
+      setIsProjectReady(true);
+    } else {
+      // No project exists yet - this is a new mission
+      setIsProjectReady(false);
     }
 
     // Transform task_messages to Message format
@@ -236,6 +244,8 @@ export const useMissionData = (
     setSelectedPresentationId,
     presentationHtml,
     setPresentationHtml,
+    isProjectReady,
+    setIsProjectReady,
     loadMissionHistory,
     processMissionData
   };

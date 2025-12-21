@@ -22,6 +22,7 @@ interface SplitLayoutViewProps {
   isStreaming: boolean;
   missionPhase: MissionPhase;
   projectData: ProjectData | null;
+  isProjectReady: boolean;
   currentStep: string;
   executionProgress: number;
 
@@ -66,6 +67,7 @@ export const SplitLayoutView: React.FC<SplitLayoutViewProps> = (props) => {
     isStreaming,
     missionPhase,
     projectData,
+    isProjectReady,
     currentStep,
     executionProgress,
     inputValue,
@@ -137,6 +139,7 @@ export const SplitLayoutView: React.FC<SplitLayoutViewProps> = (props) => {
       {/* Right Side: Project Preview - 65% */}
       <RightPanelContainer
         projectData={projectData}
+        isProjectReady={isProjectReady}
         viewMode={viewMode}
         setViewMode={setViewMode}
         presentations={presentations}
