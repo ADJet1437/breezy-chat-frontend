@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Settings, Code, FileText, MessageSquare } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { MessageSquare } from 'lucide-react';
 import ChatInterface from '../components/ChatInterface';
-import { SettingsModal } from '../components/settings';
 import Layout from '../components/Layout';
-import { Button } from '@/components/ui/button';
 import { useMissionContext } from '../contexts/MissionContext';
 import { authenticatedGet } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
@@ -27,17 +25,8 @@ const MissionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { setCurrentMissionId, setMissionData } = useMissionContext();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [missionDetails, setMissionDetails] = useState<MissionDetails | null>(null);
   const [isLoadingMission, setIsLoadingMission] = useState(true); // Start as true to prevent ChatInterface from fetching
-  const [isMobile, setIsMobile] = useState(false);
-  const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
-  const [isCodeViewOpen, setIsCodeViewOpen] = useState(() => {
-    // Check initial state from localStorage
-    return localStorage.getItem('missionCodeViewOpen') === 'true';
-  });
-  const menuRef = useRef<HTMLDivElement>(null);
 
   // No authentication redirect - show empty state instead
 
@@ -58,55 +47,6 @@ const MissionDetail = () => {
     }
   }, [id, isAuthenticated]);
 
-  // Check mobile status
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    // Check on mount
-    checkMobile();
-
-    // Listen for window resize
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Handle outside click to close secondary menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowSecondaryMenu(false);
-      }
-    };
-
-    if (showSecondaryMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showSecondaryMenu]);
-
-  // Listen for localStorage changes to update code view state
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const codeViewState = localStorage.getItem('missionCodeViewOpen') === 'true';
-      setIsCodeViewOpen(codeViewState);
-    };
-
-    // Listen for storage events from other windows/tabs
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check for changes periodically (for same-window changes)
-    const interval = setInterval(handleStorageChange, 100);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
 
   const loadMissionDetails = async (missionId: string) => {
     setIsLoadingMission(true);
@@ -136,96 +76,6 @@ const MissionDetail = () => {
         system_prompt: newPrompt,
       });
     }
-  };
-
-  // Contextual floating menu with Settings and Code options
-  const CustomizeButton = () => {
-    const hasCodeAgent = missionDetails?.code_agent?.id;
-    
-    return (
-      <div 
-        ref={menuRef}
-        className={`fixed z-50 transition-all duration-200 ${
-          isMobile 
-            ? 'bottom-32 right-6'  // Mobile: above input bar
-            : 'bottom-20 right-6'  // Desktop: above input
-        }`}
-        style={{ 
-          marginLeft: 'max(0px, env(safe-area-inset-left))', 
-          marginRight: 'max(0px, env(safe-area-inset-right))' 
-        }}
-      >
-        {/* Vertical Menu */}
-        {showSecondaryMenu && (
-          <div className="absolute bottom-16 right-0 flex flex-col space-y-3 pointer-events-none">
-            {/* Settings Option - Always visible */}
-            <div 
-              className="transition-all duration-300 ease-out pointer-events-auto"
-              style={{
-                transform: showSecondaryMenu 
-                  ? 'scale(1) translateY(0)' 
-                  : 'scale(0.3) translateY(20px)',
-                opacity: showSecondaryMenu ? 1 : 0,
-                transitionDelay: '50ms'
-              }}
-            >
-              <Button
-                onClick={() => {
-                  setShowSecondaryMenu(false);
-                  setShowSettingsModal(true);
-                }}
-                size="sm"
-                className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 border-2 border-white"
-                title="Mission Settings"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Code Option - Only show if mission has code agent AND code view is NOT open */}
-            {hasCodeAgent && !isCodeViewOpen && (
-              <div 
-                className="transition-all duration-300 ease-out pointer-events-auto"
-                style={{
-                  transform: showSecondaryMenu 
-                    ? 'scale(1) translateY(0)' 
-                    : 'scale(0.3) translateY(20px)',
-                  opacity: showSecondaryMenu ? 1 : 0,
-                  transitionDelay: '100ms'
-                }}
-              >
-                <Button
-                  onClick={() => {
-                    setShowSecondaryMenu(false);
-                    // Trigger code view via ChatInterface
-                    const chatInterface = document.querySelector('[data-chat-interface]');
-                    if (chatInterface) {
-                      const event = new CustomEvent('toggleCodeView');
-                      chatInterface.dispatchEvent(event);
-                    }
-                  }}
-                  size="sm"
-                  className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-2 border-white"
-                  title="Code View"
-                >
-                  <Code className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Main Settings Button */}
-        <Button
-          onClick={() => setShowSecondaryMenu(!showSecondaryMenu)}
-          size="lg"
-          className="rounded-full h-12 w-12 shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-          title="Options"
-        >
-          <Settings className="h-5 w-5" />
-        </Button>
-      </div>
-    );
   };
 
   // Show loading state while auth is loading
@@ -264,19 +114,6 @@ const MissionDetail = () => {
   return (
     <Layout>
       <ChatInterface missionId={id} missionData={missionDetails} isParentLoading={isLoadingMission} />
-      <CustomizeButton />
-
-      {/* Mission Settings Modal */}
-      {id && missionDetails && (
-        <SettingsModal
-          isOpen={showSettingsModal}
-          onClose={() => setShowSettingsModal(false)}
-          context="mission"
-          missionId={id}
-          systemPrompt={missionDetails.system_prompt || ''}
-          onSystemPromptUpdate={handleSystemPromptUpdate}
-        />
-      )}
     </Layout>
   );
 };
