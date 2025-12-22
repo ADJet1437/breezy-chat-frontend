@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, ExternalLink, Menu, Hammer, FileCode, Presentation, Printer, Download, Trash2 } from 'lucide-react';
+import { Loader2, ExternalLink, Menu, Presentation, Printer, Download, Trash2 } from 'lucide-react';
 import { BuildPreview } from '../code-agent/BuildPreview';
 import { PresentationPreview } from '../presentation/PresentationPreview';
 import { EmptyProjectState } from '../code-agent/EmptyProjectState';
@@ -91,25 +91,6 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              {/* View Mode Options */}
-              {projectData?.project_id && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => setViewMode('build')}
-                    className={viewMode === 'build' ? 'bg-accent' : ''}
-                  >
-                    <Hammer className="h-4 w-4 mr-2" />
-                    Build Preview
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setViewMode('files')}
-                    className={viewMode === 'files' ? 'bg-accent' : ''}
-                  >
-                    <FileCode className="h-4 w-4 mr-2" />
-                    Files View
-                  </DropdownMenuItem>
-                </>
-              )}
               {/* Presentation List */}
               {presentations.map((presentation) => (
                 <DropdownMenuItem
@@ -134,8 +115,8 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
                 </DropdownMenuItem>
               ))}
 
-              {/* Separator between view modes and actions */}
-              {(projectData?.project_id || presentations.length > 0) && (
+              {/* Separator between presentations and actions */}
+              {presentations.length > 0 && (
                 <DropdownMenuSeparator />
               )}
 
