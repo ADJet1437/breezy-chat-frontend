@@ -6,52 +6,15 @@ import { useMissionData } from '../hooks/useMissionData';
 import { useMessageStreaming } from '../hooks/useMessageStreaming';
 import { useProjectActions } from '../hooks/useProjectActions';
 import { SplitLayoutView } from './chat/SplitLayoutView';
-import { FullWidthChatView } from './chat/FullWidthChatView';
 import { ChatStickyInputBarRef } from './ChatStickyInputBar';
 import { Message } from '../types/chat';
 
 type ViewMode = 'build' | 'files' | 'presentation';
 
-interface TaskMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  created_at: string;
-  mission_id: string;
-  file_ids: string[];
-  files?: {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    source: string;
-  }[];
-  images?: {
-    id: string;
-    name: string;
-    size: number;
-    type: string;
-    source: string;
-  }[];
-}
-
-interface MissionDetails {
-  name: string;
-  id: string;
-  created_at: string;
-  updated_at: string;
-  llm_id: string;
-  system_prompt?: string;
-  task_messages: TaskMessage[];
-  code_agent: {
-    id: string | null;
-  };
-}
-
 interface ChatInterfaceProps {
   missionId?: string;
   rightSidebarVisible?: boolean;
-  missionData?: MissionDetails | null;
+  missionData?: any; // MissionDetails type from useMissionData hook
   isParentLoading?: boolean;
   initialMessage?: string;
   initialFileIds?: string[];
@@ -78,10 +41,8 @@ const ChatInterface = ({
   });
   const [attachedFileIds, setAttachedFileIds] = useState<string[]>([]);
   const [attachedFileDetails, setAttachedFileDetails] = useState<any[]>([]);
-  const [showRightPanel, setShowRightPanel] = useState(() => {
-    const saved = localStorage.getItem('missionCodeViewOpen');
-    return saved ? JSON.parse(saved) : false;
-  });
+  // Sidebar is always visible in chat view
+  const [showRightPanel, setShowRightPanel] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('build');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
@@ -115,6 +76,7 @@ const ChatInterface = ({
     setPresentations: missionHook.setPresentations,
     setSelectedPresentationId: missionHook.setSelectedPresentationId,
     setRefreshTrigger,
+    setIsProjectReady: missionHook.setIsProjectReady,
     attachedFileIds,
     setAttachedFileIds,
     setAttachedFileDetails,
@@ -154,23 +116,7 @@ const ChatInterface = ({
     };
   }, [sidebarCollapsed]);
 
-  useEffect(() => {
-    localStorage.setItem('missionCodeViewOpen', JSON.stringify(showRightPanel));
-  }, [showRightPanel]);
-
-  useEffect(() => {
-    const handleToggleCodeView = () => {
-      setShowRightPanel(prev => !prev);
-    };
-
-    const chatElement = document.querySelector('[data-chat-interface]');
-    if (chatElement) {
-      chatElement.addEventListener('toggleCodeView', handleToggleCodeView);
-      return () => {
-        chatElement.removeEventListener('toggleCodeView', handleToggleCodeView);
-      };
-    }
-  }, [missionHook.projectData]);
+  // Sidebar is always visible, no need to persist or toggle
 
   // Auto-send initial message when creating new mission from HomePage
   useEffect(() => {
@@ -269,69 +215,17 @@ const ChatInterface = ({
     streamingHook.setPendingMessage(null);
   };
 
-  // Render appropriate layout
-  const shouldShowSplitView = showRightPanel && (
-    missionHook.projectData?.project_id ||
-    missionHook.presentations.length > 0 ||
-    streamingHook.isPresentationStreaming
-  );
-
-  if (shouldShowSplitView) {
-    return (
-      <SplitLayoutView
-        messages={missionHook.messages}
-        isLoadingHistory={missionHook.isLoadingHistory}
-        isStreaming={streamingHook.isStreaming}
-        missionPhase={streamingHook.missionPhase}
-        projectData={missionHook.projectData}
-        currentStep={streamingHook.currentStep}
-        executionProgress={streamingHook.executionProgress}
-        inputValue={inputValue}
-        setInputValue={setInputValue}
-        onSendMessage={handleSendMessage}
-        onKeyPress={handleKeyPress}
-        onFilesUploaded={handleFilesUploaded}
-        attachedFileIds={attachedFileIds}
-        attachedFileDetails={attachedFileDetails}
-        setAttachedFileIds={setAttachedFileIds}
-        setAttachedFileDetails={setAttachedFileDetails}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        presentations={missionHook.presentations}
-        selectedPresentationId={missionHook.selectedPresentationId}
-        setSelectedPresentationId={missionHook.setSelectedPresentationId}
-        presentationHtml={missionHook.presentationHtml}
-        setPresentationHtml={missionHook.setPresentationHtml}
-        refreshTrigger={refreshTrigger}
-        isLoadingPreview={projectActions.isLoadingPreview}
-        onView={projectActions.handleView}
-        onCloseRightPanel={() => {
-          setShowRightPanel(false);
-          streamingHook.setIsPresentationStreaming(false);
-        }}
-        onExportPDF={projectActions.handleExportPDF}
-        onDownloadProject={projectActions.handleDownloadProject}
-        onDeleteProject={projectActions.handleDeleteProject}
-        showSubscriptionDialog={streamingHook.showSubscriptionDialog}
-        onSubscriptionDialogChange={(open) => {
-          if (!open) handleSubscriptionCancel();
-        }}
-        onSubscribed={handleSubscriptionSuccess}
-        subscriptionMessage={streamingHook.subscriptionMessage}
-      />
-    );
-  }
-
+  // Always show split view in chat interface
   return (
-    <FullWidthChatView
+    <SplitLayoutView
       messages={missionHook.messages}
       isLoadingHistory={missionHook.isLoadingHistory}
       isStreaming={streamingHook.isStreaming}
       missionPhase={streamingHook.missionPhase}
       projectData={missionHook.projectData}
+      isProjectReady={missionHook.isProjectReady}
       currentStep={streamingHook.currentStep}
       executionProgress={streamingHook.executionProgress}
-      inputBarRef={inputBarRef}
       inputValue={inputValue}
       setInputValue={setInputValue}
       onSendMessage={handleSendMessage}
@@ -341,10 +235,23 @@ const ChatInterface = ({
       attachedFileDetails={attachedFileDetails}
       setAttachedFileIds={setAttachedFileIds}
       setAttachedFileDetails={setAttachedFileDetails}
-      missionId={missionId}
-      currentMissionId={currentMissionId}
-      rightSidebarVisible={rightSidebarVisible}
-      sidebarCollapsed={sidebarCollapsed}
+      viewMode={viewMode}
+      setViewMode={setViewMode}
+      presentations={missionHook.presentations}
+      selectedPresentationId={missionHook.selectedPresentationId}
+      setSelectedPresentationId={missionHook.setSelectedPresentationId}
+      presentationHtml={missionHook.presentationHtml}
+      setPresentationHtml={missionHook.setPresentationHtml}
+      refreshTrigger={refreshTrigger}
+      isLoadingPreview={projectActions.isLoadingPreview}
+      onView={projectActions.handleView}
+      onCloseRightPanel={() => {
+        // Panel is always visible, but we can handle presentation streaming state
+        streamingHook.setIsPresentationStreaming(false);
+      }}
+      onExportPDF={projectActions.handleExportPDF}
+      onDownloadProject={projectActions.handleDownloadProject}
+      onDeleteProject={projectActions.handleDeleteProject}
       showSubscriptionDialog={streamingHook.showSubscriptionDialog}
       onSubscriptionDialogChange={(open) => {
         if (!open) handleSubscriptionCancel();

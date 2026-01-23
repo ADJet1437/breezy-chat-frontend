@@ -7,9 +7,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, ExternalLink, Menu, Hammer, FileCode, Presentation, Printer, Download, Trash2 } from 'lucide-react';
+import { Loader2, ExternalLink, Menu, Presentation, Printer, Download, Trash2 } from 'lucide-react';
 import { BuildPreview } from '../code-agent/BuildPreview';
 import { PresentationPreview } from '../presentation/PresentationPreview';
+import { EmptyProjectState } from '../code-agent/EmptyProjectState';
 import { authenticatedGet } from '../../utils/authenticatedFetch';
 import { buildApiUrl } from '../../utils/apiConfig';
 
@@ -24,6 +25,7 @@ interface ProjectData {
 
 interface RightPanelContainerProps {
   projectData: ProjectData | null;
+  isProjectReady: boolean;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
   presentations: Array<{ id: string; created_at: string }>;
@@ -42,6 +44,7 @@ interface RightPanelContainerProps {
 
 export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
   projectData,
+  isProjectReady,
   viewMode,
   setViewMode,
   presentations,
@@ -57,6 +60,12 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
   onDownloadProject,
   onDeleteProject
 }) => {
+  // Show empty state when:
+  // 1. No project exists yet (building new project - first round)
+  // 2. Project exists but not ready yet (waiting for execution_complete)
+  // Show project preview when project exists AND is ready
+  const showEmptyState = !projectData?.project_id || !isProjectReady;
+  const showProject = projectData?.project_id && isProjectReady;
   return (
     <div className="w-[65%] max-w-[65%] flex flex-col overflow-hidden min-w-0" style={{ width: '65%', maxWidth: '65%', minWidth: '0' }}>
       {/* Fixed Header */}
@@ -82,25 +91,6 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              {/* View Mode Options */}
-              {projectData?.project_id && (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => setViewMode('build')}
-                    className={viewMode === 'build' ? 'bg-accent' : ''}
-                  >
-                    <Hammer className="h-4 w-4 mr-2" />
-                    Build Preview
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setViewMode('files')}
-                    className={viewMode === 'files' ? 'bg-accent' : ''}
-                  >
-                    <FileCode className="h-4 w-4 mr-2" />
-                    Files View
-                  </DropdownMenuItem>
-                </>
-              )}
               {/* Presentation List */}
               {presentations.map((presentation) => (
                 <DropdownMenuItem
@@ -125,8 +115,8 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
                 </DropdownMenuItem>
               ))}
 
-              {/* Separator between view modes and actions */}
-              {(projectData?.project_id || presentations.length > 0) && (
+              {/* Separator between presentations and actions */}
+              {presentations.length > 0 && (
                 <DropdownMenuSeparator />
               )}
 
@@ -156,22 +146,18 @@ export const RightPanelContainer: React.FC<RightPanelContainerProps> = ({
           </DropdownMenu>
         </div>
 
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-accent rounded-lg transition-colors"
-          title="Close panel"
-        >
-          ✕
-        </button>
+        {/* Panel is always visible, no close button */}
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {viewMode === 'presentation' ? (
           <PresentationPreview htmlContent={presentationHtml} />
-        ) : projectData?.project_id ? (
+        ) : showProject ? (
           <BuildPreview agentId={projectData.project_id} refreshTrigger={refreshTrigger} />
-        ) : null}
+        ) : (
+          <EmptyProjectState />
+        )}
       </div>
     </div>
   );

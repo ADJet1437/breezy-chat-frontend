@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, startTransition, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authenticatedPost } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
@@ -29,6 +29,7 @@ interface UseMessageStreamingProps {
   setPresentations: React.Dispatch<React.SetStateAction<Array<{ id: string; created_at: string }>>>;
   setSelectedPresentationId: React.Dispatch<React.SetStateAction<string | null>>;
   setRefreshTrigger: React.Dispatch<React.SetStateAction<number>>;
+  setIsProjectReady: React.Dispatch<React.SetStateAction<boolean>>;
   attachedFileIds: string[];
   setAttachedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
   setAttachedFileDetails: React.Dispatch<React.SetStateAction<any[]>>;
@@ -67,6 +68,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     setPresentations,
     setSelectedPresentationId,
     setRefreshTrigger,
+    setIsProjectReady,
     attachedFileIds,
     setAttachedFileIds,
     setAttachedFileDetails,
@@ -81,6 +83,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const wasProjectReadyRef = useRef<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -160,7 +163,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     setProjectData(newProjectData);
                     projectDataRef.current = newProjectData;
                     setMissionPhase('project_created');
-                    setShowRightPanel(false);
+                    setIsProjectReady(false);
+                    wasProjectReadyRef.current = false;
                   }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
@@ -175,7 +179,6 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     setPresentationHtml('');
                     setIsPresentationStreaming(true);
                     setViewMode('presentation');
-                    setShowRightPanel(true);
                   }
 
                   if (data.data?.tool_name === 'task_complete') {
@@ -270,10 +273,15 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
                     const currentProjectData = projectDataRef.current || projectData;
                     if (currentProjectData?.project_id) {
-                      setViewMode('build');
-                      setTimeout(() => {
-                        setShowRightPanel(true);
-                      }, 1000);
+                      const wasAlreadyReady = wasProjectReadyRef.current;
+                      startTransition(() => {
+                        setViewMode('build');
+                        setIsProjectReady(true);
+                        if (wasAlreadyReady) {
+                          setRefreshTrigger(prev => prev + 1);
+                        }
+                      });
+                      wasProjectReadyRef.current = true;
                     }
                   }
                 } else if (data.event_type === 'mission_content') {
