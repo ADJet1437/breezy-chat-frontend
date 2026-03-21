@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { List, ChevronLeft, ChevronRight, User, LogOut, LogIn, Plus, Palette, Database, Compass } from 'lucide-react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Sidebar,
@@ -40,6 +40,27 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const validGlobalTabs = ['profile', 'plans', 'preferences', 'usage', 'account', 'knowledgeBase'];
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && validGlobalTabs.includes(tabParam)) {
+      setSettingsInitialTab(tabParam);
+      setGlobalSettingsOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleSettingsTabChange = (tab: string) => {
+    setSearchParams(prev => { prev.set('tab', tab); return prev; });
+  };
+
+  const handleSettingsClose = () => {
+    setGlobalSettingsOpen(false);
+    setSettingsInitialTab(undefined);
+    setSearchParams(prev => { prev.delete('tab'); return prev; });
+  };
 
   const navigationItems = [
     {
@@ -325,12 +346,10 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
       />
       <SettingsModal
         isOpen={globalSettingsOpen}
-        onClose={() => {
-          setGlobalSettingsOpen(false);
-          setSettingsInitialTab(undefined);
-        }}
+        onClose={handleSettingsClose}
         context="global"
         initialTab={settingsInitialTab as any}
+        onTabChange={handleSettingsTabChange}
       />
     </TooltipProvider>
   );
