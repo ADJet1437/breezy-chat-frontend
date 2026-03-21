@@ -29,6 +29,7 @@ interface SettingsModalProps {
   systemPrompt?: string;
   onSystemPromptUpdate?: (newPrompt: string) => void;
   initialTab?: SettingsTab;
+  onTabChange?: (tab: SettingsTab) => void;
 }
 
 const missionTabs = [
@@ -85,6 +86,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   systemPrompt = '',
   onSystemPromptUpdate,
   initialTab,
+  onTabChange,
 }) => {
   const isMissionContext = context === 'mission';
   const tabs = isMissionContext ? missionTabs : globalTabs;
@@ -190,7 +192,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        if (context === 'global') onTabChange?.(tab.id);
+                      }}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 ${
                         isActive
                           ? 'bg-accent text-accent-foreground shadow-sm'
