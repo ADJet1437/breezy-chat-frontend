@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const BASE_URL = 'http://localhost:8001/api/v1';
-const WS_BASE = 'ws://localhost:8001/api/v1';
+const _HTTP_BASE = import.meta.env.VITE_TALOSY_BACKEND_HOST || 'http://localhost:8000';
+const BASE_URL = `${_HTTP_BASE}/api/v1`;
+const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/api/v1`;
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
