@@ -149,7 +149,7 @@ export default function DemoTalkosV1() {
   const isActiveRef = useRef(false);
   const isPausedRef = useRef(false);
   const submitCalledRef = useRef(false);
-  const currentAudioRef = useRef<{ el: HTMLAudioElement; url: string } | null>(null);
+  const currentAudioRef = useRef<{ source: AudioBufferSourceNode } | null>(null);
 
   const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
@@ -164,22 +164,25 @@ export default function DemoTalkosV1() {
   const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
     isActiveRef.current = false;
     stopVad();
+    const ctx = audioContextRef.current;
+    if (!ctx) { onFinish(); return; }
     try {
       const binary = atob(base64Mp3);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      const entry = { el: audio, url };
+      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ok */ } }
+      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+      const bufSource = ctx.createBufferSource();
+      bufSource.buffer = audioBuffer;
+      bufSource.connect(ctx.destination);
+      const entry = { source: bufSource };
       currentAudioRef.current = entry;
-      const cleanup = () => {
-        URL.revokeObjectURL(url);
-        if (currentAudioRef.current === entry) currentAudioRef.current = null;
+      bufSource.onended = () => {
+        if (currentAudioRef.current !== entry) return;
+        currentAudioRef.current = null;
+        setTimeout(onFinish, 400);
       };
-      audio.onended = () => { cleanup(); setTimeout(onFinish, 400); };
-      audio.onerror = () => { cleanup(); onFinish(); };
-      await audio.play();
+      bufSource.start();
     } catch {
       currentAudioRef.current = null;
       onFinish();
@@ -195,24 +198,14 @@ export default function DemoTalkosV1() {
       const stream = streamRef.current;
       if (!stream) { console.error('[MIC] no stream — mic not acquired'); return; }
 
-      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-        audioContextRef.current = new AudioContext();
-        const source = audioContextRef.current.createMediaStreamSource(stream);
-        const analyser = audioContextRef.current.createAnalyser();
-        analyser.fftSize = 512;
-        source.connect(analyser);
-        analyserRef.current = analyser;
-      }
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
+      if (!analyserRef.current) { console.error('[MIC] no analyser — AudioContext not ready'); return; }
 
       audioChunksRef.current = [];
       const mr = RECORDER_MIME
         ? new MediaRecorder(stream, { mimeType: RECORDER_MIME })
         : new MediaRecorder(stream);
       mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mr.start(100);
+      mr.start();
       mediaRecorderRef.current = mr;
       isActiveRef.current = true;
       setAppState('listening');
@@ -274,6 +267,16 @@ export default function DemoTalkosV1() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      // Create and unlock AudioContext during user gesture — required for Safari + Chrome mobile
+      const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      const ctx = new AudioCtx();
+      try { await ctx.resume(); } catch { /* ok */ }
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      audioContextRef.current = ctx;
+      analyserRef.current = analyser;
     } catch {
       alert('Microphone access is required. Please allow the permission and try again.');
       setView('setup');
@@ -289,7 +292,8 @@ export default function DemoTalkosV1() {
       return;
     }
 
-    const ws = new WebSocket(`${WS_BASE}/talkos/ws/${sessionId}`);
+    const wsParams = new URLSearchParams({ language, native_language: nativeLanguage });
+    const ws = new WebSocket(`${WS_BASE}/talkos/ws/${sessionId}?${wsParams}`);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
@@ -337,10 +341,9 @@ export default function DemoTalkosV1() {
     stopVad();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
-      const { el, url } = currentAudioRef.current;
-      el.pause();
-      URL.revokeObjectURL(url);
+      const entry = currentAudioRef.current;
       currentAudioRef.current = null;
+      try { entry.source.stop(); } catch { /* already ended */ }
     }
     setAppState('paused');
   }
@@ -356,10 +359,9 @@ export default function DemoTalkosV1() {
     stopVad();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
-      const { el, url } = currentAudioRef.current;
-      el.pause();
-      URL.revokeObjectURL(url);
+      const entry = currentAudioRef.current;
       currentAudioRef.current = null;
+      try { entry.source.stop(); } catch { /* already ended */ }
     }
     setSummary(null);
     setView('summary');
