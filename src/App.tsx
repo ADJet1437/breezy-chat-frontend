@@ -20,6 +20,7 @@ import Overview from "./pages/Overview";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import UseCases from "./pages/UseCases";
+import DemoTalkosV1 from "./pages/DemoTalkosV1";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const AppInner = () => {
             <Route path="/overview" element={<Overview />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/demo-talkos-v1" element={<DemoTalkosV1 />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
