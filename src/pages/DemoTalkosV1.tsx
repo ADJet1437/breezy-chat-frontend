@@ -8,7 +8,7 @@ const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/a
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
-const INTERRUPT_THRESHOLD_DB = -18;
+const INTERRUPT_THRESHOLD_DB = -25;
 const INTERRUPT_SUSTAINED_MS = 400;
 const INTERRUPT_SILENCE_RESET_MS = 150;
 const TEXT_STREAM_MS_PER_WORD = 50;
@@ -161,6 +161,7 @@ export default function DemoTalkosV1() {
   const interruptSilenceStartRef = useRef<number | null>(null);
   const streamingFullTextRef = useRef('');
   const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionEndedRef = useRef(false);
 
   const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
@@ -342,6 +343,7 @@ export default function DemoTalkosV1() {
   }
 
   const startSession = useCallback(async () => {
+    sessionEndedRef.current = false;
     setView('conversation');
     setMessages([]);
     setSummary(null);
@@ -426,7 +428,7 @@ export default function DemoTalkosV1() {
       }
     };
 
-    ws.onerror = () => { alert('Connection error'); setView('setup'); };
+    ws.onerror = () => { if (!sessionEndedRef.current) { alert('Connection error'); setView('setup'); } };
     ws.onclose = () => { if (sessionIdRef.current) fetchSummary(sessionIdRef.current); };
   }, [language, nativeLanguage, addMessage, playAudio, enterListening]);
 
@@ -462,6 +464,7 @@ export default function DemoTalkosV1() {
       currentAudioRef.current = null;
       try { entry.source.stop(); } catch { /* already ended */ }
     }
+    sessionEndedRef.current = true;
     setSummary(null);
     setView('summary');
     if (wsRef.current?.readyState === WebSocket.OPEN) {
