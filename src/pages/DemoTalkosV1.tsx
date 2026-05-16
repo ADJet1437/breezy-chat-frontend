@@ -8,6 +8,9 @@ const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/a
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
+const INTERRUPT_THRESHOLD_DB = -25;
+const INTERRUPT_SUSTAINED_MS = 250;
+const INTERRUPT_SILENCE_RESET_MS = 150;
 
 const RECORDER_MIME = (() => {
   if (typeof MediaRecorder === 'undefined') return '';
@@ -150,6 +153,9 @@ export default function DemoTalkosV1() {
   const isPausedRef = useRef(false);
   const submitCalledRef = useRef(false);
   const currentAudioRef = useRef<{ source: AudioBufferSourceNode } | null>(null);
+  const interruptVadRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const interruptSpeechStartRef = useRef<number | null>(null);
+  const interruptSilenceStartRef = useRef<number | null>(null);
 
   const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
@@ -161,33 +167,11 @@ export default function DemoTalkosV1() {
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
   }, []);
 
-  const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
-    isActiveRef.current = false;
-    stopVad();
-    const ctx = audioContextRef.current;
-    if (!ctx) { onFinish(); return; }
-    try {
-      const binary = atob(base64Mp3);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ok */ } }
-      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
-      const bufSource = ctx.createBufferSource();
-      bufSource.buffer = audioBuffer;
-      bufSource.connect(ctx.destination);
-      const entry = { source: bufSource };
-      currentAudioRef.current = entry;
-      bufSource.onended = () => {
-        if (currentAudioRef.current !== entry) return;
-        currentAudioRef.current = null;
-        setTimeout(onFinish, 400);
-      };
-      bufSource.start();
-    } catch {
-      currentAudioRef.current = null;
-      onFinish();
-    }
-  }, [stopVad]);
+  const stopInterruptVad = useCallback(() => {
+    if (interruptVadRef.current) { clearInterval(interruptVadRef.current); interruptVadRef.current = null; }
+    interruptSpeechStartRef.current = null;
+    interruptSilenceStartRef.current = null;
+  }, []);
 
   const enterListening = useCallback(async () => {
     hasSpokenRef.current = false;
@@ -229,6 +213,69 @@ export default function DemoTalkosV1() {
     }
   }, [stopVad]);
 
+  const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
+    isActiveRef.current = false;
+    stopVad();
+    stopInterruptVad();
+    const ctx = audioContextRef.current;
+    if (!ctx) { onFinish(); return; }
+    try {
+      const binary = atob(base64Mp3);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ok */ } }
+      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+      const bufSource = ctx.createBufferSource();
+      bufSource.buffer = audioBuffer;
+      bufSource.connect(ctx.destination);
+      const entry = { source: bufSource };
+      currentAudioRef.current = entry;
+      bufSource.onended = () => {
+        if (currentAudioRef.current !== entry) return;
+        currentAudioRef.current = null;
+        stopInterruptVad();
+        setTimeout(onFinish, 400);
+      };
+      bufSource.start();
+
+      // Monitor mic while AI speaks; sustained voice above threshold triggers an interrupt
+      if (analyserRef.current) {
+        const iData = new Float32Array(analyserRef.current.fftSize);
+        interruptVadRef.current = setInterval(() => {
+          if (!analyserRef.current) return;
+          analyserRef.current.getFloatTimeDomainData(iData);
+          const rms = Math.sqrt(iData.reduce((s, v) => s + v * v, 0) / iData.length);
+          const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+          if (db > INTERRUPT_THRESHOLD_DB) {
+            interruptSilenceStartRef.current = null;
+            if (interruptSpeechStartRef.current === null) {
+              interruptSpeechStartRef.current = Date.now();
+            } else if (Date.now() - interruptSpeechStartRef.current >= INTERRUPT_SUSTAINED_MS) {
+              stopInterruptVad();
+              if (currentAudioRef.current) {
+                const interrupted = currentAudioRef.current;
+                currentAudioRef.current = null;
+                try { interrupted.source.stop(); } catch { /* already ended */ }
+              }
+              enterListening();
+            }
+          } else {
+            if (interruptSilenceStartRef.current === null) {
+              interruptSilenceStartRef.current = Date.now();
+            } else if (Date.now() - interruptSilenceStartRef.current >= INTERRUPT_SILENCE_RESET_MS) {
+              interruptSpeechStartRef.current = null;
+              interruptSilenceStartRef.current = null;
+            }
+          }
+        }, VAD_INTERVAL_MS);
+      }
+    } catch {
+      currentAudioRef.current = null;
+      stopInterruptVad();
+      onFinish();
+    }
+  }, [stopVad, stopInterruptVad, enterListening]);
+
   function triggerSubmit() {
     if (!isActiveRef.current || submitCalledRef.current) return;
     submitCalledRef.current = true;
@@ -265,7 +312,7 @@ export default function DemoTalkosV1() {
     setAppState('connecting');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       streamRef.current = stream;
       // Create and unlock AudioContext during user gesture — required for Safari + Chrome mobile
       const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
@@ -339,6 +386,7 @@ export default function DemoTalkosV1() {
     isPausedRef.current = true;
     isActiveRef.current = false;
     stopVad();
+    stopInterruptVad();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -357,6 +405,7 @@ export default function DemoTalkosV1() {
     isActiveRef.current = false;
     isPausedRef.current = false;
     stopVad();
+    stopInterruptVad();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -373,11 +422,12 @@ export default function DemoTalkosV1() {
   useEffect(() => {
     return () => {
       stopVad();
+      stopInterruptVad();
       wsRef.current?.close();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       audioContextRef.current?.close();
     };
-  }, [stopVad]);
+  }, [stopVad, stopInterruptVad]);
 
   const pauseActive = appState === 'listening' || appState === 'ai_speaking' || appState === 'processing' || appState === 'paused';
 
