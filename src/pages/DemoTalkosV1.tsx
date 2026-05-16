@@ -8,8 +8,8 @@ const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/a
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
-const INTERRUPT_THRESHOLD_DB = -25;
-const INTERRUPT_SUSTAINED_MS = 250;
+const INTERRUPT_THRESHOLD_DB = -18;
+const INTERRUPT_SUSTAINED_MS = 400;
 const INTERRUPT_SILENCE_RESET_MS = 150;
 const TEXT_STREAM_MS_PER_WORD = 50;
 
@@ -155,6 +155,7 @@ export default function DemoTalkosV1() {
   const isPausedRef = useRef(false);
   const submitCalledRef = useRef(false);
   const currentAudioRef = useRef<{ source: AudioBufferSourceNode } | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const interruptVadRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const interruptSpeechStartRef = useRef<number | null>(null);
   const interruptSilenceStartRef = useRef<number | null>(null);
@@ -165,6 +166,14 @@ export default function DemoTalkosV1() {
     setMessages((prev) => [...prev, { role, text }]);
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 80);
   }, []);
+
+  async function fetchSummary(sid: string) {
+    for (let attempt = 0; attempt < 15; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+      const res = await fetch(`${BASE_URL}/talkos/sessions/${sid}/summary`);
+      if (res.ok) { setSummary(await res.json()); return; }
+    }
+  }
 
   const flushStreaming = useCallback(() => {
     if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); streamingIntervalRef.current = null; }
@@ -365,6 +374,7 @@ export default function DemoTalkosV1() {
       setView('setup');
       return;
     }
+    sessionIdRef.current = sessionId;
 
     const wsParams = new URLSearchParams({ language, native_language: nativeLanguage });
     const ws = new WebSocket(`${WS_BASE}/talkos/ws/${sessionId}?${wsParams}`);
@@ -407,7 +417,7 @@ export default function DemoTalkosV1() {
           if (!isPausedRef.current) enterListening();
           break;
         case 'session_end':
-          setSummary(msg.summary);
+          if (sessionIdRef.current) fetchSummary(sessionIdRef.current);
           break;
         case 'error':
           alert(`Error: ${msg.message}`);
@@ -417,7 +427,7 @@ export default function DemoTalkosV1() {
     };
 
     ws.onerror = () => { alert('Connection error'); setView('setup'); };
-    ws.onclose = () => { if (!isPausedRef.current) console.warn('[WS] closed'); };
+    ws.onclose = () => { if (sessionIdRef.current) fetchSummary(sessionIdRef.current); };
   }, [language, nativeLanguage, addMessage, playAudio, enterListening]);
 
   function handlePause() {
