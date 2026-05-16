@@ -8,6 +8,10 @@ const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/a
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
+const INTERRUPT_THRESHOLD_DB = -18;
+const INTERRUPT_SUSTAINED_MS = 400;
+const INTERRUPT_SILENCE_RESET_MS = 150;
+const TEXT_STREAM_MS_PER_WORD = 50;
 
 const RECORDER_MIME = (() => {
   if (typeof MediaRecorder === 'undefined') return '';
@@ -135,6 +139,7 @@ export default function DemoTalkosV1() {
   const [appState, setAppState] = useState<AppState>('connecting');
   const [messages, setMessages] = useState<Message[]>([]);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [streamingText, setStreamingText] = useState('');
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -150,44 +155,45 @@ export default function DemoTalkosV1() {
   const isPausedRef = useRef(false);
   const submitCalledRef = useRef(false);
   const currentAudioRef = useRef<{ source: AudioBufferSourceNode } | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const interruptVadRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const interruptSpeechStartRef = useRef<number | null>(null);
+  const interruptSilenceStartRef = useRef<number | null>(null);
+  const streamingFullTextRef = useRef('');
+  const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 80);
   }, []);
 
+  async function fetchSummary(sid: string) {
+    for (let attempt = 0; attempt < 15; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+      const res = await fetch(`${BASE_URL}/talkos/sessions/${sid}/summary`);
+      if (res.ok) { setSummary(await res.json()); return; }
+    }
+  }
+
+  const flushStreaming = useCallback(() => {
+    if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); streamingIntervalRef.current = null; }
+    if (streamingFullTextRef.current) {
+      addMessage('ai', streamingFullTextRef.current);
+      streamingFullTextRef.current = '';
+    }
+    setStreamingText('');
+  }, [addMessage]);
+
   const stopVad = useCallback(() => {
     if (vadIntervalRef.current) { clearInterval(vadIntervalRef.current); vadIntervalRef.current = null; }
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
   }, []);
 
-  const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
-    isActiveRef.current = false;
-    stopVad();
-    const ctx = audioContextRef.current;
-    if (!ctx) { onFinish(); return; }
-    try {
-      const binary = atob(base64Mp3);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ok */ } }
-      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
-      const bufSource = ctx.createBufferSource();
-      bufSource.buffer = audioBuffer;
-      bufSource.connect(ctx.destination);
-      const entry = { source: bufSource };
-      currentAudioRef.current = entry;
-      bufSource.onended = () => {
-        if (currentAudioRef.current !== entry) return;
-        currentAudioRef.current = null;
-        setTimeout(onFinish, 400);
-      };
-      bufSource.start();
-    } catch {
-      currentAudioRef.current = null;
-      onFinish();
-    }
-  }, [stopVad]);
+  const stopInterruptVad = useCallback(() => {
+    if (interruptVadRef.current) { clearInterval(interruptVadRef.current); interruptVadRef.current = null; }
+    interruptSpeechStartRef.current = null;
+    interruptSilenceStartRef.current = null;
+  }, []);
 
   const enterListening = useCallback(async () => {
     hasSpokenRef.current = false;
@@ -229,6 +235,83 @@ export default function DemoTalkosV1() {
     }
   }, [stopVad]);
 
+  function startTextStream(text: string) {
+    if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); streamingIntervalRef.current = null; }
+    streamingFullTextRef.current = text;
+    setStreamingText('');
+    const words = text.split(' ');
+    let wordIdx = 0;
+    streamingIntervalRef.current = setInterval(() => {
+      wordIdx++;
+      setStreamingText(words.slice(0, wordIdx).join(' '));
+      if (wordIdx >= words.length) { clearInterval(streamingIntervalRef.current!); streamingIntervalRef.current = null; }
+    }, TEXT_STREAM_MS_PER_WORD);
+  }
+
+  const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
+    isActiveRef.current = false;
+    stopVad();
+    stopInterruptVad();
+    const ctx = audioContextRef.current;
+    if (!ctx) { onFinish(); return; }
+    try {
+      const binary = atob(base64Mp3);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ok */ } }
+      const audioBuffer = await ctx.decodeAudioData(bytes.buffer.slice(0));
+      const bufSource = ctx.createBufferSource();
+      bufSource.buffer = audioBuffer;
+      bufSource.connect(ctx.destination);
+      const entry = { source: bufSource };
+      currentAudioRef.current = entry;
+      bufSource.onended = () => {
+        if (currentAudioRef.current !== entry) return;
+        currentAudioRef.current = null;
+        stopInterruptVad();
+        setTimeout(onFinish, 400);
+      };
+      bufSource.start();
+
+      // Monitor mic while AI speaks; sustained voice above threshold triggers an interrupt
+      if (analyserRef.current) {
+        const iData = new Float32Array(analyserRef.current.fftSize);
+        interruptVadRef.current = setInterval(() => {
+          if (!analyserRef.current) return;
+          analyserRef.current.getFloatTimeDomainData(iData);
+          const rms = Math.sqrt(iData.reduce((s, v) => s + v * v, 0) / iData.length);
+          const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+          if (db > INTERRUPT_THRESHOLD_DB) {
+            interruptSilenceStartRef.current = null;
+            if (interruptSpeechStartRef.current === null) {
+              interruptSpeechStartRef.current = Date.now();
+            } else if (Date.now() - interruptSpeechStartRef.current >= INTERRUPT_SUSTAINED_MS) {
+              stopInterruptVad();
+              flushStreaming();
+              if (currentAudioRef.current) {
+                const interrupted = currentAudioRef.current;
+                currentAudioRef.current = null;
+                try { interrupted.source.stop(); } catch { /* already ended */ }
+              }
+              enterListening();
+            }
+          } else {
+            if (interruptSilenceStartRef.current === null) {
+              interruptSilenceStartRef.current = Date.now();
+            } else if (Date.now() - interruptSilenceStartRef.current >= INTERRUPT_SILENCE_RESET_MS) {
+              interruptSpeechStartRef.current = null;
+              interruptSilenceStartRef.current = null;
+            }
+          }
+        }, VAD_INTERVAL_MS);
+      }
+    } catch {
+      currentAudioRef.current = null;
+      stopInterruptVad();
+      onFinish();
+    }
+  }, [stopVad, stopInterruptVad, enterListening, flushStreaming]);
+
   function triggerSubmit() {
     if (!isActiveRef.current || submitCalledRef.current) return;
     submitCalledRef.current = true;
@@ -265,7 +348,7 @@ export default function DemoTalkosV1() {
     setAppState('connecting');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       streamRef.current = stream;
       // Create and unlock AudioContext during user gesture — required for Safari + Chrome mobile
       const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
@@ -291,6 +374,7 @@ export default function DemoTalkosV1() {
       setView('setup');
       return;
     }
+    sessionIdRef.current = sessionId;
 
     const wsParams = new URLSearchParams({ language, native_language: nativeLanguage });
     const ws = new WebSocket(`${WS_BASE}/talkos/ws/${sessionId}?${wsParams}`);
@@ -302,11 +386,17 @@ export default function DemoTalkosV1() {
 
       switch (msg.type) {
         case 'ready':
-          addMessage('ai', msg.opening_text);
           if (msg.opening_audio) {
+            startTextStream(msg.opening_text);
             setAppState('ai_speaking');
-            playAudio(msg.opening_audio, () => { if (!isPausedRef.current) enterListening(); });
+            playAudio(msg.opening_audio, () => {
+              addMessage('ai', msg.opening_text);
+              setStreamingText('');
+              streamingFullTextRef.current = '';
+              if (!isPausedRef.current) enterListening();
+            });
           } else {
+            addMessage('ai', msg.opening_text);
             enterListening();
           }
           break;
@@ -314,15 +404,20 @@ export default function DemoTalkosV1() {
           addMessage('user', msg.text);
           break;
         case 'ai_response':
-          addMessage('ai', msg.text);
+          startTextStream(msg.text);
           setAppState('ai_speaking');
-          playAudio(msg.audio, () => { if (!isPausedRef.current) enterListening(); else setAppState('paused'); });
+          playAudio(msg.audio, () => {
+            addMessage('ai', msg.text);
+            setStreamingText('');
+            streamingFullTextRef.current = '';
+            if (!isPausedRef.current) enterListening(); else setAppState('paused');
+          });
           break;
         case 'no_speech':
           if (!isPausedRef.current) enterListening();
           break;
         case 'session_end':
-          setSummary(msg.summary);
+          if (sessionIdRef.current) fetchSummary(sessionIdRef.current);
           break;
         case 'error':
           alert(`Error: ${msg.message}`);
@@ -332,13 +427,15 @@ export default function DemoTalkosV1() {
     };
 
     ws.onerror = () => { alert('Connection error'); setView('setup'); };
-    ws.onclose = () => { if (!isPausedRef.current) console.warn('[WS] closed'); };
+    ws.onclose = () => { if (sessionIdRef.current) fetchSummary(sessionIdRef.current); };
   }, [language, nativeLanguage, addMessage, playAudio, enterListening]);
 
   function handlePause() {
     isPausedRef.current = true;
     isActiveRef.current = false;
     stopVad();
+    stopInterruptVad();
+    flushStreaming();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -357,6 +454,8 @@ export default function DemoTalkosV1() {
     isActiveRef.current = false;
     isPausedRef.current = false;
     stopVad();
+    stopInterruptVad();
+    flushStreaming();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -373,11 +472,17 @@ export default function DemoTalkosV1() {
   useEffect(() => {
     return () => {
       stopVad();
+      stopInterruptVad();
+      if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); }
       wsRef.current?.close();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       audioContextRef.current?.close();
     };
-  }, [stopVad]);
+  }, [stopVad, stopInterruptVad]);
+
+  useEffect(() => {
+    if (streamingText) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [streamingText]);
 
   const pauseActive = appState === 'listening' || appState === 'ai_speaking' || appState === 'processing' || appState === 'paused';
 
@@ -474,17 +579,21 @@ export default function DemoTalkosV1() {
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-2.5">
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`max-w-[80%] rounded-2xl px-3 py-2.5 ${m.role === 'user' ? 'self-end' : 'self-start border'}`}
-              style={{
-                backgroundColor: m.role === 'user' ? '#7c6af7' : '#16213e',
-                borderColor: m.role === 'ai' ? '#2a2a4a' : undefined,
-              }}
-            >
-              <span className="text-sm leading-relaxed" style={{ color: m.role === 'user' ? '#fff' : '#e0e0ff' }}>{m.text}</span>
-            </div>
+            m.role === 'user' ? (
+              <div
+                key={i}
+                className="max-w-[80%] rounded-2xl px-3 py-2.5 self-end"
+                style={{ backgroundColor: '#7c6af7' }}
+              >
+                <span className="text-sm leading-relaxed" style={{ color: '#fff' }}>{m.text}</span>
+              </div>
+            ) : (
+              <p key={i} className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{m.text}</p>
+            )
           ))}
+          {streamingText && (
+            <p className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{streamingText}</p>
+          )}
         </div>
 
         {/* Footer */}
