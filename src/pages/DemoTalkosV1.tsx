@@ -493,8 +493,15 @@ export default function DemoTalkosV1() {
       <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#1a1a2e' }}>
         <div className="w-full max-w-sm flex flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-2">
-            <span className="text-5xl">🗣️</span>
-            <h1 className="text-3xl font-black" style={{ color: '#e0e0ff' }}>Talkos</h1>
+            <h1
+              className="text-3xl font-black"
+              style={{
+                background: 'linear-gradient(135deg, #8ba4f8 0%, #6c52f5 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >Talkos</h1>
             <p className="text-sm text-center" style={{ color: '#8888aa' }}>AI language partner — speak to learn</p>
           </div>
 
@@ -529,7 +536,7 @@ export default function DemoTalkosV1() {
             className="w-full py-4 rounded-2xl text-base font-bold text-white transition-opacity hover:opacity-90 active:opacity-75"
             style={{ backgroundColor: '#7c6af7' }}
           >
-            Start Session
+            Start
           </button>
         </div>
       </div>
