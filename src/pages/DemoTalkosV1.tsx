@@ -11,6 +11,7 @@ const VAD_INTERVAL_MS = 100;
 const INTERRUPT_THRESHOLD_DB = -25;
 const INTERRUPT_SUSTAINED_MS = 250;
 const INTERRUPT_SILENCE_RESET_MS = 150;
+const TEXT_STREAM_MS_PER_WORD = 50;
 
 const RECORDER_MIME = (() => {
   if (typeof MediaRecorder === 'undefined') return '';
@@ -138,6 +139,7 @@ export default function DemoTalkosV1() {
   const [appState, setAppState] = useState<AppState>('connecting');
   const [messages, setMessages] = useState<Message[]>([]);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
+  const [streamingText, setStreamingText] = useState('');
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -156,11 +158,22 @@ export default function DemoTalkosV1() {
   const interruptVadRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const interruptSpeechStartRef = useRef<number | null>(null);
   const interruptSilenceStartRef = useRef<number | null>(null);
+  const streamingFullTextRef = useRef('');
+  const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
     setMessages((prev) => [...prev, { role, text }]);
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 80);
   }, []);
+
+  const flushStreaming = useCallback(() => {
+    if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); streamingIntervalRef.current = null; }
+    if (streamingFullTextRef.current) {
+      addMessage('ai', streamingFullTextRef.current);
+      streamingFullTextRef.current = '';
+    }
+    setStreamingText('');
+  }, [addMessage]);
 
   const stopVad = useCallback(() => {
     if (vadIntervalRef.current) { clearInterval(vadIntervalRef.current); vadIntervalRef.current = null; }
@@ -213,6 +226,19 @@ export default function DemoTalkosV1() {
     }
   }, [stopVad]);
 
+  function startTextStream(text: string) {
+    if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); streamingIntervalRef.current = null; }
+    streamingFullTextRef.current = text;
+    setStreamingText('');
+    const words = text.split(' ');
+    let wordIdx = 0;
+    streamingIntervalRef.current = setInterval(() => {
+      wordIdx++;
+      setStreamingText(words.slice(0, wordIdx).join(' '));
+      if (wordIdx >= words.length) { clearInterval(streamingIntervalRef.current!); streamingIntervalRef.current = null; }
+    }, TEXT_STREAM_MS_PER_WORD);
+  }
+
   const playAudio = useCallback(async (base64Mp3: string, onFinish: () => void) => {
     isActiveRef.current = false;
     stopVad();
@@ -252,6 +278,7 @@ export default function DemoTalkosV1() {
               interruptSpeechStartRef.current = Date.now();
             } else if (Date.now() - interruptSpeechStartRef.current >= INTERRUPT_SUSTAINED_MS) {
               stopInterruptVad();
+              flushStreaming();
               if (currentAudioRef.current) {
                 const interrupted = currentAudioRef.current;
                 currentAudioRef.current = null;
@@ -274,7 +301,7 @@ export default function DemoTalkosV1() {
       stopInterruptVad();
       onFinish();
     }
-  }, [stopVad, stopInterruptVad, enterListening]);
+  }, [stopVad, stopInterruptVad, enterListening, flushStreaming]);
 
   function triggerSubmit() {
     if (!isActiveRef.current || submitCalledRef.current) return;
@@ -349,11 +376,17 @@ export default function DemoTalkosV1() {
 
       switch (msg.type) {
         case 'ready':
-          addMessage('ai', msg.opening_text);
           if (msg.opening_audio) {
+            startTextStream(msg.opening_text);
             setAppState('ai_speaking');
-            playAudio(msg.opening_audio, () => { if (!isPausedRef.current) enterListening(); });
+            playAudio(msg.opening_audio, () => {
+              addMessage('ai', msg.opening_text);
+              setStreamingText('');
+              streamingFullTextRef.current = '';
+              if (!isPausedRef.current) enterListening();
+            });
           } else {
+            addMessage('ai', msg.opening_text);
             enterListening();
           }
           break;
@@ -361,9 +394,14 @@ export default function DemoTalkosV1() {
           addMessage('user', msg.text);
           break;
         case 'ai_response':
-          addMessage('ai', msg.text);
+          startTextStream(msg.text);
           setAppState('ai_speaking');
-          playAudio(msg.audio, () => { if (!isPausedRef.current) enterListening(); else setAppState('paused'); });
+          playAudio(msg.audio, () => {
+            addMessage('ai', msg.text);
+            setStreamingText('');
+            streamingFullTextRef.current = '';
+            if (!isPausedRef.current) enterListening(); else setAppState('paused');
+          });
           break;
         case 'no_speech':
           if (!isPausedRef.current) enterListening();
@@ -387,6 +425,7 @@ export default function DemoTalkosV1() {
     isActiveRef.current = false;
     stopVad();
     stopInterruptVad();
+    flushStreaming();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -406,6 +445,7 @@ export default function DemoTalkosV1() {
     isPausedRef.current = false;
     stopVad();
     stopInterruptVad();
+    flushStreaming();
     mediaRecorderRef.current?.stop();
     if (currentAudioRef.current) {
       const entry = currentAudioRef.current;
@@ -423,11 +463,16 @@ export default function DemoTalkosV1() {
     return () => {
       stopVad();
       stopInterruptVad();
+      if (streamingIntervalRef.current) { clearInterval(streamingIntervalRef.current); }
       wsRef.current?.close();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       audioContextRef.current?.close();
     };
   }, [stopVad, stopInterruptVad]);
+
+  useEffect(() => {
+    if (streamingText) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [streamingText]);
 
   const pauseActive = appState === 'listening' || appState === 'ai_speaking' || appState === 'processing' || appState === 'paused';
 
@@ -524,17 +569,21 @@ export default function DemoTalkosV1() {
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-2.5">
           {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`max-w-[80%] rounded-2xl px-3 py-2.5 ${m.role === 'user' ? 'self-end' : 'self-start border'}`}
-              style={{
-                backgroundColor: m.role === 'user' ? '#7c6af7' : '#16213e',
-                borderColor: m.role === 'ai' ? '#2a2a4a' : undefined,
-              }}
-            >
-              <span className="text-sm leading-relaxed" style={{ color: m.role === 'user' ? '#fff' : '#e0e0ff' }}>{m.text}</span>
-            </div>
+            m.role === 'user' ? (
+              <div
+                key={i}
+                className="max-w-[80%] rounded-2xl px-3 py-2.5 self-end"
+                style={{ backgroundColor: '#7c6af7' }}
+              >
+                <span className="text-sm leading-relaxed" style={{ color: '#fff' }}>{m.text}</span>
+              </div>
+            ) : (
+              <p key={i} className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{m.text}</p>
+            )
           ))}
+          {streamingText && (
+            <p className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{streamingText}</p>
+          )}
         </div>
 
         {/* Footer */}
