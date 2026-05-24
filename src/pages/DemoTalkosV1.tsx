@@ -23,7 +23,7 @@ const RECORDER_MIME = (() => {
 
 type View = 'setup' | 'conversation' | 'summary';
 type AppState = 'connecting' | 'ai_speaking' | 'listening' | 'processing' | 'paused' | 'ended';
-type Message = { role: 'user' | 'ai'; text: string };
+type Message = { role: 'user'; text: string } | { role: 'ai'; text: string; translation?: string };
 type SessionSummary = {
   exchanges: number;
   nailed: string[];
@@ -140,6 +140,10 @@ export default function DemoTalkosV1() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [streamingText, setStreamingText] = useState('');
+  const [suggestion, setSuggestion] = useState('');
+  const [suggestionPlaying, setSuggestionPlaying] = useState(false);
+  const [suggestionSpeed, setSuggestionSpeed] = useState(1.0);
+  const suggestionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -163,8 +167,8 @@ export default function DemoTalkosV1() {
   const streamingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionEndedRef = useRef(false);
 
-  const addMessage = useCallback((role: 'user' | 'ai', text: string) => {
-    setMessages((prev) => [...prev, { role, text }]);
+  const addMessage = useCallback((role: 'user' | 'ai', text: string, translation?: string) => {
+    setMessages((prev) => [...prev, role === 'ai' ? { role, text, translation } : { role, text }]);
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }), 80);
   }, []);
 
@@ -318,6 +322,7 @@ export default function DemoTalkosV1() {
     submitCalledRef.current = true;
     isActiveRef.current = false;
     stopVad();
+    setSuggestion('');
     submitSpeech();
   }
 
@@ -406,12 +411,16 @@ export default function DemoTalkosV1() {
           addMessage('user', msg.text);
           break;
         case 'ai_response':
+          suggestionAudioRef.current?.pause();
+          setSuggestionPlaying(false);
+          setSuggestion('');
           startTextStream(msg.text);
           setAppState('ai_speaking');
           playAudio(msg.audio, () => {
-            addMessage('ai', msg.text);
+            addMessage('ai', msg.text, msg.translation);
             setStreamingText('');
             streamingFullTextRef.current = '';
+            if (msg.suggestion) setSuggestion(msg.suggestion);
             if (!isPausedRef.current) enterListening(); else setAppState('paused');
           });
           break;
@@ -465,6 +474,7 @@ export default function DemoTalkosV1() {
       try { entry.source.stop(); } catch { /* already ended */ }
     }
     sessionEndedRef.current = true;
+    setSuggestion('');
     setSummary(null);
     setView('summary');
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -598,11 +608,71 @@ export default function DemoTalkosV1() {
                 <span className="text-sm leading-relaxed" style={{ color: '#fff' }}>{m.text}</span>
               </div>
             ) : (
-              <p key={i} className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{m.text}</p>
+              <div key={i} className="self-start flex flex-col gap-1 max-w-[85%]">
+                <p className="text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{m.text}</p>
+                {m.translation && (
+                  <p className="text-xs leading-relaxed" style={{ color: '#6a6a9a' }}>{m.translation}</p>
+                )}
+              </div>
             )
           ))}
           {streamingText && (
             <p className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{streamingText}</p>
+          )}
+          {suggestion && (
+            <div className="self-end flex flex-col items-end gap-1 mt-1">
+              <span className="text-xs font-medium" style={{ color: '#8888aa' }}>try saying</span>
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl rounded-tr-sm"
+                style={{ backgroundColor: '#1e1e3e', border: '1px dashed #5a4aaa' }}
+              >
+                <span className="text-sm" style={{ color: '#a89af7' }}>{suggestion}</span>
+                <div className="flex items-center gap-1.5" style={{ flexShrink: 0 }}>
+                  <button
+                    onClick={async () => {
+                      if (suggestionPlaying) {
+                        suggestionAudioRef.current?.pause();
+                        setSuggestionPlaying(false);
+                        return;
+                      }
+                      setSuggestionPlaying(true);
+                      try {
+                        const res = await fetch(`${BASE_URL}/talkos/tts`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ text: suggestion, speed: suggestionSpeed }),
+                        });
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const audio = new Audio(url);
+                        suggestionAudioRef.current = audio;
+                        audio.play();
+                        audio.onended = () => { URL.revokeObjectURL(url); setSuggestionPlaying(false); };
+                      } catch {
+                        setSuggestionPlaying(false);
+                      }
+                    }}
+                    style={{ color: suggestionPlaying ? '#7c6af7' : '#5a4aaa' }}
+                  >
+                    {suggestionPlaying ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+                    )}
+                  </button>
+                  <select
+                    value={suggestionSpeed}
+                    onChange={(e) => setSuggestionSpeed(Number(e.target.value))}
+                    className="text-xs font-bold outline-none cursor-pointer appearance-none bg-transparent"
+                    style={{ color: suggestionSpeed < 1 ? '#a89af7' : '#5a4aaa' }}
+                  >
+                    <option value={1.0}>1x</option>
+                    <option value={0.75}>0.75x</option>
+                    <option value={0.5}>0.5x</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
