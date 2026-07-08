@@ -45,6 +45,9 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
         behavior: 'smooth',
         block: 'start'
       });
+    } else {
+      // Section lives on the homepage — navigate there with a hash anchor
+      window.location.href = `/#${sectionId}`;
     }
   };
 
@@ -92,6 +95,15 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
               )}
 
               {/* Always show marketing links */}
+              <NavigationItem
+                href="/language"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/language');
+                }}
+              >
+                Language
+              </NavigationItem>
               <NavigationItem href="#use-cases-showcase" onClick={scrollToSection('use-cases-showcase')}>
                 Examples
               </NavigationItem>
@@ -160,6 +172,17 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
               )}
 
               {/* Always show marketing links */}
+              <a
+                href="/language"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/language');
+                  setMobileMenuOpen(false);
+                }}
+                className="text-gray-600 hover:text-blue-600 transition-colors duration-200 cursor-pointer font-medium px-2 py-2"
+              >
+                Language
+              </a>
               <a
                 href="#use-cases-showcase"
                 onClick={(e) => {

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { BASE_URL, LANGUAGES, WS_BASE } from './config';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const _HTTP_BASE = import.meta.env.VITE_TALOSY_BACKEND_HOST || 'http://localhost:8000';
-const BASE_URL = `${_HTTP_BASE}/api/v1`;
-const WS_BASE = `${_HTTP_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')}/api/v1`;
 const SPEECH_THRESHOLD_DB = -25;
 const SILENCE_MS = 1800;
 const VAD_INTERVAL_MS = 100;
@@ -44,19 +43,15 @@ async function createSession(language: string, nativeLanguage: string): Promise<
   return data.session_id;
 }
 
-// ─── Language options ─────────────────────────────────────────────────────────
-
-const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Swedish', 'Japanese', 'Mandarin', 'Korean', 'Italian', 'Portuguese'];
-
 // ─── State indicator ──────────────────────────────────────────────────────────
 
 const STATE_CONFIG: Record<AppState, { color: string; icon: string; label: string; spin: boolean }> = {
-  connecting:  { color: '#2a2a4a', icon: '',   label: 'Connecting…',  spin: true },
-  ai_speaking: { color: '#44aa88', icon: '🔊', label: 'Speaking…',    spin: false },
-  listening:   { color: '#7c6af7', icon: '🎙', label: 'Listening…',   spin: false },
-  processing:  { color: '#f0a040', icon: '',   label: 'Processing…',  spin: true },
-  paused:      { color: '#f0a040', icon: '⏸', label: 'Paused',        spin: false },
-  ended:       { color: '#2a2a4a', icon: '✓',  label: 'Session ended', spin: false },
+  connecting:  { color: '#e5e7eb', icon: '',   label: 'Connecting…',  spin: true },
+  ai_speaking: { color: '#10b981', icon: '🔊', label: 'Speaking…',    spin: false },
+  listening:   { color: '#7c3aed', icon: '🎙', label: 'Listening…',   spin: false },
+  processing:  { color: '#f59e0b', icon: '',   label: 'Processing…',  spin: true },
+  paused:      { color: '#f59e0b', icon: '⏸', label: 'Paused',        spin: false },
+  ended:       { color: '#e5e7eb', icon: '✓',  label: 'Session ended', spin: false },
 };
 
 function StateIndicator({ appState }: { appState: AppState }) {
@@ -70,12 +65,12 @@ function StateIndicator({ appState }: { appState: AppState }) {
         )}
         <div className="w-[72px] h-[72px] rounded-full flex items-center justify-center" style={{ backgroundColor: cfg.color }}>
           {cfg.spin
-            ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ? <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: '#7c3aed', borderTopColor: 'transparent' }} />
             : <span className="text-2xl">{cfg.icon}</span>
           }
         </div>
       </div>
-      <span className="text-base font-semibold tracking-wide" style={{ color: '#e0e0ff' }}>{cfg.label}</span>
+      <span className="text-base font-semibold tracking-wide" style={{ color: '#111827' }}>{cfg.label}</span>
     </div>
   );
 }
@@ -87,9 +82,9 @@ function SummaryView({ summary, onAgain }: { summary: SessionSummary; onAgain: (
   return (
     <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-4 max-w-lg mx-auto w-full">
       <div className="flex gap-4 mt-2 mb-2">
-        <div className="rounded-2xl p-5 flex flex-col items-center min-w-[110px] border" style={{ backgroundColor: '#16213e', borderColor: '#2a2a4a' }}>
-          <span className="text-4xl font-black" style={{ color: '#7c6af7' }}>{summary.exchanges}</span>
-          <span className="text-xs mt-1" style={{ color: '#8888aa' }}>exchanges</span>
+        <div className="rounded-2xl p-5 flex flex-col items-center min-w-[110px] border" style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+          <span className="text-4xl font-black" style={{ color: '#7c3aed' }}>{summary.exchanges}</span>
+          <span className="text-xs mt-1" style={{ color: '#6b7280' }}>exchanges</span>
         </div>
       </div>
 
@@ -99,7 +94,7 @@ function SummaryView({ summary, onAgain }: { summary: SessionSummary; onAgain: (
             <span
               key={i}
               className="px-3 py-1 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: '#1e1e3e', color: '#7c6af7', border: '1px solid #2a2a4a' }}
+              style={{ backgroundColor: '#eef2ff', color: '#7c3aed', border: '1px solid #e5e7eb' }}
             >
               {topic}
             </span>
@@ -108,12 +103,12 @@ function SummaryView({ summary, onAgain }: { summary: SessionSummary; onAgain: (
       )}
 
       {summary.nailed.length > 0 && (
-        <div className="w-full rounded-xl p-4 border flex flex-col gap-2.5" style={{ backgroundColor: '#16213e', borderColor: '#2a2a4a' }}>
-          <span className="text-sm font-bold" style={{ color: '#44aa88' }}>🎉 {nailedLabel}</span>
+        <div className="w-full rounded-xl p-4 border flex flex-col gap-2.5" style={{ backgroundColor: '#ffffff', borderColor: '#e5e7eb' }}>
+          <span className="text-sm font-bold" style={{ color: '#10b981' }}>🎉 {nailedLabel}</span>
           {summary.nailed.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="text-xs font-bold mt-0.5 shrink-0" style={{ color: '#44aa88' }}>✓</span>
-              <span className="text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{item}</span>
+              <span className="text-xs font-bold mt-0.5 shrink-0" style={{ color: '#10b981' }}>✓</span>
+              <span className="text-sm leading-relaxed" style={{ color: '#111827' }}>{item}</span>
             </div>
           ))}
         </div>
@@ -122,7 +117,7 @@ function SummaryView({ summary, onAgain }: { summary: SessionSummary; onAgain: (
       <button
         onClick={onAgain}
         className="mt-4 mb-8 px-12 py-4 rounded-full text-base font-bold text-white"
-        style={{ backgroundColor: '#7c6af7' }}
+        style={{ background: 'linear-gradient(to right, #3b82f6, #9333ea)' }}
       >
         Practice Again
       </button>
@@ -132,9 +127,15 @@ function SummaryView({ summary, onAgain }: { summary: SessionSummary; onAgain: (
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function DemoTalkosV1() {
+export default function FreeTalk({
+  onGuidedPractice,
+  onHistory,
+}: {
+  onGuidedPractice?: () => void;
+  onHistory?: () => void;
+}) {
   const [view, setView] = useState<View>('setup');
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState('Swedish');
   const [nativeLanguage, setNativeLanguage] = useState('English');
   const [appState, setAppState] = useState<AppState>('connecting');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -503,54 +504,61 @@ export default function DemoTalkosV1() {
 
   if (view === 'setup') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#1a1a2e' }}>
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-6" style={{ backgroundColor: '#f9fafb' }}>
         <div className="w-full max-w-sm flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-2">
-            <h1
-              className="text-3xl font-black"
-              style={{
-                background: 'linear-gradient(135deg, #8ba4f8 0%, #6c52f5 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >Talkos</h1>
-            <p className="text-sm text-center" style={{ color: '#8888aa' }}>AI language partner — speak to learn</p>
-          </div>
-
           <div className="w-full flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold" style={{ color: '#8888aa' }}>I WANT TO PRACTICE</label>
+              <label className="text-xs font-semibold" style={{ color: '#6b7280' }}>I WANT TO PRACTICE</label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 className="w-full rounded-xl px-4 py-3 text-sm font-medium border outline-none"
-                style={{ backgroundColor: '#16213e', color: '#e0e0ff', borderColor: '#2a2a4a' }}
+                style={{ backgroundColor: '#ffffff', color: '#111827', borderColor: '#e5e7eb' }}
               >
                 {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold" style={{ color: '#8888aa' }}>I SPEAK</label>
+              <label className="text-xs font-semibold" style={{ color: '#6b7280' }}>I SPEAK</label>
               <select
                 value={nativeLanguage}
                 onChange={(e) => setNativeLanguage(e.target.value)}
                 className="w-full rounded-xl px-4 py-3 text-sm font-medium border outline-none"
-                style={{ backgroundColor: '#16213e', color: '#e0e0ff', borderColor: '#2a2a4a' }}
+                style={{ backgroundColor: '#ffffff', color: '#111827', borderColor: '#e5e7eb' }}
               >
                 {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
           </div>
 
+          {onGuidedPractice && (
+            <button
+              onClick={onGuidedPractice}
+              className="w-full py-4 rounded-2xl text-base font-bold text-white transition-opacity hover:opacity-90 active:opacity-75"
+              style={{ background: 'linear-gradient(to right, #3b82f6, #9333ea)' }}
+            >
+              Start
+            </button>
+          )}
+
           <button
             onClick={startSession}
-            className="w-full py-4 rounded-2xl text-base font-bold text-white transition-opacity hover:opacity-90 active:opacity-75"
-            style={{ backgroundColor: '#7c6af7' }}
+            className="w-full py-3.5 rounded-2xl text-sm font-bold border transition-opacity hover:opacity-90"
+            style={{ color: '#8b5cf6', borderColor: '#a78bfa', backgroundColor: 'transparent' }}
           >
-            Start
+            Free talk
           </button>
+
+          {onHistory && (
+            <button
+              onClick={onHistory}
+              className="text-sm font-semibold transition-opacity hover:opacity-75"
+              style={{ color: '#6b7280' }}
+            >
+              My practice history
+            </button>
+          )}
         </div>
       </div>
     );
@@ -560,17 +568,17 @@ export default function DemoTalkosV1() {
 
   if (view === 'summary') {
     return (
-      <div className="min-h-screen flex flex-col items-center" style={{ backgroundColor: '#1a1a2e' }}>
-        <div className="w-full max-w-2xl flex flex-col min-h-screen border-x" style={{ borderColor: '#2a2a4a' }}>
-          <div className="flex items-center gap-2 px-5 pt-5 pb-3 border-b" style={{ borderColor: '#2a2a4a' }}>
-            <span className="text-lg font-black" style={{ color: '#e0e0ff' }}>Session Summary</span>
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center" style={{ backgroundColor: '#f9fafb' }}>
+        <div className="w-full max-w-2xl flex flex-col min-h-[calc(100vh-4rem)] border-x" style={{ borderColor: '#e5e7eb' }}>
+          <div className="flex items-center gap-2 px-5 pt-5 pb-3 border-b" style={{ borderColor: '#e5e7eb' }}>
+            <span className="text-lg font-black" style={{ color: '#111827' }}>Session Summary</span>
           </div>
           {summary
             ? <SummaryView summary={summary} onAgain={() => setView('setup')} />
             : (
               <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#7c6af7', borderTopColor: 'transparent' }} />
-                <span className="text-sm" style={{ color: '#8888aa' }}>Generating your review…</span>
+                <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#7c3aed', borderTopColor: 'transparent' }} />
+                <span className="text-sm" style={{ color: '#6b7280' }}>Generating your review…</span>
               </div>
             )
           }
@@ -582,13 +590,12 @@ export default function DemoTalkosV1() {
   // ── Conversation view ─────────────────────────────────────────────────────
 
   return (
-    <div className="h-screen flex flex-col items-center" style={{ backgroundColor: '#1a1a2e' }}>
-      <div className="w-full max-w-2xl flex flex-col h-full border-x" style={{ borderColor: '#2a2a4a' }}>
+    <div className="h-[calc(100vh-4rem)] flex flex-col items-center" style={{ backgroundColor: '#f9fafb' }}>
+      <div className="w-full max-w-2xl flex flex-col h-full border-x" style={{ borderColor: '#e5e7eb' }}>
         {/* Header */}
-        <div className="flex items-center gap-2 px-5 pt-5 pb-3 border-b shrink-0" style={{ borderColor: '#2a2a4a' }}>
-          <button onClick={() => setView('setup')} className="text-2xl font-light leading-none mr-1" style={{ color: '#7c6af7' }}>‹</button>
-          <span className="text-base font-bold" style={{ color: '#e0e0ff' }}>Talkos</span>
-          <span className="text-xs ml-2 px-2 py-0.5 rounded-full" style={{ backgroundColor: '#16213e', color: '#8888aa' }}>
+        <div className="flex items-center gap-2 px-5 pt-5 pb-3 border-b shrink-0" style={{ borderColor: '#e5e7eb' }}>
+          <button onClick={() => setView('setup')} className="text-2xl font-light leading-none mr-1" style={{ color: '#7c3aed' }}>‹</button>
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#ffffff', color: '#6b7280' }}>
             {language}
           </span>
         </div>
@@ -603,30 +610,30 @@ export default function DemoTalkosV1() {
               <div
                 key={i}
                 className="max-w-[80%] rounded-2xl px-3 py-2.5 self-end"
-                style={{ backgroundColor: '#7c6af7' }}
+                style={{ backgroundColor: '#7c3aed' }}
               >
                 <span className="text-sm leading-relaxed" style={{ color: '#fff' }}>{m.text}</span>
               </div>
             ) : (
               <div key={i} className="self-start flex flex-col gap-1 max-w-[85%]">
-                <p className="text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{m.text}</p>
+                <p className="text-sm leading-relaxed" style={{ color: '#111827' }}>{m.text}</p>
                 {m.translation && (
-                  <p className="text-xs leading-relaxed" style={{ color: '#6a6a9a' }}>{m.translation}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: '#9ca3af' }}>{m.translation}</p>
                 )}
               </div>
             )
           ))}
           {streamingText && (
-            <p className="self-start text-sm leading-relaxed" style={{ color: '#e0e0ff' }}>{streamingText}</p>
+            <p className="self-start text-sm leading-relaxed" style={{ color: '#111827' }}>{streamingText}</p>
           )}
           {suggestion && (
             <div className="self-end flex flex-col items-end gap-1 mt-1">
-              <span className="text-xs font-medium" style={{ color: '#8888aa' }}>try saying</span>
+              <span className="text-xs font-medium" style={{ color: '#6b7280' }}>try saying</span>
               <div
                 className="flex items-center gap-2 px-4 py-2 rounded-2xl rounded-tr-sm"
-                style={{ backgroundColor: '#1e1e3e', border: '1px dashed #5a4aaa' }}
+                style={{ backgroundColor: '#eef2ff', border: '1px dashed #a78bfa' }}
               >
-                <span className="text-sm" style={{ color: '#a89af7' }}>{suggestion}</span>
+                <span className="text-sm" style={{ color: '#8b5cf6' }}>{suggestion}</span>
                 <div className="flex items-center gap-1.5" style={{ flexShrink: 0 }}>
                   <button
                     onClick={async () => {
@@ -652,7 +659,7 @@ export default function DemoTalkosV1() {
                         setSuggestionPlaying(false);
                       }
                     }}
-                    style={{ color: suggestionPlaying ? '#7c6af7' : '#5a4aaa' }}
+                    style={{ color: suggestionPlaying ? '#7c3aed' : '#a78bfa' }}
                   >
                     {suggestionPlaying ? (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
@@ -664,7 +671,7 @@ export default function DemoTalkosV1() {
                     value={suggestionSpeed}
                     onChange={(e) => setSuggestionSpeed(Number(e.target.value))}
                     className="text-xs font-bold outline-none cursor-pointer appearance-none bg-transparent"
-                    style={{ color: suggestionSpeed < 1 ? '#a89af7' : '#5a4aaa' }}
+                    style={{ color: suggestionSpeed < 1 ? '#8b5cf6' : '#a78bfa' }}
                   >
                     <option value={1.0}>1x</option>
                     <option value={0.75}>0.75x</option>
@@ -677,14 +684,14 @@ export default function DemoTalkosV1() {
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 flex justify-evenly items-center px-8 py-5 border-t" style={{ borderColor: '#2a2a4a' }}>
+        <div className="shrink-0 flex justify-evenly items-center px-8 py-5 border-t" style={{ borderColor: '#e5e7eb' }}>
           <button
             onClick={appState === 'paused' ? handleResume : handlePause}
             disabled={!pauseActive}
             className="w-14 h-14 rounded-full flex items-center justify-center text-xl transition-opacity"
             style={{
-              backgroundColor: pauseActive ? '#7c6af7' : '#16213e',
-              border: pauseActive ? 'none' : '1.5px solid #2a2a4a',
+              backgroundColor: pauseActive ? '#7c3aed' : '#ffffff',
+              border: pauseActive ? 'none' : '1.5px solid #e5e7eb',
               opacity: pauseActive ? 1 : 0.5,
             }}
           >
@@ -694,7 +701,7 @@ export default function DemoTalkosV1() {
           <button
             onClick={handleEnd}
             className="w-14 h-14 rounded-full flex items-center justify-center text-xl border"
-            style={{ backgroundColor: '#16213e', borderColor: '#3a2a2a', color: '#e0e0ff' }}
+            style={{ backgroundColor: '#ffffff', borderColor: '#fca5a5', color: '#111827' }}
           >
             ✕
           </button>
