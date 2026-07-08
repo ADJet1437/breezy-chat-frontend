@@ -20,7 +20,14 @@ import Overview from "./pages/Overview";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import UseCases from "./pages/UseCases";
-import DemoTalkosV1 from "./pages/DemoTalkosV1";
+import {
+  LanguageHomePage,
+  LanguageHistoryPage,
+  PracticeCreatePage,
+  PracticePreviewPage,
+  PracticeSessionPage,
+  PracticeSummaryPage,
+} from "./pages/language";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
@@ -50,7 +57,13 @@ const AppInner = () => {
             <Route path="/overview" element={<Overview />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/demo-talkos-v1" element={<DemoTalkosV1 />} />
+            <Route path="/language" element={<LanguageHomePage />} />
+            <Route path="/language/practice/new" element={<PracticeCreatePage />} />
+            <Route path="/language/practice/:scriptId" element={<PracticePreviewPage />} />
+            <Route path="/language/practice/:scriptId/session" element={<PracticeSessionPage />} />
+            <Route path="/language/practice/:scriptId/summary" element={<PracticeSummaryPage />} />
+            <Route path="/language/practice" element={<Navigate to="/language/practice/new" replace />} />
+            <Route path="/language/history" element={<LanguageHistoryPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<Layout><NotFound /></Layout>} />
           </Routes>
