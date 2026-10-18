@@ -55,52 +55,48 @@
   }
 
   .dark {
-    /* Main backgrounds - Industrial dark (slate-900 equivalent) */
-    --background: 215 28% 17%;
-    --foreground: 210 40% 98%;
+    /* Neutral near-black. No blue tint: a hue here is what made the old theme
+       read as "slate" rather than black, and it leaks into every border. */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 91%;
 
-    /* Cards and surfaces - Slightly lighter (slate-800 equivalent) */
-    --card: 215 25% 18%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 91%;
 
-    --popover: 215 25% 18%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 91%;
 
-    /* Primary colors - Keep accessible */
-    --primary: 210 40% 98%;
-    --primary-foreground: 215 28% 17%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 9%;
 
-    /* Secondary surfaces - Medium dark (slate-700 equivalent) */
-    --secondary: 215 25% 27%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 91%;
 
-    /* Muted backgrounds and borders */
-    --muted: 215 25% 27%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 56%;
 
-    --accent: 215 25% 27%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 17%;
+    --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 0 0% 95%;
 
-    /* Borders - Subtle but visible */
-    --border: 215 19% 35%;
-    --input: 215 25% 27%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 17%;
+    --input: 0 0% 15%;
+    --ring: 0 0% 40%;
 
-    /* Sidebar - Consistent with main theme */
-    --sidebar-background: 215 28% 17%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 27%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 19% 35%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* The sidebar sits a shade darker than the page, so the chat column
+       reads as the lit surface without needing a border to say so. */
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 82%;
+    --sidebar-primary: 0 0% 95%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 0 0% 40%;
 
-    /* Chat-specific variables for dark mode */
-    --chat-attachment-bg: 215 25% 27%; /* dark version of blue-50 */
+    --chat-attachment-bg: 0 0% 15%;
   }
 }
 

@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { setGlobalToast } from "./utils/errorHandler";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
-import Missions from "./pages/Missions";
 import MissionDetail from "./pages/MissionDetail";
 import NewMission from "./pages/NewMission";
 import AuthCallback from "./pages/AuthCallback";
@@ -50,7 +49,6 @@ const AppInner = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/chat" element={<NewMission />} />
-            <Route path="/missions" element={<Layout><Missions /></Layout>} />
             <Route path="/missions/:id" element={<MissionDetail />} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
             <Route path="/terms" element={<TermsOfService />} />

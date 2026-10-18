@@ -1,4 +1,4 @@
-import { useState, useRef, startTransition, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authenticatedPost } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
@@ -6,30 +6,12 @@ import { Message } from '../types/chat';
 import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { MissionPhase } from '../components/MissionProgressIndicator';
 
-interface ProjectData {
-  project_id: string;
-  project_name: string;
-  project_path: string;
-  session_id: string;
-}
-
 interface UseMessageStreamingProps {
   missionId?: string;
   currentMissionId: string | null;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setCurrentMissionId: (id: string) => void;
-  projectData: ProjectData | null;
-  setProjectData: React.Dispatch<React.SetStateAction<ProjectData | null>>;
-  projectDataRef: React.MutableRefObject<ProjectData | null>;
-  showRightPanel: boolean;
-  setShowRightPanel: (show: boolean) => void;
-  setViewMode: (mode: 'build' | 'files' | 'presentation') => void;
-  setPresentationHtml: React.Dispatch<React.SetStateAction<string>>;
-  setPresentations: React.Dispatch<React.SetStateAction<Array<{ id: string; created_at: string }>>>;
-  setSelectedPresentationId: React.Dispatch<React.SetStateAction<string | null>>;
-  setRefreshTrigger: React.Dispatch<React.SetStateAction<number>>;
-  setIsProjectReady: React.Dispatch<React.SetStateAction<boolean>>;
   attachedFileIds: string[];
   setAttachedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
   setAttachedFileDetails: React.Dispatch<React.SetStateAction<any[]>>;
@@ -41,8 +23,6 @@ interface UseMessageStreamingReturn {
   missionPhase: MissionPhase;
   executionProgress: number;
   currentStep: string;
-  isPresentationStreaming: boolean;
-  setIsPresentationStreaming: React.Dispatch<React.SetStateAction<boolean>>;
   sendMessageToBackend: (message: string, overrideFileIds?: string[]) => Promise<void>;
   showSubscriptionDialog: boolean;
   setShowSubscriptionDialog: React.Dispatch<React.SetStateAction<boolean>>;
@@ -58,17 +38,6 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     messages,
     setMessages,
     setCurrentMissionId,
-    projectData,
-    setProjectData,
-    projectDataRef,
-    showRightPanel,
-    setShowRightPanel,
-    setViewMode,
-    setPresentationHtml,
-    setPresentations,
-    setSelectedPresentationId,
-    setRefreshTrigger,
-    setIsProjectReady,
     attachedFileIds,
     setAttachedFileIds,
     setAttachedFileDetails,
@@ -79,11 +48,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const [missionPhase, setMissionPhase] = useState<MissionPhase>('init');
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>('');
-  const [isPresentationStreaming, setIsPresentationStreaming] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  const wasProjectReadyRef = useRef<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -151,42 +118,15 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   newMissionId = data.answer;
                   setCurrentMissionId(data.answer);
                   setMissionPhase('init');
-                } else if (data.event_type === 'project_created') {
-                  const projectInfo = data.data;
-                  if (projectInfo && projectInfo.project_id) {
-                    const newProjectData = {
-                      project_id: projectInfo.project_id,
-                      project_name: projectInfo.project_name,
-                      project_path: projectInfo.project_path,
-                      session_id: projectInfo.session_id
-                    };
-                    setProjectData(newProjectData);
-                    projectDataRef.current = newProjectData;
-                    setMissionPhase('project_created');
-                    setIsProjectReady(false);
-                    wasProjectReadyRef.current = false;
-                  }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
                   setExecutionProgress(10);
-                  setCurrentStep('Starting development...');
+                  setCurrentStep('Working on it…');
                 } else if (data.event_type === 'tool_call') {
                   const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
                   setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
 
-                  if (data.data?.tool_name === 'create_presentation') {
-                    setPresentationHtml('');
-                    setIsPresentationStreaming(true);
-                    setViewMode('presentation');
-                  }
-
-                  if (data.data?.tool_name === 'task_complete') {
-                    const requiresRefresh = data.data?.tool_result?.metadata?.requires_preview_refresh;
-                    if (requiresRefresh === true && showRightPanel && projectData?.project_id) {
-                      setRefreshTrigger(prev => prev + 1);
-                    }
-                  }
                 } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_generation') {
                   const skeletonMessage: Message = {
                     id: botMessageId,
@@ -247,43 +187,11 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   const message = data.data.message || 'Processing...';
                   setCurrentStep(`💭 ${message}`);
                   setExecutionProgress(prev => Math.min(prev + 5, 90));
-                } else if (data.event_type === 'presentation_content') {
-                  const htmlChunk = data.data.html_chunk || '';
-                  setPresentationHtml(prev => prev + htmlChunk);
                 } else if (data.event_type === 'execution_complete') {
                   setMissionPhase('complete');
                   setExecutionProgress(100);
 
-                  if (data.data.presentation_html && data.data.presentation_id) {
-                    const newPresentation = {
-                      id: data.data.presentation_id,
-                      created_at: new Date().toISOString(),
-                    };
-
-                    setPresentations(prev => [newPresentation, ...prev]);
-                    setSelectedPresentationId(data.data.presentation_id);
-                    setPresentationHtml(data.data.presentation_html);
-                    setViewMode('presentation');
-                    setCurrentStep('✅ Presentation created!');
-                    setShowRightPanel(true);
-                    setIsPresentationStreaming(false);
-                    newMissionId = null;
-                  } else {
-                    setCurrentStep('✅ Mission completed! Launching code agent...');
-
-                    const currentProjectData = projectDataRef.current || projectData;
-                    if (currentProjectData?.project_id) {
-                      const wasAlreadyReady = wasProjectReadyRef.current;
-                      startTransition(() => {
-                        setViewMode('build');
-                        setIsProjectReady(true);
-                        if (wasAlreadyReady) {
-                          setRefreshTrigger(prev => prev + 1);
-                        }
-                      });
-                      wasProjectReadyRef.current = true;
-                    }
-                  }
+                  setCurrentStep('Done');
                 } else if (data.event_type === 'mission_content') {
                   createInitialBotMessage();
                   setMessages(prev => prev.map(msg =>
@@ -341,8 +249,6 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     missionPhase,
     executionProgress,
     currentStep,
-    isPresentationStreaming,
-    setIsPresentationStreaming,
     sendMessageToBackend,
     showSubscriptionDialog,
     setShowSubscriptionDialog,

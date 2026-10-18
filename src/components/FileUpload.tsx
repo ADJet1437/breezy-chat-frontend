@@ -354,7 +354,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, disabled, miss
             <Button
               onClick={handleAttachFiles}
               disabled={uploadedFiles.length === 0}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Attach {uploadedFiles.length} File(s)
             </Button>

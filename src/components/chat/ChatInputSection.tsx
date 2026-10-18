@@ -75,7 +75,7 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
           <button
             onClick={onSendMessage}
             disabled={!inputValue.trim() || isStreaming || isLoadingHistory}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl px-6 py-3 font-medium transition-all duration-200 flex items-center justify-center h-[44px]"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed rounded-xl px-6 py-3 font-medium transition-all duration-200 flex items-center justify-center h-[44px]"
           >
             <Send className="h-4 w-4" />
           </button>

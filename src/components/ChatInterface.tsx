@@ -1,20 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useMissionContext } from '../contexts/MissionContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useMissionData } from '../hooks/useMissionData';
+import { useMissionData, MissionDetails } from '../hooks/useMissionData';
 import { useMessageStreaming } from '../hooks/useMessageStreaming';
-import { useProjectActions } from '../hooks/useProjectActions';
-import { SplitLayoutView } from './chat/SplitLayoutView';
+import { ChatView } from './chat/ChatView';
 import { ChatStickyInputBarRef } from './ChatStickyInputBar';
-import { Message } from '../types/chat';
-
-type ViewMode = 'build' | 'files' | 'presentation';
+import { AttachedFile, Message } from '../types/chat';
 
 interface ChatInterfaceProps {
   missionId?: string;
-  rightSidebarVisible?: boolean;
-  missionData?: any; // MissionDetails type from useMissionData hook
+  missionData?: MissionDetails | null;
   isParentLoading?: boolean;
   initialMessage?: string;
   initialFileIds?: string[];
@@ -22,7 +17,6 @@ interface ChatInterfaceProps {
 
 const ChatInterface = ({
   missionId,
-  rightSidebarVisible = false,
   missionData,
   isParentLoading = false,
   initialMessage,
@@ -30,21 +24,12 @@ const ChatInterface = ({
 }: ChatInterfaceProps) => {
   // Context
   const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
-  const { accessToken } = useAuth();
   const { toast } = useToast();
 
   // UI State
   const [inputValue, setInputValue] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved ? JSON.parse(saved) : false;
-  });
   const [attachedFileIds, setAttachedFileIds] = useState<string[]>([]);
-  const [attachedFileDetails, setAttachedFileDetails] = useState<any[]>([]);
-  // Sidebar is always visible in chat view
-  const [showRightPanel, setShowRightPanel] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('build');
-  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [attachedFileDetails, setAttachedFileDetails] = useState<AttachedFile[]>([]);
 
   // Refs
   const inputBarRef = useRef<ChatStickyInputBarRef>(null);
@@ -55,9 +40,7 @@ const ChatInterface = ({
     currentMissionId,
     missionData,
     isParentLoading,
-    setMissionData,
-    setViewMode,
-    setShowRightPanel
+    setMissionData
   );
 
   const streamingHook = useMessageStreaming({
@@ -66,63 +49,16 @@ const ChatInterface = ({
     messages: missionHook.messages,
     setMessages: missionHook.setMessages,
     setCurrentMissionId,
-    projectData: missionHook.projectData,
-    setProjectData: missionHook.setProjectData,
-    projectDataRef: missionHook.projectDataRef,
-    showRightPanel,
-    setShowRightPanel,
-    setViewMode,
-    setPresentationHtml: missionHook.setPresentationHtml,
-    setPresentations: missionHook.setPresentations,
-    setSelectedPresentationId: missionHook.setSelectedPresentationId,
-    setRefreshTrigger,
-    setIsProjectReady: missionHook.setIsProjectReady,
     attachedFileIds,
     setAttachedFileIds,
     setAttachedFileDetails,
     inputBarRef
   });
 
-  const projectActions = useProjectActions({
-    projectData: missionHook.projectData,
-    setProjectData: missionHook.setProjectData,
-    projectDataRef: missionHook.projectDataRef,
-    setShowRightPanel,
-    setMessages: missionHook.setMessages,
-    missionId,
-    currentMissionId,
-    presentationHtml: missionHook.presentationHtml,
-    accessToken
-  });
-
-  // Effects
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('sidebarCollapsed');
-      if (saved) {
-        const newState = JSON.parse(saved);
-        if (newState !== sidebarCollapsed) {
-          setSidebarCollapsed(newState);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(handleStorageChange, 100);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [sidebarCollapsed]);
-
-  // Sidebar is always visible, no need to persist or toggle
-
   // Auto-send initial message when creating new mission from HomePage
   useEffect(() => {
     // Only auto-send when we have initialMessage and no missionId (creating new mission)
     if (initialMessage && !missionId) {
-      // Create user message for display
       const userMessage: Message = {
         id: Date.now().toString(),
         content: initialMessage,
@@ -131,8 +67,6 @@ const ChatInterface = ({
       };
 
       missionHook.setMessages(prev => [...prev, userMessage]);
-
-      // Send to backend with file IDs
       streamingHook.sendMessageToBackend(initialMessage, initialFileIds);
     }
     // Only run once on mount when initialMessage is provided
@@ -148,20 +82,14 @@ const ChatInterface = ({
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
-      attachedFiles: attachedFileDetails.length > 0 ? attachedFileDetails.map(file => ({
-        id: file.id,
-        name: file.name,
-        size: file.size,
-        type: file.type
-      })) : undefined,
+      attachedFiles: attachedFileDetails.length > 0
+        ? attachedFileDetails.map(({ id, name, size, type }) => ({ id, name, size, type }))
+        : undefined,
     };
 
     missionHook.setMessages(prev => [...prev, userMessage]);
     const messageToSend = inputValue;
     setInputValue('');
-    missionHook.setPresentationHtml('');
-    missionHook.setSelectedPresentationId(null);
-    streamingHook.setIsPresentationStreaming(false);
 
     inputBarRef.current?.focusInput();
     await streamingHook.sendMessageToBackend(messageToSend);
@@ -174,7 +102,7 @@ const ChatInterface = ({
     }
   };
 
-  const handleFilesUploaded = (fileIds: string[], fileDetails: any[]) => {
+  const handleFilesUploaded = (fileIds: string[], fileDetails: AttachedFile[]) => {
     setAttachedFileIds(fileIds);
     setAttachedFileDetails(fileDetails);
     toast({
@@ -215,15 +143,12 @@ const ChatInterface = ({
     streamingHook.setPendingMessage(null);
   };
 
-  // Always show split view in chat interface
   return (
-    <SplitLayoutView
+    <ChatView
       messages={missionHook.messages}
       isLoadingHistory={missionHook.isLoadingHistory}
       isStreaming={streamingHook.isStreaming}
       missionPhase={streamingHook.missionPhase}
-      projectData={missionHook.projectData}
-      isProjectReady={missionHook.isProjectReady}
       currentStep={streamingHook.currentStep}
       executionProgress={streamingHook.executionProgress}
       inputValue={inputValue}
@@ -235,23 +160,6 @@ const ChatInterface = ({
       attachedFileDetails={attachedFileDetails}
       setAttachedFileIds={setAttachedFileIds}
       setAttachedFileDetails={setAttachedFileDetails}
-      viewMode={viewMode}
-      setViewMode={setViewMode}
-      presentations={missionHook.presentations}
-      selectedPresentationId={missionHook.selectedPresentationId}
-      setSelectedPresentationId={missionHook.setSelectedPresentationId}
-      presentationHtml={missionHook.presentationHtml}
-      setPresentationHtml={missionHook.setPresentationHtml}
-      refreshTrigger={refreshTrigger}
-      isLoadingPreview={projectActions.isLoadingPreview}
-      onView={projectActions.handleView}
-      onCloseRightPanel={() => {
-        // Panel is always visible, but we can handle presentation streaming state
-        streamingHook.setIsPresentationStreaming(false);
-      }}
-      onExportPDF={projectActions.handleExportPDF}
-      onDownloadProject={projectActions.handleDownloadProject}
-      onDeleteProject={projectActions.handleDeleteProject}
       showSubscriptionDialog={streamingHook.showSubscriptionDialog}
       onSubscriptionDialogChange={(open) => {
         if (!open) handleSubscriptionCancel();

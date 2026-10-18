@@ -20,9 +20,9 @@ const ImageGeneratingMessage: React.FC<ImageGeneratingMessageProps> = ({ message
         {/* Image Container - Same structure as ImageMessage */}
         <div className="relative bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
           {/* Skeleton placeholder */}
-          <div className="relative bg-gradient-to-br from-gray-100 to-gray-200" style={{ width: '400px', height: '400px' }}>
+          <div className="relative bg-muted" style={{ width: '400px', height: '400px' }}>
             {/* Shimmer animation */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/10 to-transparent animate-shimmer"></div>
             
             {/* Centered "Generating..." text */}
             <div className="absolute inset-0 flex items-center justify-center">

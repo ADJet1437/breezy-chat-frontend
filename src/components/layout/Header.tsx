@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
               {/* Show "My Missions" button when authenticated */}
               {isAuthenticated && (
                 <Button
-                  onClick={() => navigate('/missions')}
+                  onClick={() => navigate('/')}
                   variant="ghost"
                   className="text-gray-600 hover:text-blue-600 transition-colors duration-200 font-medium"
                 >
@@ -144,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
                   onClick={() => setShowLoginDialog(true)}
                   variant="default"
                   size="sm"
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   Sign In
                 </Button>
@@ -161,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
               {isAuthenticated && (
                 <Button
                   onClick={() => {
-                    navigate('/missions');
+                    navigate('/');
                     setMobileMenuOpen(false);
                   }}
                   variant="ghost"
@@ -254,7 +254,7 @@ export const Header: React.FC<HeaderProps> = ({ showNavigation = true }) => {
                       setShowLoginDialog(true);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     Sign In
                   </Button>

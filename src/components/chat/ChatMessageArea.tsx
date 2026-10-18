@@ -9,7 +9,6 @@ interface ChatMessageAreaProps {
   isLoadingHistory: boolean;
   isStreaming: boolean;
   missionPhase: MissionPhase;
-  projectName?: string;
   currentStep: string;
   executionProgress: number;
 }
@@ -19,7 +18,6 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
   isLoadingHistory,
   isStreaming,
   missionPhase,
-  projectName,
   currentStep,
   executionProgress
 }) => {
@@ -38,7 +36,7 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
       <div className="flex items-center justify-center h-32">
         <div className="text-center">
           <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading mission history...</p>
+          <p className="text-sm text-muted-foreground">Loading conversation…</p>
         </div>
       </div>
     );
@@ -50,7 +48,6 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
       {isStreaming && missionPhase !== 'init' ? (
         <MissionProgressIndicator
           phase={missionPhase}
-          projectName={projectName}
           currentStep={currentStep}
           progress={executionProgress}
         />

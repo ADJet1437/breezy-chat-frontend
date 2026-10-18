@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { authenticatedGet } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 import { Message } from '../types/chat';
@@ -38,7 +38,7 @@ interface TaskMessage {
   content_blocks: ContentBlock[];
 }
 
-interface MissionDetails {
+export interface MissionDetails {
   name: string;
   id: string;
   created_at: string;
@@ -46,33 +46,12 @@ interface MissionDetails {
   llm_id: string;
   system_prompt?: string;
   task_messages: TaskMessage[];
-  code_agent: {
-    id: string | null;
-  };
-}
-
-interface ProjectData {
-  project_id: string;
-  project_name: string;
-  project_path: string;
-  session_id: string;
 }
 
 interface UseMissionDataReturn {
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
-  projectData: ProjectData | null;
-  setProjectData: React.Dispatch<React.SetStateAction<ProjectData | null>>;
-  projectDataRef: React.MutableRefObject<ProjectData | null>;
   isLoadingHistory: boolean;
-  presentations: Array<{ id: string; created_at: string }>;
-  setPresentations: React.Dispatch<React.SetStateAction<Array<{ id: string; created_at: string }>>>;
-  selectedPresentationId: string | null;
-  setSelectedPresentationId: React.Dispatch<React.SetStateAction<string | null>>;
-  presentationHtml: string;
-  setPresentationHtml: React.Dispatch<React.SetStateAction<string>>;
-  isProjectReady: boolean;
-  setIsProjectReady: React.Dispatch<React.SetStateAction<boolean>>;
   loadMissionHistory: (missionId: string) => Promise<void>;
   processMissionData: (missionDetails: MissionDetails) => void;
 }
@@ -82,43 +61,14 @@ export const useMissionData = (
   currentMissionId: string | null,
   missionData: MissionDetails | null | undefined,
   isParentLoading: boolean,
-  setMissionData: (id: string, llmId: string) => void,
-  setViewMode: (mode: 'build' | 'files' | 'presentation') => void,
-  setShowRightPanel: (show: boolean) => void
+  setMissionData: (id: string, llmId: string) => void
 ): UseMissionDataReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [projectData, setProjectData] = useState<ProjectData | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [presentations, setPresentations] = useState<Array<{ id: string; created_at: string }>>([]);
-  const [selectedPresentationId, setSelectedPresentationId] = useState<string | null>(null);
-  const [presentationHtml, setPresentationHtml] = useState<string>('');
-  const [isProjectReady, setIsProjectReady] = useState<boolean>(false);
-  const projectDataRef = useRef<ProjectData | null>(null);
 
   const processMissionData = (missionDetails: MissionDetails) => {
     // Store mission data atomically in context
     setMissionData(missionDetails.id, missionDetails.llm_id);
-
-    // Check if mission has a completed code agent and set up project data
-    if (missionDetails.code_agent && missionDetails.code_agent.id) {
-      const agentId = missionDetails.code_agent.id;
-
-      const projectInfo = {
-        project_id: agentId,
-        project_name: missionDetails.name,
-        project_path: '',
-        session_id: agentId
-      };
-
-      setProjectData(projectInfo);
-      projectDataRef.current = projectInfo;
-      setViewMode('build');
-      // For existing missions loaded from backend, project is already complete and ready
-      setIsProjectReady(true);
-    } else {
-      // No project exists yet - this is a new mission
-      setIsProjectReady(false);
-    }
 
     // Transform task_messages to Message format
     const historyMessages: Message[] = [];
@@ -178,37 +128,6 @@ export const useMissionData = (
       const missionDetails: MissionDetails = await response.json();
       processMissionData(missionDetails);
 
-      // Try to load presentations list
-      try {
-        const presentationsResponse = await authenticatedGet(
-          buildApiUrl(`/api/v1/missions/${missionId}/presentations`)
-        );
-
-        if (presentationsResponse.ok) {
-          const data = await presentationsResponse.json();
-          const presentationsList = data.presentations || [];
-
-          if (presentationsList.length > 0) {
-            setViewMode('presentation');
-            setPresentations(presentationsList);
-
-            const latest = presentationsList[0];
-            setSelectedPresentationId(latest.id);
-
-            const htmlResponse = await authenticatedGet(
-              buildApiUrl(`/api/v1/presentations/${latest.id}`)
-            );
-
-            if (htmlResponse.ok) {
-              const htmlData = await htmlResponse.json();
-              setPresentationHtml(htmlData.html_content);
-              setShowRightPanel(true);
-            }
-          }
-        }
-      } catch (presentationError) {
-        // No presentations exist, silently continue
-      }
     } catch (error) {
       setMessages([]);
     } finally {
@@ -234,18 +153,7 @@ export const useMissionData = (
   return {
     messages,
     setMessages,
-    projectData,
-    setProjectData,
-    projectDataRef,
     isLoadingHistory,
-    presentations,
-    setPresentations,
-    selectedPresentationId,
-    setSelectedPresentationId,
-    presentationHtml,
-    setPresentationHtml,
-    isProjectReady,
-    setIsProjectReady,
     loadMissionHistory,
     processMissionData
   };
