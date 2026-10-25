@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Download, Loader2, Presentation } from 'lucide-react';
+import { Check, Code2, Copy, Download, Images, Loader2, Presentation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedGet } from '@/utils/authenticatedFetch';
 import { buildApiUrl } from '@/utils/apiConfig';
 import { SlideImage } from './SlideImage';
-import { useDeck } from './useDeck';
+import { useDeck, useDeckScript } from './useDeck';
 
 interface Props {
   deckId: string | null;
@@ -19,7 +19,28 @@ export function DeckPanel({ deckId, revisionSignal = 0, expectedSlides = 0 }: Pr
   const { deck, loading, error } = useDeck(deckId, revisionSignal);
   const [active, setActive] = useState(0);
   const [downloading, setDownloading] = useState(false);
+  const [view, setView] = useState<'slides' | 'script'>('slides');
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  // The script is what actually produced the slides -- reading it is how you
+  // find out why one looks the way it does. Loaded only when opened.
+  const { script, loading: scriptLoading, error: scriptError } = useDeckScript(
+    deckId,
+    deck?.revision ?? 0,
+    view === 'script' && !!deck
+  );
+
+  const copyScript = async () => {
+    if (!script) return;
+    try {
+      await navigator.clipboard.writeText(script.script);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast({ title: 'Could not copy the script', variant: 'destructive' });
+    }
+  };
 
   useEffect(() => {
     if (deck && active >= deck.slide_count) setActive(0);
@@ -88,21 +109,85 @@ export function DeckPanel({ deckId, revisionSignal = 0, expectedSlides = 0 }: Pr
             {deck.slide_count} slides · r{deck.revision}
           </span>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 shrink-0 gap-1.5 text-xs"
-          onClick={download}
-          disabled={downloading}
-        >
-          {downloading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Download className="h-3 w-3" />
-          )}
-          .pptx
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center rounded-md border border-border p-0.5">
+            {([
+              ['slides', Images, 'Slides'],
+              ['script', Code2, 'Script'],
+            ] as const).map(([key, Icon, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(key)}
+                aria-pressed={view === key}
+                className={`flex items-center gap-1.5 rounded px-2 py-1 text-[11px] transition-colors ${
+                  view === key
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-3 w-3" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 gap-1.5 text-xs"
+            onClick={download}
+            disabled={downloading}
+          >
+            {downloading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            .pptx
+          </Button>
+        </div>
       </div>
+
+      {view === 'script' && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center gap-2 border-b bg-muted/20 px-4 py-1.5 text-[11px] text-muted-foreground">
+            <span>
+              python-pptx · revision {script?.revision ?? deck.revision}
+              {script?.author === 'user' ? ' · edited by hand' : ''}
+            </span>
+            {script && (
+              <button
+                type="button"
+                onClick={copyScript}
+                className="ml-auto flex items-center gap-1 transition-colors hover:text-foreground"
+              >
+                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            )}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-auto bg-muted/10 p-4">
+            {scriptLoading && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Loading the script…
+              </div>
+            )}
+            {scriptError && (
+              <p className="text-xs text-muted-foreground">{scriptError}</p>
+            )}
+            {script && (
+              <pre className="whitespace-pre font-mono text-[12px] leading-relaxed text-foreground/90">
+                {script.script}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
+
+      {view === 'slides' && (
+      <>
 
       <div className="flex min-h-0 flex-1 items-center justify-center bg-muted/20 p-5">
         <SlideImage
@@ -137,6 +222,8 @@ export function DeckPanel({ deckId, revisionSignal = 0, expectedSlides = 0 }: Pr
           </button>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

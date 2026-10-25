@@ -138,6 +138,15 @@ export const useMissionData = (
               toolName: block.tool_name,
               toolSummary: typeof output.message === 'string' ? output.message : undefined,
               toolFailed: output.status === 'error',
+              // What the tool reported while it ran. The backend keeps this
+              // now, so a finished call opens the same way on a reload as it
+              // did live -- it used to collapse to a bare line the moment the
+              // page was refreshed.
+              toolProgress: Array.isArray(output.steps)
+                ? output.steps.filter((step: unknown): step is string =>
+                    typeof step === 'string'
+                  )
+                : undefined,
             });
             break;
           }

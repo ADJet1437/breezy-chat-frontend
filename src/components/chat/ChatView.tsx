@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ChatMessageArea } from './ChatMessageArea';
 import { ChatInputSection } from './ChatInputSection';
 import { AttachedFile, Message } from '../../types/chat';
 import { MissionPhase } from '../MissionProgressIndicator';
 import SubscriptionDialog from '../SubscriptionDialog';
 import { DeckPanel } from '../deck/DeckPanel';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 
 interface ChatViewProps {
   // Message area props
@@ -73,11 +79,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSubscribed,
   subscriptionMessage,
 }) => {
-  return (
-    <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
-      <div
-        className={`flex min-w-0 flex-col ${deckId ? 'w-[42%] border-r' : 'w-full'}`}
-      >
+  const deckPanelRef = useRef<ImperativePanelHandle>(null);
+
+  // Double-click the handle to put the split back. A persisted width with no
+  // way to undo it is the sidebar bug again, in a different shape.
+  const resetSplit = () => deckPanelRef.current?.resize(58);
+
+  const conversation = (
+      <div className="flex h-full min-w-0 flex-col">
         <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
           <div className={`mx-auto w-full p-4 ${deckId ? '' : 'max-w-3xl'}`}>
             <ChatMessageArea
@@ -109,15 +118,38 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </div>
       </div>
+  );
 
-      {deckId && (
-        <div className="min-w-0 flex-1">
-          <DeckPanel
-            deckId={deckId}
-            revisionSignal={deckRevision}
-            expectedSlides={expectedSlides}
-          />
-        </div>
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
+      {deckId ? (
+        // Draggable split. autoSaveId persists the width per browser, and the
+        // bounds keep both sides usable: under ~30% the composer and the slide
+        // picker both start clipping, and a pane dragged to nothing is a pane
+        // with no obvious way back.
+        <ResizablePanelGroup
+          direction="horizontal"
+          autoSaveId="chat-deck-split"
+          className="flex-1"
+        >
+          <ResizablePanel defaultSize={42} minSize={30} maxSize={70}>
+            {conversation}
+          </ResizablePanel>
+
+          <ResizableHandle withHandle onDoubleClick={resetSplit} />
+
+          <ResizablePanel ref={deckPanelRef} defaultSize={58} minSize={30}>
+            <div className="h-full min-w-0">
+              <DeckPanel
+                deckId={deckId}
+                revisionSignal={deckRevision}
+                expectedSlides={expectedSlides}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="min-w-0 flex-1">{conversation}</div>
       )}
 
       <SubscriptionDialog

@@ -71,3 +71,60 @@ export function useDeck(deckId: string | null, revisionSignal = 0): UseDeckResul
 /** Slide image URL, busted per revision so an edited slide actually updates. */
 export const slideSrc = (deckId: string, index: number, revision: number) =>
   buildApiUrl(`/api/v1/decks/${deckId}/slides/${index}?r=${revision}`);
+
+export interface DeckScript {
+  revision: number;
+  /** "llm" for a generated script, "user" for a direct edit. */
+  author: string;
+  script: string;
+}
+
+/**
+ * The python-pptx script that produced a revision.
+ *
+ * Fetched only when asked for: a script is a few hundred lines, and nobody
+ * needs it loaded behind every deck they open. Per revision, so reading an
+ * older version tells you what actually made *that* one.
+ */
+export function useDeckScript(deckId: string | null, revision: number, enabled: boolean) {
+  const [script, setScript] = useState<DeckScript | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!deckId || !enabled) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    void (async () => {
+      try {
+        const response = await authenticatedGet(
+          buildApiUrl(`/api/v1/decks/${deckId}/script?r=${revision}`)
+        );
+        if (!response.ok) {
+          throw new Error(
+            response.status === 404
+              ? 'This revision was not made from a script.'
+              : `Could not load the script (${response.status})`
+          );
+        }
+        const data = await response.json();
+        if (!cancelled) setScript(data);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Could not load the script');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deckId, revision, enabled]);
+
+  return { script, loading, error };
+}

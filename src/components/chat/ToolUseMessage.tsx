@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Check, ChevronDown, Loader2, Wrench } from 'lucide-react';
 
 interface Props {
@@ -33,11 +33,21 @@ export const ToolUseMessage: React.FC<Props> = ({
   progress,
 }) => {
   const [open, setOpen] = useState(false);
+  const scroller = useRef<HTMLDivElement>(null);
   const log = progress ?? [];
   // Nothing to expand into until the tool has said more than its opening line.
   const expandable = log.length > 1;
   // Expanded while it runs, so the stream is visible without a click.
   const expanded = expandable && (open || running);
+
+  // Follow the newest line while the tool runs. Without this the pane holds
+  // its scroll at the top and the step that is actually happening is below
+  // the fold -- which is the one line worth reading.
+  useEffect(() => {
+    if (!running) return;
+    const pane = scroller.current;
+    if (pane) pane.scrollTop = pane.scrollHeight;
+  }, [log.length, running]);
 
   const icon = failed ? (
     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -98,7 +108,12 @@ export const ToolUseMessage: React.FC<Props> = ({
         </button>
 
         {expanded && (
-          <div className="border-t border-border px-3 py-2">
+          // Capped and scrollable: a deck reports twenty-odd steps, and at
+          // full height the block pushed the answer off the screen.
+          <div
+            ref={scroller}
+            className="max-h-56 overflow-y-auto border-t border-border px-3 py-2"
+          >
             <ol className="space-y-1">
               {log.map((step, index) => (
                 <li
