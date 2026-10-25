@@ -45,7 +45,6 @@ const ChatInterface = ({
 
   const streamingHook = useMessageStreaming({
     missionId,
-    currentMissionId,
     messages: missionHook.messages,
     setMessages: missionHook.setMessages,
     setCurrentMissionId,

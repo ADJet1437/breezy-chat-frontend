@@ -8,7 +8,6 @@ import { MissionPhase } from '../components/MissionProgressIndicator';
 
 interface UseMessageStreamingProps {
   missionId?: string;
-  currentMissionId: string | null;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setCurrentMissionId: (id: string) => void;
@@ -38,7 +37,6 @@ interface UseMessageStreamingReturn {
 export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessageStreamingReturn => {
   const {
     missionId,
-    currentMissionId,
     messages,
     setMessages,
     setCurrentMissionId,
@@ -65,18 +63,34 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   // Reopening a conversation has to find its deck: the stream that created it
   // is long gone, and without this the panel only ever appears in the session
   // that built it.
+  //
+  // Keyed on the route's missionId alone. It used to fall back to the mission
+  // in context, which outlives navigation -- so starting a new task fetched
+  // the *previous* conversation's deck and showed it beside an empty chat. A
+  // conversation created in this session needs no fallback: the stream sets
+  // the deck directly, and the app navigates to /missions/:id once it exists.
   useEffect(() => {
-    const id = missionId || currentMissionId;
-    if (!id) return;
+    // Clear first. Whatever deck is on screen belongs to the conversation we
+    // are leaving, and it must not survive into the next one for the length
+    // of a fetch.
+    setDeckId(null);
+    setDeckRevision(0);
+    setExpectedSlides(0);
+
+    if (!missionId) return;
+
+    // A response for a conversation the user has already left must not land.
+    let cancelled = false;
+
     (async () => {
       try {
         const response = await authenticatedGet(
-          buildApiUrl(`/api/v1/decks?mission_id=${id}`)
+          buildApiUrl(`/api/v1/decks?mission_id=${missionId}`)
         );
-        if (!response.ok) return;
+        if (!response.ok || cancelled) return;
         const data = await response.json();
         const newest = (data.decks ?? [])[0];
-        if (newest) {
+        if (newest && !cancelled) {
           setDeckId(newest.id);
           setDeckRevision(newest.revision || 1);
           setExpectedSlides(newest.slide_count || 0);
@@ -85,7 +99,11 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
         // A conversation without a deck is the normal case.
       }
     })();
-  }, [missionId, currentMissionId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [missionId]);
 
   const navigate = useNavigate();
 
