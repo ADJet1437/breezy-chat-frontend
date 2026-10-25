@@ -10,6 +10,13 @@ interface TextBlockResponse {
   text: string;
 }
 
+interface ThinkingBlockResponse {
+  id: string;
+  type: "thinking";
+  created_at: string;
+  thinking_content: string;
+}
+
 interface ToolUseBlockResponse {
   id: string;
   type: "tool_use";
@@ -28,7 +35,11 @@ interface ImageBlockResponse {
   alt_text: string;
 }
 
-type ContentBlock = TextBlockResponse | ToolUseBlockResponse | ImageBlockResponse;
+type ContentBlock =
+  | TextBlockResponse
+  | ThinkingBlockResponse
+  | ToolUseBlockResponse
+  | ImageBlockResponse;
 
 interface TaskMessage {
   id: string;
@@ -74,41 +85,78 @@ export const useMissionData = (
     const historyMessages: Message[] = [];
 
     missionDetails.task_messages.forEach((taskMessage) => {
-      // Extract text content from TextBlocks
-      const textBlocks = taskMessage.content_blocks.filter(
-        (block): block is TextBlockResponse => block.type === 'text'
-      );
-      const textContent = textBlocks.map(block => block.text).join('\n');
+      // One pass, in block order. This used to be four filter passes that
+      // pushed text, then thinking, then tools, then images -- so the
+      // transcript showed a fixed sequence of types rather than what actually
+      // happened, and every text block was joined into a single bubble, which
+      // made text between two tool calls impossible to render in place.
+      //
+      // created_at is stamped by the backend when each segment began, so it
+      // is the order the turn happened in. id breaks ties.
+      const blocks = [...taskMessage.content_blocks].sort((a, b) => {
+        const byTime = Date.parse(a.created_at) - Date.parse(b.created_at);
+        return byTime !== 0 ? byTime : a.id.localeCompare(b.id);
+      });
 
-      // Extract image blocks
-      const imageBlocks = taskMessage.content_blocks.filter(
-        (block): block is ImageBlockResponse => block.type === 'image'
-      );
+      // Only for an image's caption, which has no text of its own.
+      const turnText = blocks
+        .filter((block): block is TextBlockResponse => block.type === 'text')
+        .map(block => block.text)
+        .join('\n');
 
-      // Add main text message if there's text content
-      if (textContent) {
-        historyMessages.push({
-          id: taskMessage.id,
-          content: textContent,
-          sender: taskMessage.role === 'user' ? 'user' : 'bot',
-          timestamp: new Date(taskMessage.created_at),
-        });
-      }
+      const sender = taskMessage.role === 'user' ? 'user' : 'bot';
 
-      // Add separate ImageMessage for each image block
-      imageBlocks.forEach(imageBlock => {
-        historyMessages.push({
-          id: `${taskMessage.id}_image_${imageBlock.id}`,
-          content: '',
-          sender: 'bot',
-          timestamp: new Date(taskMessage.created_at),
-          type: 'image',
-          imageUrl: imageBlock.image_url,
-          imageAlt: imageBlock.alt_text,
-          filename: imageBlock.alt_text,
-          prompt: textContent,
-          isLoaded: true
-        });
+      blocks.forEach(block => {
+        switch (block.type) {
+          case 'text':
+            historyMessages.push({
+              id: `${taskMessage.id}_text_${block.id}`,
+              content: block.text,
+              sender,
+              timestamp: new Date(block.created_at),
+            });
+            break;
+
+          case 'thinking':
+            historyMessages.push({
+              id: `${taskMessage.id}_thinking_${block.id}`,
+              content: block.thinking_content,
+              sender: 'bot',
+              timestamp: new Date(block.created_at),
+              type: 'thinking',
+            });
+            break;
+
+          case 'tool_use': {
+            const output = block.tool_output || {};
+            historyMessages.push({
+              id: `${taskMessage.id}_tool_${block.id}`,
+              content: '',
+              sender: 'bot',
+              timestamp: new Date(block.created_at),
+              type: 'tool-use',
+              toolName: block.tool_name,
+              toolSummary: typeof output.message === 'string' ? output.message : undefined,
+              toolFailed: output.status === 'error',
+            });
+            break;
+          }
+
+          case 'image':
+            historyMessages.push({
+              id: `${taskMessage.id}_image_${block.id}`,
+              content: '',
+              sender: 'bot',
+              timestamp: new Date(block.created_at),
+              type: 'image',
+              imageUrl: block.image_url,
+              imageAlt: block.alt_text,
+              filename: block.alt_text,
+              prompt: turnText,
+              isLoaded: true,
+            });
+            break;
+        }
       });
     });
 

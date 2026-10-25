@@ -4,6 +4,7 @@ import { ChatInputSection } from './ChatInputSection';
 import { AttachedFile, Message } from '../../types/chat';
 import { MissionPhase } from '../MissionProgressIndicator';
 import SubscriptionDialog from '../SubscriptionDialog';
+import { DeckPanel } from '../deck/DeckPanel';
 
 interface ChatViewProps {
   // Message area props
@@ -24,6 +25,14 @@ interface ChatViewProps {
   attachedFileDetails: AttachedFile[];
   setAttachedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
   setAttachedFileDetails: React.Dispatch<React.SetStateAction<AttachedFile[]>>;
+
+  // Artifact panel. A deck opens it; nothing else does yet. When another
+  // artifact type arrives this becomes a {kind, component} lookup rather than
+  // another branch -- a viewMode union is what made the old panel assume
+  // everything was a code project.
+  deckId?: string | null;
+  deckRevision?: number;
+  expectedSlides?: number;
 
   // Subscription dialog
   showSubscriptionDialog: boolean;
@@ -56,46 +65,60 @@ export const ChatView: React.FC<ChatViewProps> = ({
   attachedFileDetails,
   setAttachedFileIds,
   setAttachedFileDetails,
+  deckId,
+  deckRevision = 0,
+  expectedSlides = 0,
   showSubscriptionDialog,
   onSubscriptionDialogChange,
   onSubscribed,
   subscriptionMessage,
 }) => {
   return (
-    <div
-      className="flex h-screen w-full flex-col overflow-hidden bg-background"
-      data-chat-interface
-    >
-      <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
-        <div className="mx-auto w-full max-w-3xl p-4">
-          <ChatMessageArea
-            messages={messages}
-            isLoadingHistory={isLoadingHistory}
-            isStreaming={isStreaming}
-            missionPhase={missionPhase}
-            currentStep={currentStep}
-            executionProgress={executionProgress}
-          />
+    <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
+      <div
+        className={`flex min-w-0 flex-col ${deckId ? 'w-[42%] border-r' : 'w-full'}`}
+      >
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
+          <div className={`mx-auto w-full p-4 ${deckId ? '' : 'max-w-3xl'}`}>
+            <ChatMessageArea
+              messages={messages}
+              isLoadingHistory={isLoadingHistory}
+              isStreaming={isStreaming}
+              missionPhase={missionPhase}
+              currentStep={currentStep}
+              executionProgress={executionProgress}
+            />
+          </div>
+        </div>
+
+        <div className="flex-shrink-0 border-t bg-background">
+          <div className={`mx-auto w-full p-4 ${deckId ? '' : 'max-w-3xl'}`}>
+            <ChatInputSection
+              inputValue={inputValue}
+              setInputValue={setInputValue}
+              onSendMessage={onSendMessage}
+              onKeyPress={onKeyPress}
+              onFilesUploaded={onFilesUploaded}
+              attachedFileIds={attachedFileIds}
+              attachedFileDetails={attachedFileDetails}
+              setAttachedFileIds={setAttachedFileIds}
+              setAttachedFileDetails={setAttachedFileDetails}
+              isStreaming={isStreaming}
+              isLoadingHistory={isLoadingHistory}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t bg-background">
-        <div className="mx-auto w-full max-w-3xl p-4">
-          <ChatInputSection
-            inputValue={inputValue}
-            setInputValue={setInputValue}
-            onSendMessage={onSendMessage}
-            onKeyPress={onKeyPress}
-            onFilesUploaded={onFilesUploaded}
-            attachedFileIds={attachedFileIds}
-            attachedFileDetails={attachedFileDetails}
-            setAttachedFileIds={setAttachedFileIds}
-            setAttachedFileDetails={setAttachedFileDetails}
-            isStreaming={isStreaming}
-            isLoadingHistory={isLoadingHistory}
+      {deckId && (
+        <div className="min-w-0 flex-1">
+          <DeckPanel
+            deckId={deckId}
+            revisionSignal={deckRevision}
+            expectedSlides={expectedSlides}
           />
         </div>
-      </div>
+      )}
 
       <SubscriptionDialog
         open={showSubscriptionDialog}

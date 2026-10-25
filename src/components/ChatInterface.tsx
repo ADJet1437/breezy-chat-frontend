@@ -160,6 +160,9 @@ const ChatInterface = ({
       attachedFileDetails={attachedFileDetails}
       setAttachedFileIds={setAttachedFileIds}
       setAttachedFileDetails={setAttachedFileDetails}
+      deckId={streamingHook.deckId}
+      deckRevision={streamingHook.deckRevision}
+      expectedSlides={streamingHook.expectedSlides}
       showSubscriptionDialog={streamingHook.showSubscriptionDialog}
       onSubscriptionDialogChange={(open) => {
         if (!open) handleSubscriptionCancel();

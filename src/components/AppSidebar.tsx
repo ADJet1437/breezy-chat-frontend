@@ -161,27 +161,41 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* Mark and panel toggle */}
-        <div className={`flex items-center px-3 pt-3 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        {/* Mark and panel toggle. The toggle renders in both states -- when it
+            was hidden while collapsed, collapsing the sidebar removed the only
+            control that could undo it. Collapsed it sits under the mark, since
+            the rail is too narrow to hold both side by side. */}
+        <div
+          className={`flex px-3 pt-3 ${
+            collapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'
+          }`}
+        >
           <button
             type="button"
             onClick={() => navigate('/')}
             aria-label="Home"
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-sm font-bold text-background"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-foreground text-sm font-bold text-background"
           >
             T
           </button>
-          {!collapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-sidebar-foreground/60"
-              onClick={onToggleCollapse}
-              aria-label="Collapse sidebar"
-            >
-              <LayoutPanelLeft className="h-[18px] w-[18px]" />
-            </Button>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-sidebar-foreground/60"
+                onClick={onToggleCollapse}
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                <LayoutPanelLeft className="h-[18px] w-[18px]" />
+              </Button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" className="text-xs">
+                Expand sidebar
+              </TooltipContent>
+            )}
+          </Tooltip>
         </div>
 
         {/* New task */}
