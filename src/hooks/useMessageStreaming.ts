@@ -1,35 +1,16 @@
-import { useState, useRef, startTransition, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authenticatedPost } from '../utils/authenticatedFetch';
+import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 import { Message } from '../types/chat';
 import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { MissionPhase } from '../components/MissionProgressIndicator';
 
-interface ProjectData {
-  project_id: string;
-  project_name: string;
-  project_path: string;
-  session_id: string;
-}
-
 interface UseMessageStreamingProps {
   missionId?: string;
-  currentMissionId: string | null;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setCurrentMissionId: (id: string) => void;
-  projectData: ProjectData | null;
-  setProjectData: React.Dispatch<React.SetStateAction<ProjectData | null>>;
-  projectDataRef: React.MutableRefObject<ProjectData | null>;
-  showRightPanel: boolean;
-  setShowRightPanel: (show: boolean) => void;
-  setViewMode: (mode: 'build' | 'files' | 'presentation') => void;
-  setPresentationHtml: React.Dispatch<React.SetStateAction<string>>;
-  setPresentations: React.Dispatch<React.SetStateAction<Array<{ id: string; created_at: string }>>>;
-  setSelectedPresentationId: React.Dispatch<React.SetStateAction<string | null>>;
-  setRefreshTrigger: React.Dispatch<React.SetStateAction<number>>;
-  setIsProjectReady: React.Dispatch<React.SetStateAction<boolean>>;
   attachedFileIds: string[];
   setAttachedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
   setAttachedFileDetails: React.Dispatch<React.SetStateAction<any[]>>;
@@ -41,34 +22,24 @@ interface UseMessageStreamingReturn {
   missionPhase: MissionPhase;
   executionProgress: number;
   currentStep: string;
-  isPresentationStreaming: boolean;
-  setIsPresentationStreaming: React.Dispatch<React.SetStateAction<boolean>>;
   sendMessageToBackend: (message: string, overrideFileIds?: string[]) => Promise<void>;
   showSubscriptionDialog: boolean;
   setShowSubscriptionDialog: React.Dispatch<React.SetStateAction<boolean>>;
   subscriptionMessage: string;
   pendingMessage: string | null;
   setPendingMessage: React.Dispatch<React.SetStateAction<string | null>>;
+  deckId: string | null;
+  deckRevision: number;
+  expectedSlides: number;
+  setDeckId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessageStreamingReturn => {
   const {
     missionId,
-    currentMissionId,
     messages,
     setMessages,
     setCurrentMissionId,
-    projectData,
-    setProjectData,
-    projectDataRef,
-    showRightPanel,
-    setShowRightPanel,
-    setViewMode,
-    setPresentationHtml,
-    setPresentations,
-    setSelectedPresentationId,
-    setRefreshTrigger,
-    setIsProjectReady,
     attachedFileIds,
     setAttachedFileIds,
     setAttachedFileDetails,
@@ -79,11 +50,60 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const [missionPhase, setMissionPhase] = useState<MissionPhase>('init');
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>('');
-  const [isPresentationStreaming, setIsPresentationStreaming] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState('');
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  const wasProjectReadyRef = useRef<boolean>(false);
+  // The artifact this conversation is showing. A deck arrives mid-stream and
+  // the panel has to open before it finishes, or the user watches a spinner
+  // in the chat with nothing beside it.
+  const [deckId, setDeckId] = useState<string | null>(null);
+  const [deckRevision, setDeckRevision] = useState<number>(0);
+  const [expectedSlides, setExpectedSlides] = useState<number>(0);
+
+  // Reopening a conversation has to find its deck: the stream that created it
+  // is long gone, and without this the panel only ever appears in the session
+  // that built it.
+  //
+  // Keyed on the route's missionId alone. It used to fall back to the mission
+  // in context, which outlives navigation -- so starting a new task fetched
+  // the *previous* conversation's deck and showed it beside an empty chat. A
+  // conversation created in this session needs no fallback: the stream sets
+  // the deck directly, and the app navigates to /missions/:id once it exists.
+  useEffect(() => {
+    // Clear first. Whatever deck is on screen belongs to the conversation we
+    // are leaving, and it must not survive into the next one for the length
+    // of a fetch.
+    setDeckId(null);
+    setDeckRevision(0);
+    setExpectedSlides(0);
+
+    if (!missionId) return;
+
+    // A response for a conversation the user has already left must not land.
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await authenticatedGet(
+          buildApiUrl(`/api/v1/decks?mission_id=${missionId}`)
+        );
+        if (!response.ok || cancelled) return;
+        const data = await response.json();
+        const newest = (data.decks ?? [])[0];
+        if (newest && !cancelled) {
+          setDeckId(newest.id);
+          setDeckRevision(newest.revision || 1);
+          setExpectedSlides(newest.slide_count || 0);
+        }
+      } catch {
+        // A conversation without a deck is the normal case.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [missionId]);
 
   const navigate = useNavigate();
 
@@ -110,19 +130,27 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       await handleApiError(response, 'Chat Message');
 
       const botMessageId = (Date.now() + 1).toString();
-      let initialBotMessageCreated = false;
 
-      const createInitialBotMessage = () => {
-        if (!initialBotMessageCreated) {
-          const botMessage: Message = {
-            id: botMessageId,
-            content: '',
-            sender: 'bot',
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, botMessage]);
-          initialBotMessageCreated = true;
+      // A turn is a sequence of segments, not one bubble. The agent loop can
+      // speak, call a tool, and speak again; with a single id the second
+      // stretch of text appended into the bubble already sitting above the
+      // tool chip. A tool call closes whatever segment is open, so the next
+      // text opens a new one below it -- the same shape a reload renders.
+      let segment = 0;
+      let openTextId: string | null = null;
+      let openThinkingId: string | null = null;
+      const seenToolCalls = new Set<string>();
+
+      const closeSegments = () => {
+        if (openThinkingId) {
+          const id = openThinkingId;
+          setMessages(prev => prev.map(m =>
+            m.id === id ? { ...m, thinkingStreaming: false } : m
+          ));
         }
+        openTextId = null;
+        openThinkingId = null;
+        segment += 1;
       };
 
       const reader = response.body?.getReader();
@@ -132,7 +160,12 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            // A turn that ends on reasoning -- a loop guard stopping the
+            // agent, say -- would otherwise leave the block spinning forever.
+            closeSegments();
+            break;
+          }
 
           const chunk = decoder.decode(value);
           buffer += chunk;
@@ -151,42 +184,63 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   newMissionId = data.answer;
                   setCurrentMissionId(data.answer);
                   setMissionPhase('init');
-                } else if (data.event_type === 'project_created') {
-                  const projectInfo = data.data;
-                  if (projectInfo && projectInfo.project_id) {
-                    const newProjectData = {
-                      project_id: projectInfo.project_id,
-                      project_name: projectInfo.project_name,
-                      project_path: projectInfo.project_path,
-                      session_id: projectInfo.session_id
-                    };
-                    setProjectData(newProjectData);
-                    projectDataRef.current = newProjectData;
-                    setMissionPhase('project_created');
-                    setIsProjectReady(false);
-                    wasProjectReadyRef.current = false;
-                  }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
                   setExecutionProgress(10);
-                  setCurrentStep('Starting development...');
+                  setCurrentStep('Working on it…');
                 } else if (data.event_type === 'tool_call') {
                   const customMessage = data.data.message || `🔧 Using: ${data.data.tool_name || 'unknown tool'}`;
                   setCurrentStep(customMessage);
                   setExecutionProgress(prev => Math.min(prev + 10, 85));
 
-                  if (data.data?.tool_name === 'create_presentation') {
-                    setPresentationHtml('');
-                    setIsPresentationStreaming(true);
-                    setViewMode('presentation');
+                  // Drop a chip into the transcript as the tool runs, so the
+                  // live view matches what a reload will show. Keyed on
+                  // tool_call_id and updated in place: a tool reports several
+                  // times and should stay one line, not become a list.
+                  const callId = data.data.tool_call_id || data.data.tool_name;
+                  if (callId) {
+                    const chipId = `tool_${callId}`;
+                    // Only the first report for this call closes the open
+                    // segment; a running tool reports repeatedly and must not
+                    // split the text around it each time. Tracked here rather
+                    // than inside the updater below, which React runs later.
+                    if (!seenToolCalls.has(chipId)) {
+                      seenToolCalls.add(chipId);
+                      closeSegments();
+                    }
+                    setMessages(prev => {
+                      const existing = prev.find(m => m.id === chipId);
+                      // Append rather than replace: the tool reports many
+                      // times, and the sequence is the useful part -- a single
+                      // changing line shows movement, the list shows what it
+                      // actually did. Repeats are dropped so a timed tick that
+                      // says the same thing twice does not pad the log.
+                      const log = existing?.toolProgress ?? [];
+                      const step = data.data.message;
+                      const toolProgress =
+                        step && step !== log[log.length - 1] ? [...log, step] : log;
+
+                      const chip: Message = {
+                        id: chipId,
+                        content: '',
+                        sender: 'bot',
+                        timestamp: existing?.timestamp ?? new Date(),
+                        type: 'tool-use',
+                        toolName: data.data.tool_name || 'tool',
+                        toolSummary: data.data.message,
+                        toolFailed: data.data.status === 'error',
+                        toolProgress,
+                        // Anything but a terminal status means still working.
+                        toolRunning: !['error', 'success', 'complete'].includes(
+                          data.data.status
+                        ),
+                      };
+                      return existing
+                        ? prev.map(m => (m.id === chipId ? chip : m))
+                        : [...prev, chip];
+                    });
                   }
 
-                  if (data.data?.tool_name === 'task_complete') {
-                    const requiresRefresh = data.data?.tool_result?.metadata?.requires_preview_refresh;
-                    if (requiresRefresh === true && showRightPanel && projectData?.project_id) {
-                      setRefreshTrigger(prev => prev + 1);
-                    }
-                  }
                 } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_generation') {
                   const skeletonMessage: Message = {
                     id: botMessageId,
@@ -196,8 +250,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     type: 'image-generating',
                     prompt: data.data.message.replace('🎨 Generating image: ', '').replace(/\.\.\..*$/, '')
                   };
+                  closeSegments();
                   setMessages(prev => [...prev, skeletonMessage]);
-                  initialBotMessageCreated = true;
                 } else if (data.event_type === 'tool_start' && data.data?.tool_name === 'image_editing') {
                   const skeletonMessage: Message = {
                     id: botMessageId,
@@ -207,8 +261,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     type: 'image-editing',
                     prompt: data.data.message.replace('✏️ Editing image: ', '').replace(/\.\.\..*$/, '')
                   };
+                  closeSegments();
                   setMessages(prev => [...prev, skeletonMessage]);
-                  initialBotMessageCreated = true;
                 } else if (data.event_type === 'tool_complete' && data.data?.tool_name === 'image_generation') {
                   const result = data.data.result;
                   if (result && result.base64_image) {
@@ -247,50 +301,91 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   const message = data.data.message || 'Processing...';
                   setCurrentStep(`💭 ${message}`);
                   setExecutionProgress(prev => Math.min(prev + 5, 90));
-                } else if (data.event_type === 'presentation_content') {
-                  const htmlChunk = data.data.html_chunk || '';
-                  setPresentationHtml(prev => prev + htmlChunk);
+                } else if (data.event_type === 'deck_built') {
+                  setCurrentStep(data.data.message || 'Rendering slides…');
                 } else if (data.event_type === 'execution_complete') {
+                  if (data.data.deck_id) {
+                    // modify_deck returns the same deck_id with a higher
+                    // revision; the revision is what busts the slide image
+                    // cache, so an edit refreshes the panel in place instead
+                    // of showing the previous version's pictures.
+                    setDeckId(data.data.deck_id);
+                    setDeckRevision(data.data.revision || 1);
+                    setExpectedSlides(data.data.slide_count || 0);
+                  }
+                  // Settle every chip: the tool finished, whatever it was.
+                  // The closing line joins the log, so the expanded view ends
+                  // on the outcome rather than on "Rendering slides…".
+                  setMessages(prev => prev.map(m => {
+                    if (m.type !== 'tool-use' || !m.toolRunning) return m;
+                    const log = m.toolProgress ?? [];
+                    const step = data.data.message;
+                    return {
+                      ...m,
+                      toolRunning: false,
+                      toolSummary: step || m.toolSummary,
+                      toolProgress:
+                        step && step !== log[log.length - 1] ? [...log, step] : log,
+                    };
+                  }));
                   setMissionPhase('complete');
                   setExecutionProgress(100);
 
-                  if (data.data.presentation_html && data.data.presentation_id) {
-                    const newPresentation = {
-                      id: data.data.presentation_id,
-                      created_at: new Date().toISOString(),
-                    };
-
-                    setPresentations(prev => [newPresentation, ...prev]);
-                    setSelectedPresentationId(data.data.presentation_id);
-                    setPresentationHtml(data.data.presentation_html);
-                    setViewMode('presentation');
-                    setCurrentStep('✅ Presentation created!');
-                    setShowRightPanel(true);
-                    setIsPresentationStreaming(false);
-                    newMissionId = null;
-                  } else {
-                    setCurrentStep('✅ Mission completed! Launching code agent...');
-
-                    const currentProjectData = projectDataRef.current || projectData;
-                    if (currentProjectData?.project_id) {
-                      const wasAlreadyReady = wasProjectReadyRef.current;
-                      startTransition(() => {
-                        setViewMode('build');
-                        setIsProjectReady(true);
-                        if (wasAlreadyReady) {
-                          setRefreshTrigger(prev => prev + 1);
-                        }
-                      });
-                      wasProjectReadyRef.current = true;
+                  setCurrentStep('Done');
+                } else if (data.event_type === 'mission_thinking') {
+                  // One block per segment, appended to in place, so reasoning
+                  // sits directly above the thing it produced -- including a
+                  // second round of reasoning after a tool returns.
+                  const thinkingId = openThinkingId
+                    ?? `${botMessageId}_seg${segment}_thinking`;
+                  const isNew = openThinkingId === null;
+                  openThinkingId = thinkingId;
+                  setMessages(prev => {
+                    if (!isNew) {
+                      return prev.map(m =>
+                        m.id === thinkingId
+                          ? { ...m, content: m.content + data.answer }
+                          : m
+                      );
                     }
-                  }
+                    return [...prev, {
+                      id: thinkingId,
+                      content: data.answer,
+                      sender: 'bot' as const,
+                      timestamp: new Date(),
+                      type: 'thinking' as const,
+                      thinkingStreaming: true,
+                    }];
+                  });
                 } else if (data.event_type === 'mission_content') {
-                  createInitialBotMessage();
-                  setMessages(prev => prev.map(msg =>
-                    msg.id === botMessageId
-                      ? { ...msg, content: msg.content + data.answer }
-                      : msg
-                  ));
+                  // Text means the model has stopped reasoning: collapse the
+                  // block rather than leaving it open above the answer.
+                  if (openThinkingId) {
+                    const id = openThinkingId;
+                    setMessages(prev => prev.map(m =>
+                      m.id === id ? { ...m, thinkingStreaming: false } : m
+                    ));
+                    openThinkingId = null;
+                  }
+
+                  const textId = openTextId ?? `${botMessageId}_seg${segment}_text`;
+                  const isNew = openTextId === null;
+                  openTextId = textId;
+                  setMessages(prev => {
+                    if (!isNew) {
+                      return prev.map(m =>
+                        m.id === textId
+                          ? { ...m, content: m.content + data.answer }
+                          : m
+                      );
+                    }
+                    return [...prev, {
+                      id: textId,
+                      content: data.answer,
+                      sender: 'bot' as const,
+                      timestamp: new Date(),
+                    }];
+                  });
                 }
               } catch (error) {
                 console.error('Error parsing SSE data:', error);
@@ -341,13 +436,15 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     missionPhase,
     executionProgress,
     currentStep,
-    isPresentationStreaming,
-    setIsPresentationStreaming,
     sendMessageToBackend,
     showSubscriptionDialog,
     setShowSubscriptionDialog,
     subscriptionMessage,
     pendingMessage,
-    setPendingMessage
+    setPendingMessage,
+    deckId,
+    deckRevision,
+    expectedSlides,
+    setDeckId
   };
 };

@@ -16,9 +16,6 @@ interface MissionDetails {
   llm_id: string;
   system_prompt?: string;
   task_messages: any[];
-  code_agent: {
-    id: string | null;
-  };
 }
 
 const MissionDetail = () => {

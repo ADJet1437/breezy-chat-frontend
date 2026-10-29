@@ -70,14 +70,14 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 dark:bg-gradient-to-br dark:from-background dark:to-background">
+      <div className="min-h-screen w-full bg-background">
         {/* Fixed Sidebar - Full Height */}
-        <div className={`fixed left-0 top-0 bottom-0 transition-all duration-300 overflow-hidden ${
+        <div className={`fixed left-0 top-0 bottom-0 border-r border-sidebar-border transition-all duration-300 overflow-hidden ${
           !isMobile 
             ? sidebarCollapsed 
-              ? 'w-16 z-50 pointer-events-auto' // Collapsed
-              : 'w-64 z-50 pointer-events-auto' // Expanded
-            : 'w-64 z-50 pointer-events-auto'
+              ? 'w-[68px] z-50 pointer-events-auto' // Collapsed
+              : 'w-72 z-50 pointer-events-auto' // Expanded
+            : 'w-72 z-50 pointer-events-auto'
         }`}>
           <AppSidebar 
             collapsed={sidebarCollapsed} 
@@ -91,8 +91,8 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           <div className={`flex-1 flex flex-col transition-all duration-300 pointer-events-auto ${
             !isMobile 
               ? sidebarCollapsed 
-                ? 'ml-0 md:ml-16 relative z-40' // Collapsed
-                : 'ml-0 md:ml-64 relative z-20' // Expanded
+                ? 'ml-0 md:ml-[68px] relative z-40' // Collapsed
+                : 'ml-0 md:ml-72 relative z-20' // Expanded
               : 'relative z-20'
           }`}>
             {/* Mobile sidebar trigger */}
@@ -119,7 +119,9 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           <div className="fixed top-4 right-4 z-50">
             <Button
               onClick={handleSignIn}
-              className="bg-background/90 backdrop-blur-sm border border-border hover:bg-background text-foreground rounded-xl px-4 py-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
             >
               <LogIn className="h-4 w-4 mr-2" />
               Sign In

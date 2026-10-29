@@ -2,6 +2,8 @@
 import React from 'react';
 import MessageBubble from './MessageBubble';
 import ImageMessage from './chat/ImageMessage';
+import { ToolUseMessage } from './chat/ToolUseMessage';
+import { ThinkingMessage } from './chat/ThinkingMessage';
 import ImageGeneratingMessage from './chat/ImageGeneratingMessage';
 import ImageEditingMessage from './chat/ImageEditingMessage';
 import { Message } from '../types/chat';
@@ -14,6 +16,29 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
   return (
     <div className="space-y-4 min-w-0">
       {messages.map((message) => {
+        if (message.type === 'thinking') {
+          return (
+            <ThinkingMessage
+              key={message.id}
+              content={message.content}
+              streaming={message.thinkingStreaming}
+            />
+          );
+        }
+
+        if (message.type === 'tool-use') {
+          return (
+            <ToolUseMessage
+              key={message.id}
+              toolName={message.toolName || 'tool'}
+              summary={message.toolSummary}
+              failed={message.toolFailed}
+              running={message.toolRunning}
+              progress={message.toolProgress}
+            />
+          );
+        }
+
         if (message.type === 'image-generating') {
           return (
             <ImageGeneratingMessage

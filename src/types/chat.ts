@@ -12,7 +12,16 @@ export interface Message {
   content: string;
   sender: 'user' | 'bot' | 'system';
   timestamp: Date;
-  type?: 'text' | 'image' | 'image-generating' | 'image-editing';
+  type?: 'text' | 'image' | 'image-generating' | 'image-editing' | 'tool-use' | 'thinking';
+  /** For 'tool-use': what the agent did, drawn as a chip rather than prose. */
+  toolName?: string;
+  toolSummary?: string;
+  toolFailed?: boolean;
+  toolRunning?: boolean;
+  /** Every line the tool has reported this turn, oldest first. */
+  toolProgress?: string[];
+  /** For 'thinking': still streaming. */
+  thinkingStreaming?: boolean;
   attachedFiles?: AttachedFile[];
   imageUrl?: string;
   imageAlt?: string;

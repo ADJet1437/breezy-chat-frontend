@@ -29,7 +29,7 @@ const ProfileSettings: React.FC = () => {
       <div className="flex items-center space-x-4">
         <Avatar className="h-16 w-16">
           <AvatarImage src={user.avatar_url || undefined} alt={user.name || user.email} />
-          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg font-medium">
+          <AvatarFallback className="bg-muted text-foreground text-lg font-medium">
             {getInitials(user.email, user.name)}
           </AvatarFallback>
         </Avatar>

@@ -168,7 +168,7 @@ const EmailLoginForm: React.FC<EmailLoginFormProps> = ({
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full h-11 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+          className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition-all duration-200 shadow-sm hover:shadow-md"
           disabled={isLoading}
         >
           {isLoading ? (
