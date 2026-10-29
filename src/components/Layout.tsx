@@ -12,8 +12,46 @@ interface LayoutProps {
   rightSidebar?: React.ReactNode;
 }
 
+/**
+ * The sidebar's width, and the room the content leaves for it, come from
+ * these two numbers and nowhere else.
+ *
+ * They used to be expressed twice: the sidebar as `w-72` / `w-[68px]`, and
+ * the content as `md:ml-72` / `md:ml-[68px]`. Two declarations of one fact
+ * can disagree, and they did -- the responsive prefix on the margin meant it
+ * applied on a rule the sidebar's own width did not follow, so the content
+ * could sit underneath a sidebar that was still drawn full width. Inline
+ * styles rather than classes, because a number cannot be purged, cannot be
+ * overridden by a stale stylesheet, and renders the same in every build.
+ */
+export const SIDEBAR_WIDTH = 288; // w-72
+export const RAIL_WIDTH = 68;     // collapsed
+export const MOBILE_BREAKPOINT = 768;
+
+/**
+ * How wide the sidebar is, and how much room the content leaves for it.
+ *
+ * Returned together from one function so the two can never disagree, which
+ * is the failure this replaces: the content sliding underneath a sidebar
+ * that was still drawn at full width.
+ */
+export function layoutGeometry(isMobile: boolean, collapsed: boolean) {
+  const sidebarWidth = !isMobile && collapsed ? RAIL_WIDTH : SIDEBAR_WIDTH;
+  return {
+    sidebarWidth,
+    // Below the breakpoint the sidebar is an overlay drawn on top, so the
+    // content keeps the whole width and is not pushed off screen.
+    contentOffset: isMobile ? 0 : sidebarWidth,
+  };
+}
+
 const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
-  const [isMobile, setIsMobile] = useState(false);
+  // Resolved synchronously. Starting at `false` meant the first paint always
+  // claimed desktop, so on a narrow window the content rendered with a
+  // desktop offset for a frame before correcting itself.
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Load from localStorage on initial render
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -24,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
 
     // Check on mount
@@ -68,17 +106,16 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     setLoginDialogOpen(true);
   };
 
+  const { sidebarWidth, contentOffset } = layoutGeometry(isMobile, sidebarCollapsed);
+
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-background">
+      <div className="min-h-screen w-full overflow-x-hidden bg-background">
         {/* Fixed Sidebar - Full Height */}
-        <div className={`fixed left-0 top-0 bottom-0 border-r border-sidebar-border transition-all duration-300 overflow-hidden ${
-          !isMobile 
-            ? sidebarCollapsed 
-              ? 'w-[68px] z-50 pointer-events-auto' // Collapsed
-              : 'w-72 z-50 pointer-events-auto' // Expanded
-            : 'w-72 z-50 pointer-events-auto'
-        }`}>
+        <div
+          style={{ width: sidebarWidth }}
+          className="pointer-events-auto fixed bottom-0 left-0 top-0 z-50 overflow-hidden border-r border-sidebar-border transition-all duration-300"
+        >
           <AppSidebar 
             collapsed={sidebarCollapsed} 
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -86,22 +123,19 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
         </div>
         
         {/* Main layout with content */}
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen min-w-0">
           {/* Main content area */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 pointer-events-auto ${
-            !isMobile 
-              ? sidebarCollapsed 
-                ? 'ml-0 md:ml-[68px] relative z-40' // Collapsed
-                : 'ml-0 md:ml-72 relative z-20' // Expanded
-              : 'relative z-20'
-          }`}>
+          <div
+            style={{ marginLeft: contentOffset }}
+            className="pointer-events-auto relative z-20 flex min-w-0 flex-1 flex-col transition-all duration-300"
+          >
             {/* Mobile sidebar trigger */}
             <div className="md:hidden p-2 border-b bg-background/80 backdrop-blur-sm">
               <SidebarTrigger />
             </div>
             
             {/* Page content */}
-            <main className={`flex-1 flex flex-col min-h-0 ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
+            <main className={`flex min-h-0 min-w-0 flex-1 flex-col ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
               {children}
             </main>
           </div>
