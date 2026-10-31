@@ -5,6 +5,7 @@ import { AttachedFile, Message } from '../../types/chat';
 import { MissionPhase } from '../MissionProgressIndicator';
 import SubscriptionDialog from '../SubscriptionDialog';
 import { DeckPanel } from '../deck/DeckPanel';
+import { AppPanel } from '../app/AppPanel';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -37,6 +38,11 @@ interface ChatViewProps {
   // another branch -- a viewMode union is what made the old panel assume
   // everything was a code project.
   deckId?: string | null;
+  missionId?: string | null;
+  appId?: string | null;
+  appSlug?: string | null;
+  appRevision?: number;
+  appProgress?: string | null;
   deckRevision?: number;
   expectedSlides?: number;
 
@@ -72,6 +78,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
   setAttachedFileIds,
   setAttachedFileDetails,
   deckId,
+  missionId,
+  appId,
+  appSlug,
+  appRevision = 0,
+  appProgress,
   deckRevision = 0,
   expectedSlides = 0,
   showSubscriptionDialog,
@@ -88,7 +99,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const conversation = (
       <div className="flex h-full min-w-0 flex-col">
         <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400 hover:scrollbar-thumb-gray-500">
-          <div className={`mx-auto w-full p-4 ${deckId ? '' : 'max-w-3xl'}`}>
+          <div className={`mx-auto w-full p-4 ${deckId || appId ? '' : 'max-w-3xl'}`}>
             <ChatMessageArea
               messages={messages}
               isLoadingHistory={isLoadingHistory}
@@ -101,7 +112,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
 
         <div className="flex-shrink-0 border-t bg-background">
-          <div className={`mx-auto w-full p-4 ${deckId ? '' : 'max-w-3xl'}`}>
+          <div className={`mx-auto w-full p-4 ${deckId || appId ? '' : 'max-w-3xl'}`}>
             <ChatInputSection
               inputValue={inputValue}
               setInputValue={setInputValue}
@@ -120,31 +131,57 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
   );
 
+  // A conversation shows one artifact: the deck if it has one, otherwise the
+  // app. The app panel opens on design_app, long before anything is built,
+  // so the schema is visible while the pages are being written.
+  const artifact = deckId ? 'deck' : appId ? 'app' : null;
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
-      {deckId ? (
+      {artifact ? (
         // Draggable split. autoSaveId persists the width per browser, and the
         // bounds keep both sides usable: under ~30% the composer and the slide
         // picker both start clipping, and a pane dragged to nothing is a pane
         // with no obvious way back.
         <ResizablePanelGroup
           direction="horizontal"
-          autoSaveId="chat-deck-split"
+          // Renamed deliberately: the old key has a saved split pinned at
+          // the 30% minimum in browsers that have it, and a stored value
+          // inside the bounds is never corrected. A new key starts
+          // everyone at the default again.
+          autoSaveId="chat-split-v2"
           className="flex-1"
         >
-          <ResizablePanel defaultSize={42} minSize={30} maxSize={70}>
+          {/* 35% of a 1400px window leaves ~420px for the conversation,
+              which is the narrowest it stays readable at. 30 was reachable
+              by dragging and left it unusable. */}
+          <ResizablePanel defaultSize={42} minSize={35} maxSize={65} className="min-w-0">
             {conversation}
           </ResizablePanel>
 
           <ResizableHandle withHandle onDoubleClick={resetSplit} />
 
-          <ResizablePanel ref={deckPanelRef} defaultSize={58} minSize={30}>
+          <ResizablePanel
+            ref={deckPanelRef}
+            defaultSize={58}
+            minSize={35}
+            className="min-w-0"
+          >
             <div className="h-full min-w-0">
-              <DeckPanel
-                deckId={deckId}
-                revisionSignal={deckRevision}
-                expectedSlides={expectedSlides}
-              />
+              {artifact === 'deck' ? (
+                <DeckPanel
+                  deckId={deckId}
+                  revisionSignal={deckRevision}
+                  expectedSlides={expectedSlides}
+                />
+              ) : (
+                <AppPanel
+                  missionId={missionId ?? null}
+                  slug={appSlug ?? null}
+                  revisionSignal={appRevision}
+                  progress={appProgress}
+                />
+              )}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

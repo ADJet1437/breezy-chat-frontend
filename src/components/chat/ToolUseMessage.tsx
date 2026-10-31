@@ -60,16 +60,24 @@ export const ToolUseMessage: React.FC<Props> = ({
   const header = (
     <>
       {icon}
-      <span className="font-medium">{toolName.replace(/_/g, ' ')}</span>
-      {summary && <span className="truncate opacity-70">· {summary}</span>}
+      {/* Holds its width against a long summary, but can still truncate:
+          shrink-0 alone means a narrow pane overflows rather than eliding. */}
+      <span className="min-w-0 max-w-[45%] shrink-0 truncate font-medium">
+        {toolName.replace(/_/g, ' ')}
+      </span>
+      {/* min-w-0 is what makes `truncate` work at all. A flex item defaults
+          to min-width:auto, so without it the span refuses to shrink below
+          its text, the chip grows to fit, and a long tool message pushes the
+          whole conversation wider than the window. */}
+      {summary && <span className="min-w-0 truncate opacity-70">· {summary}</span>}
     </>
   );
 
   if (!expandable) {
     return (
-      <div className="flex justify-start">
+      <div className="flex min-w-0 justify-start">
         <div
-          className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
+          className={`flex min-w-0 max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${
             failed
               ? 'border-destructive/40 text-destructive'
               : 'border-border text-muted-foreground'
@@ -85,9 +93,9 @@ export const ToolUseMessage: React.FC<Props> = ({
   }
 
   return (
-    <div className="flex justify-start">
+    <div className="flex min-w-0 justify-start">
       <div
-        className={`w-full max-w-[85%] overflow-hidden rounded-lg border bg-card/40 ${
+        className={`w-full min-w-0 max-w-[85%] overflow-hidden rounded-lg border bg-card/40 ${
           failed ? 'border-destructive/40' : 'border-border'
         }`}
       >
@@ -95,7 +103,7 @@ export const ToolUseMessage: React.FC<Props> = ({
           type="button"
           onClick={() => setOpen(v => !v)}
           aria-expanded={expanded}
-          className={`flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors hover:text-foreground ${
+          className={`flex w-full min-w-0 items-center gap-2 px-3 py-2 text-xs transition-colors hover:text-foreground ${
             failed ? 'text-destructive' : 'text-muted-foreground'
           }`}
         >
@@ -118,7 +126,9 @@ export const ToolUseMessage: React.FC<Props> = ({
               {log.map((step, index) => (
                 <li
                   key={`${index}_${step}`}
-                  className={`text-[13px] leading-relaxed ${
+                  // Tool output carries file lists and stack traces: long
+                  // unbroken runs with nowhere natural to wrap.
+                  className={`break-words text-[13px] leading-relaxed ${
                     index === log.length - 1 && running
                       ? 'text-foreground'
                       : 'text-muted-foreground'

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Copy, Paperclip } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, Copy, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
@@ -10,18 +10,29 @@ interface MessageBubbleProps {
   message: Message;
 }
 
+// How long the tick stays before the icon goes back to the clipboard.
+const COPIED_FOR_MS = 1600;
+
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const { toast } = useToast();
   const isBot = message.sender === 'bot';
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<number>();
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(message.content);
-      toast({
-        description: "Message copied to clipboard",
-        duration: 2000,
-      });
+      // The button answers for itself. A toast for this reports success
+      // somewhere other than where the action happened, and covers part of
+      // the conversation to do it.
+      setCopied(true);
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setCopied(false), COPIED_FOR_MS);
     } catch (err) {
+      // A failure still needs saying: nothing on the button can express it,
+      // and silence would read as success.
       toast({
         description: "Failed to copy message",
         variant: "destructive",
@@ -87,7 +98,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               )}
             </div>
 
-            <div className={`flex items-center mt-1 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+            <div className={`flex items-center mt-1 space-x-2 transition-opacity duration-200 ${
+              copied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}>
               <span className="text-xs text-gray-500">
                 {formatTime(message.timestamp)}
               </span>
@@ -95,9 +108,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 variant="ghost"
                 size="sm"
                 onClick={copyToClipboard}
+                aria-label={copied ? 'Copied' : 'Copy message'}
                 className="h-6 w-6 p-0 hover:bg-gray-100"
               >
-                <Copy className="h-3 w-3" />
+                {copied ? (
+                  <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
               </Button>
             </div>
           </>
@@ -132,7 +150,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               )}
             </div>
 
-            <div className={`flex items-center mt-1 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}>
+            <div className={`flex items-center mt-1 space-x-2 transition-opacity duration-200 ${
+              copied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}>
               <span className="text-xs text-gray-500">
                 {formatTime(message.timestamp)}
               </span>
@@ -140,9 +160,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 variant="ghost"
                 size="sm"
                 onClick={copyToClipboard}
+                aria-label={copied ? 'Copied' : 'Copy message'}
                 className="h-6 w-6 p-0 hover:bg-gray-100"
               >
-                <Copy className="h-3 w-3" />
+                {copied ? (
+                  <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
               </Button>
             </div>
           </>

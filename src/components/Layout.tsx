@@ -70,14 +70,18 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-background">
+      <div className="h-screen w-full overflow-hidden bg-background">
         {/* Fixed Sidebar - Full Height */}
         <div className={`fixed left-0 top-0 bottom-0 border-r border-sidebar-border transition-all duration-300 overflow-hidden ${
           !isMobile 
             ? sidebarCollapsed 
               ? 'w-[68px] z-50 pointer-events-auto' // Collapsed
               : 'w-72 z-50 pointer-events-auto' // Expanded
-            : 'w-72 z-50 pointer-events-auto'
+            // Mobile: off-canvas until the trigger opens it. It used to
+            // render at full width over the content, which has no left
+            // margin on mobile — so the first 288px of every page sat
+            // underneath an opaque sidebar.
+            : 'w-72 z-50 pointer-events-auto -translate-x-full'
         }`}>
           <AppSidebar 
             collapsed={sidebarCollapsed} 
@@ -86,9 +90,9 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
         </div>
         
         {/* Main layout with content */}
-        <div className="flex min-h-screen">
+        <div className="flex h-screen min-w-0">
           {/* Main content area */}
-          <div className={`flex-1 flex flex-col transition-all duration-300 pointer-events-auto ${
+          <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 pointer-events-auto ${
             !isMobile 
               ? sidebarCollapsed 
                 ? 'ml-0 md:ml-[68px] relative z-40' // Collapsed
@@ -101,7 +105,7 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
             </div>
             
             {/* Page content */}
-            <main className={`flex-1 flex flex-col min-h-0 ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
+            <main className={`flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
               {children}
             </main>
           </div>

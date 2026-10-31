@@ -144,6 +144,11 @@ const ChatInterface = ({
 
   return (
     <ChatView
+      missionId={missionId}
+      appId={streamingHook.appId}
+      appSlug={streamingHook.appSlug}
+      appRevision={streamingHook.appRevision}
+      appProgress={streamingHook.appProgress}
       messages={missionHook.messages}
       isLoadingHistory={missionHook.isLoadingHistory}
       isStreaming={streamingHook.isStreaming}

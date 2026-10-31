@@ -39,9 +39,16 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) => {
   // Listen for messages from popup window
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      // Not ours: the window receives messages from anything embedded in
+      // it, and a generated app in a sandboxed frame posts one per API
+      // call from an opaque origin. Checking shape first means the origin
+      // warning fires for an auth message from the wrong place — which is
+      // worth seeing — rather than for every row a table loads.
+      if (event.data?.type !== 'TALOSY_AUTH_SUCCESS') return;
+
       // Verify origin for security
       if (event.origin !== window.location.origin) {
-        console.warn('🚨 Received message from unexpected origin:', event.origin);
+        console.warn('🚨 Received auth message from unexpected origin:', event.origin);
         return;
       }
 
