@@ -145,10 +145,17 @@ export const ChatView: React.FC<ChatViewProps> = ({
         // with no obvious way back.
         <ResizablePanelGroup
           direction="horizontal"
-          autoSaveId="chat-deck-split"
+          // Renamed deliberately: the old key has a saved split pinned at
+          // the 30% minimum in browsers that have it, and a stored value
+          // inside the bounds is never corrected. A new key starts
+          // everyone at the default again.
+          autoSaveId="chat-split-v2"
           className="flex-1"
         >
-          <ResizablePanel defaultSize={42} minSize={30} maxSize={70} className="min-w-0">
+          {/* 35% of a 1400px window leaves ~420px for the conversation,
+              which is the narrowest it stays readable at. 30 was reachable
+              by dragging and left it unusable. */}
+          <ResizablePanel defaultSize={42} minSize={35} maxSize={65} className="min-w-0">
             {conversation}
           </ResizablePanel>
 
@@ -157,7 +164,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <ResizablePanel
             ref={deckPanelRef}
             defaultSize={58}
-            minSize={30}
+            minSize={35}
             className="min-w-0"
           >
             <div className="h-full min-w-0">
