@@ -91,7 +91,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   // in context, which outlives navigation -- so starting a new task fetched
   // the *previous* conversation's deck and showed it beside an empty chat. A
   // conversation created in this session needs no fallback: the stream sets
-  // the deck directly, and the app navigates to /missions/:id once it exists.
+  // the deck directly, and the app navigates to /tasks/:id once it exists.
   useEffect(() => {
     // Clear first. Whatever deck is on screen belongs to the conversation we
     // are leaving, and it must not survive into the next one for the length
@@ -489,7 +489,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       setAttachedFileDetails([]);
 
       if (!missionId && newMissionId) {
-        navigate(`/missions/${newMissionId}`);
+        navigate(`/tasks/${newMissionId}`);
       } else {
         inputBarRef.current?.focusInput();
       }
