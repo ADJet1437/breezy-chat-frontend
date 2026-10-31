@@ -4,19 +4,14 @@ import {
   ChevronDown,
   Clock,
   Database,
-  FileText,
   Grid2x2,
   LayoutPanelLeft,
   LogIn,
   LogOut,
   Monitor,
-  Network,
   Palette,
-  PencilLine,
   Plus,
-  Share2,
   Smile,
-  Table2,
   User,
 } from 'lucide-react';
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
@@ -52,14 +47,8 @@ const PRIMARY_ITEMS = [
 
 const TOOL_ITEMS = [
   { title: 'Slides', icon: Monitor },
-  { title: 'Swarm', icon: Network },
   { title: 'Apps', icon: Grid2x2 },
-  { title: 'Docs', icon: FileText },
   { title: 'Websites', icon: AppWindow },
-  { title: 'Sheets', icon: Table2 },
-  { title: 'Design', icon: PencilLine },
-  { title: 'Mind map', icon: Share2, badge: 'Beta' },
-  { title: 'Agents', icon: Clock },
 ];
 
 type NavItem = { title: string; icon: React.ElementType; url?: string; badge?: string };
