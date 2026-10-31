@@ -31,8 +31,22 @@ interface UseMessageStreamingReturn {
   deckId: string | null;
   deckRevision: number;
   expectedSlides: number;
+  appId: string | null;
+  appSlug: string | null;
+  appRevision: number;
+  appProgress: string | null;
   setDeckId: React.Dispatch<React.SetStateAction<string | null>>;
 }
+
+// The tools that change what the app panel shows.
+const APP_TOOLS = new Set([
+  'design_app',
+  'init_frontend',
+  'write_file',
+  'delete_file',
+  'run_command',
+  'build_and_publish',
+]);
 
 export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessageStreamingReturn => {
   const {
@@ -59,6 +73,15 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const [deckId, setDeckId] = useState<string | null>(null);
   const [deckRevision, setDeckRevision] = useState<number>(0);
   const [expectedSlides, setExpectedSlides] = useState<number>(0);
+  const [appId, setAppId] = useState<string | null>(null);
+  // The app's own address. Carried because a brand-new conversation
+  // has no mission id on the client yet -- the mission is created
+  // server-side mid-request -- and without this the panel had nothing
+  // to look the app up by and stayed empty for the whole build.
+  const [appSlug, setAppSlug] = useState<string | null>(null);
+  // Bumped by every app tool that changes what the panel should show.
+  const [appRevision, setAppRevision] = useState(0);
+  const [appProgress, setAppProgress] = useState<string | null>(null);
 
   // Reopening a conversation has to find its deck: the stream that created it
   // is long gone, and without this the panel only ever appears in the session
@@ -76,6 +99,10 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     setDeckId(null);
     setDeckRevision(0);
     setExpectedSlides(0);
+    setAppId(null);
+    setAppSlug(null);
+    setAppRevision(0);
+    setAppProgress(null);
 
     if (!missionId) return;
 
@@ -97,6 +124,27 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
         }
       } catch {
         // A conversation without a deck is the normal case.
+      }
+    })();
+
+    // The app in this conversation, for the same reason as the deck above:
+    // appId and appSlug otherwise exist only for as long as the stream that
+    // announced them, so reopening a finished conversation showed the whole
+    // build in the transcript and no app to open.
+    (async () => {
+      try {
+        const response = await authenticatedGet(
+          buildApiUrl(`/api/v1/apps?mission_id=${missionId}`)
+        );
+        if (!response.ok || cancelled) return;
+        const apps = await response.json();
+        const newest = (apps ?? [])[0];
+        if (newest && !cancelled) {
+          setAppId(newest.app_id);
+          setAppSlug(newest.slug);
+        }
+      } catch {
+        // A conversation without an app is the normal case.
       }
     })();
 
@@ -303,7 +351,24 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   setExecutionProgress(prev => Math.min(prev + 5, 90));
                 } else if (data.event_type === 'deck_built') {
                   setCurrentStep(data.data.message || 'Rendering slides…');
+                  if (APP_TOOLS.has(data.data.tool_name)) {
+                    setAppProgress(data.data.message || null);
+                  }
                 } else if (data.event_type === 'execution_complete') {
+                  if (data.data.app_id) {
+                    // design_app and build_and_publish both carry it. The
+                    // panel opens on the design, long before anything is
+                    // built, so the schema is visible while pages are
+                    // written rather than only at the end.
+                    setAppId(data.data.app_id);
+                    if (data.data.slug) setAppSlug(data.data.slug);
+                    setAppRevision(n => n + 1);
+                    setAppProgress(null);
+                  } else if (APP_TOOLS.has(data.data.tool_name)) {
+                    // A file written or a command run changes the project
+                    // without naming the app; the panel still wants to know.
+                    setAppRevision(n => n + 1);
+                  }
                   if (data.data.deck_id) {
                     // modify_deck returns the same deck_id with a higher
                     // revision; the revision is what busts the slide image
@@ -445,6 +510,10 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     deckId,
     deckRevision,
     expectedSlides,
+    appId,
+    appSlug,
+    appRevision,
+    appProgress,
     setDeckId
   };
 };
