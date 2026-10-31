@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { MissionProvider } from "./contexts/MissionContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -49,7 +49,11 @@ const AppInner = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/chat" element={<NewMission />} />
-            <Route path="/missions/:id" element={<MissionDetail />} />
+            <Route path="/tasks/:id" element={<MissionDetail />} />
+            {/* The old path, kept so links already in the wild still land
+                somewhere. `replace` so it does not sit in history and send
+                the back button round in a circle. */}
+            <Route path="/missions/:id" element={<LegacyMissionRedirect />} />
             <Route path="/use-cases" element={<Layout><UseCases /></Layout>} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -68,6 +72,12 @@ const AppInner = () => {
       </ThemeProvider>
     </BrowserRouter>
   );
+};
+
+/** /missions/:id was renamed to /tasks/:id. */
+const LegacyMissionRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/tasks/${id}`} replace />;
 };
 
 const App = () => (
