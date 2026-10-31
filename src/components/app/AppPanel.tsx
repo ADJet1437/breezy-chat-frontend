@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppWindow, ChevronDown, Code2, Database, Download, Loader2, MoreHorizontal, RefreshCw, Table2 } from 'lucide-react';
+import { AppWindow, ChevronDown, Code2, Database, Loader2, MoreHorizontal, RefreshCw, Table2 } from 'lucide-react';
 import { useApp, useAppApiBridge, appBundleUrl, withErrorReporter, AppFieldShape } from './useApp';
 import { DataAdmin } from './DataAdmin';
 import { authenticatedGet } from '@/utils/authenticatedFetch';
@@ -135,13 +135,6 @@ export function AppPanel({ missionId, slug, revisionSignal = 0, progress }: Prop
                   >
                     <RefreshCw className="h-3 w-3" /> Reload
                   </button>
-                  <a
-                    href={appBundleUrl(app.slug)}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-muted"
-                  >
-                    <Download className="h-3 w-3" /> Download page
-                  </a>
                 </div>
               </>
             )}
