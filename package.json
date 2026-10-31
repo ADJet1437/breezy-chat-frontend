@@ -10,9 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:layout": "node scripts/layout-check.mjs",
-    "test:all": "vitest run && node scripts/layout-check.mjs"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

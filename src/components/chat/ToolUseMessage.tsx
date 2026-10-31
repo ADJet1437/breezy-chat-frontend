@@ -60,7 +60,11 @@ export const ToolUseMessage: React.FC<Props> = ({
   const header = (
     <>
       {icon}
-      <span className="shrink-0 font-medium">{toolName.replace(/_/g, ' ')}</span>
+      {/* Holds its width against a long summary, but can still truncate:
+          shrink-0 alone means a narrow pane overflows rather than eliding. */}
+      <span className="min-w-0 max-w-[45%] shrink-0 truncate font-medium">
+        {toolName.replace(/_/g, ' ')}
+      </span>
       {/* min-w-0 is what makes `truncate` work at all. A flex item defaults
           to min-width:auto, so without it the span refuses to shrink below
           its text, the chip grows to fit, and a long tool message pushes the

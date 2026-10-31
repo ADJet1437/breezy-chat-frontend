@@ -45,7 +45,10 @@ export const ChatMessageArea: React.FC<ChatMessageAreaProps> = ({
   return (
     <div className="space-y-4 min-w-0">
       <MessageList messages={messages} />
-      {isStreaming && missionPhase !== 'init' ? (
+      {/* Nothing to report once the phase is complete: the answer is
+          already on screen, and a bubble reading "Thinking · Done" after
+          every round is a receipt for work the user just watched. */}
+      {isStreaming && missionPhase !== 'init' && missionPhase !== 'complete' ? (
         <MissionProgressIndicator
           phase={missionPhase}
           currentStep={currentStep}
