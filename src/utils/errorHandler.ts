@@ -111,7 +111,11 @@ export const handleApiError = async (response: Response, context: string = 'API 
   if (response.status === 401) {
     throw new AuthError(errorMessage, 'UNAUTHORIZED', 401);
   } else if (response.status === 402) {
-    const errorCode = errorData?.detail?.error_code || 'PAYMENT_REQUIRED';
+    // The backend's exception handler puts the code at the top level as
+    // `api_code`; `detail` is the human-readable string beside it. Reading
+    // detail.error_code found nothing, so every 402 looked generic.
+    const errorCode =
+      errorData?.api_code || errorData?.detail?.error_code || 'PAYMENT_REQUIRED';
     throw new PaymentRequiredError(errorMessage, errorCode, 402);
   } else if (response.status === 403) {
     throw new AuthError('You do not have permission to perform this action', 'FORBIDDEN', 403);

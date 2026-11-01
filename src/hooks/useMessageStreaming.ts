@@ -461,13 +461,16 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       }
     } catch (error) {
       if (error instanceof PaymentRequiredError) {
-        let dialogMessage = '';
+        // The server says how many credits the plan includes and which plan
+        // ran out, so prefer its wording; these are the fallbacks.
+        let dialogMessage = error.message;
         if (error.errorCode === 'SUBSCRIPTION_REQUIRED') {
           dialogMessage = 'Please subscribe to continue chatting with our AI assistant.';
-        } else if (error.errorCode === 'TRIAL_LIMIT_EXCEEDED') {
-          dialogMessage = 'You\'ve reached your daily message limit for the Trial plan. Upgrade to continue chatting.';
-        } else {
-          dialogMessage = 'Please upgrade your subscription to continue.';
+        } else if (!dialogMessage) {
+          dialogMessage =
+            error.errorCode === 'TRIAL_LIMIT_EXCEEDED'
+              ? 'You\'ve used all the credits included in the Trial plan. Upgrade to continue.'
+              : 'Please upgrade your subscription to continue.';
         }
 
         setSubscriptionMessage(dialogMessage);

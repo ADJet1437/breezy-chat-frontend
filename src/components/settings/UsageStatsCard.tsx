@@ -26,7 +26,9 @@ export const UsageStatsCard = () => {
   // Normalize data with fallback values
   const stats = {
     current_usage: usageStats.current_usage ?? 0,
-    monthly_limit: usageStats.monthly_limit ?? 1000,
+    // No invented ceiling here: the limit is enforced server-side now, and a
+    // guessed 1000 would read as headroom the plan does not have.
+    monthly_limit: usageStats.monthly_limit ?? 0,
     remaining_credits: usageStats.remaining_credits ?? 0,
     usage_percentage: usageStats.usage_percentage ?? 0,
     status: usageStats.status ?? 'low',
