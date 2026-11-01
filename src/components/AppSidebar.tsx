@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  AppWindow,
   ChevronDown,
   Clock,
   Database,
@@ -56,7 +55,6 @@ const PRIMARY_ITEMS = [
 const TOOL_ITEMS = [
   { title: 'Slides', icon: Monitor, badge: BETA },
   { title: 'Apps', icon: Grid2x2, badge: BETA },
-  { title: 'Websites', icon: AppWindow, badge: BETA },
 ];
 
 type NavItem = { title: string; icon: React.ElementType; url?: string; badge?: string };
