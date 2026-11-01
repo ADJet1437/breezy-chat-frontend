@@ -30,7 +30,12 @@ const Apps: React.FC = () => {
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+      {/* Dropped well below the top. The page starts at the top rather
+          than centring, because the grid is long -- but with only a little
+          padding the composer sat almost against the header, which reads
+          as cramped next to the home page where it floats in the middle of
+          the screen. */}
+      <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-24 sm:px-6 sm:pt-40">
         <div ref={composerRef} className="scroll-mt-6">
           <HomeComposer
             onSubmit={startTask}
