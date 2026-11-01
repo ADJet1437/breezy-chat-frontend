@@ -92,7 +92,7 @@ const HomePage: React.FC = () => {
           at scroll position zero -- off screen, and unreachable, because
           scrolling only goes down. Auto margins resolve to zero when there
           is no free space, so the content simply starts at the top. */}
-      <div className="flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className="flex min-h-full flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
         <div className="my-auto w-full max-w-3xl space-y-8 sm:space-y-10">
           <div ref={composerRef}>
             <HomeComposer onSubmit={handleCreateTask} seed={seed} />

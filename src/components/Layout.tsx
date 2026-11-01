@@ -149,7 +149,13 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
             </div>
             
             {/* Page content */}
-            <main className={`flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
+            {/* overflow-y-auto, not hidden. Pages that manage their own
+                scrolling (the chat) fill this exactly and never use it;
+                pages that are simply taller than the screen (the home page
+                on a phone) could not be scrolled at all while this clipped
+                them -- the composer was reachable and the cards below it
+                were not. */}
+            <main className={`flex-1 min-w-0 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden ${!isMobile && rightSidebar ? 'md:mr-80' : ''}`}>
               {children}
             </main>
           </div>

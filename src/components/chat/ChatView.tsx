@@ -183,7 +183,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // unmounting the app panel reloads the iframe, which rebuilds the app.
   if (artifact && isMobile) {
     return (
-      <div className="flex h-screen w-full flex-col overflow-hidden bg-background" data-chat-interface>
+      <div className="flex h-full w-full flex-col overflow-hidden bg-background" data-chat-interface>
         <div className="flex shrink-0 gap-1 border-b bg-background p-1.5">
           {([['chat', 'Chat'], ['artifact', artifact === 'deck' ? 'Slides' : 'App']] as const).map(
             ([key, label]) => (
@@ -220,7 +220,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
+    <div className="flex h-full w-full overflow-hidden bg-background" data-chat-interface>
       {artifact ? (
         // Draggable split. autoSaveId persists the width per browser, and the
         // bounds keep both sides usable: under ~30% the composer and the slide
