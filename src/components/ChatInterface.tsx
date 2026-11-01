@@ -164,6 +164,7 @@ const ChatInterface = ({
       attachedFileDetails={attachedFileDetails}
       setAttachedFileIds={setAttachedFileIds}
       setAttachedFileDetails={setAttachedFileDetails}
+      creditStatus={streamingHook.creditStatus}
       deckId={streamingHook.deckId}
       deckRevision={streamingHook.deckRevision}
       expectedSlides={streamingHook.expectedSlides}
