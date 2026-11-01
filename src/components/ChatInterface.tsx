@@ -13,6 +13,7 @@ interface ChatInterfaceProps {
   isParentLoading?: boolean;
   initialMessage?: string;
   initialFileIds?: string[];
+  initialFiles?: AttachedFile[];
 }
 
 const ChatInterface = ({
@@ -20,7 +21,8 @@ const ChatInterface = ({
   missionData,
   isParentLoading = false,
   initialMessage,
-  initialFileIds = []
+  initialFileIds = [],
+  initialFiles = []
 }: ChatInterfaceProps) => {
   // Context
   const { currentMissionId, setCurrentMissionId, setMissionData } = useMissionContext();
@@ -63,6 +65,10 @@ const ChatInterface = ({
         content: initialMessage,
         sender: 'user',
         timestamp: new Date(),
+        // Carried from the home page. Without it the attachment vanished
+        // on send and only reappeared when history reloaded — after the
+        // answer, which is exactly when it stops being useful.
+        attachedFiles: initialFiles.length ? initialFiles : undefined,
       };
 
       missionHook.setMessages(prev => [...prev, userMessage]);

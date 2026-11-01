@@ -5,7 +5,11 @@ import FileUpload, { UploadedFile } from '../FileUpload';
 import { AttachedFiles } from './AttachedFiles';
 
 interface HomeComposerProps {
-  onSubmit: (message: string, fileIds: string[]) => Promise<void>;
+  onSubmit: (
+    message: string,
+    fileIds: string[],
+    files: UploadedFile[]
+  ) => Promise<void>;
   placeholder?: string;
   /** Prefill from a thinking-model card. Appended, so picking one mid-draft
       does not discard what is already typed. */
@@ -39,7 +43,7 @@ export const HomeComposer: React.FC<HomeComposerProps> = ({
 
     setIsLoading(true);
     try {
-      await onSubmit(message, attachedFileIds);
+      await onSubmit(message, attachedFileIds, attachedFiles);
     } catch {
       toast({
         description: 'Could not start the task. Please try again.',

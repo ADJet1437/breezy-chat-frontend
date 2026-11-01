@@ -41,12 +41,20 @@ type ContentBlock =
   | ToolUseBlockResponse
   | ImageBlockResponse;
 
+interface AttachedFileResponse {
+  id: string;
+  name: string;
+  size?: number | null;
+  mime_type?: string | null;
+}
+
 interface TaskMessage {
   id: string;
   role: "user" | "assistant";
   created_at: string;
   mission_id: string;
   content_blocks: ContentBlock[];
+  files?: AttachedFileResponse[];
 }
 
 export interface MissionDetails {
@@ -106,6 +114,16 @@ export const useMissionData = (
 
       const sender = taskMessage.role === 'user' ? 'user' : 'bot';
 
+      // What was uploaded with this turn. The API resolves the message's
+      // file_ids into names and sizes; ids alone cannot be drawn.
+      const attached = (taskMessage.files ?? []).map(file => ({
+        id: file.id,
+        name: file.name,
+        size: file.size ?? 0,
+        type: file.mime_type ?? '',
+      }));
+      let attachedShown = false;
+
       blocks.forEach(block => {
         switch (block.type) {
           case 'text':
@@ -114,6 +132,13 @@ export const useMissionData = (
               content: block.text,
               sender,
               timestamp: new Date(block.created_at),
+              // On the first text block only: a turn is one message with
+              // one set of attachments, and repeating them under every
+              // paragraph would read as several uploads.
+              attachedFiles:
+                attached.length && !attachedShown
+                  ? ((attachedShown = true), attached)
+                  : undefined,
             });
             break;
 

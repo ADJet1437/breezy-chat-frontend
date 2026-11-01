@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { UploadedFile } from '../components/FileUpload';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginDialog } from '../components/login';
 import Layout from '../components/Layout';
@@ -20,6 +21,9 @@ const HomePage: React.FC = () => {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [pendingFileIds, setPendingFileIds] = useState<string[]>([]);
+  // Names and sizes, not only ids: the first message has to show the
+  // file the moment it is sent, and ids cannot be drawn.
+  const [pendingFiles, setPendingFiles] = useState<UploadedFile[]>([]);
   const [seed, setSeed] = useState<string | undefined>(undefined);
   const composerRef = useRef<HTMLDivElement>(null);
 
@@ -28,10 +32,15 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated && accessToken && pendingMessage) {
       navigate('/chat', {
-        state: { initialMessage: pendingMessage, initialFileIds: pendingFileIds },
+        state: {
+          initialMessage: pendingMessage,
+          initialFileIds: pendingFileIds,
+          initialFiles: pendingFiles,
+        },
       });
       setPendingMessage(null);
       setPendingFileIds([]);
+      setPendingFiles([]);
     }
   }, [isAuthenticated, accessToken, pendingMessage, pendingFileIds, navigate]);
 
@@ -49,16 +58,21 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleCreateTask = async (message: string, fileIds: string[]) => {
+  const handleCreateTask = async (
+    message: string,
+    fileIds: string[],
+    files: UploadedFile[]
+  ) => {
     if (!isAuthenticated || !accessToken) {
       setPendingMessage(message);
       setPendingFileIds(fileIds);
+      setPendingFiles(files);
       setShowLoginDialog(true);
       return;
     }
 
     navigate('/chat', {
-      state: { initialMessage: message, initialFileIds: fileIds },
+      state: { initialMessage: message, initialFileIds: fileIds, initialFiles: files },
     });
   };
 
