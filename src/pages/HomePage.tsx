@@ -5,7 +5,6 @@ import { LoginDialog } from '../components/login';
 import Layout from '../components/Layout';
 import { HomeComposer } from '../components/chat/HomeComposer';
 import { ThinkingModels } from '../components/home/ThinkingModels';
-import { RightRail } from '../components/home/RightRail';
 
 /**
  * The landing page: composer, then the thinking-model starters.
@@ -82,7 +81,6 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      <RightRail />
 
       <LoginDialog open={showLoginDialog} onOpenChange={handleLoginDialogChange} />
     </Layout>
