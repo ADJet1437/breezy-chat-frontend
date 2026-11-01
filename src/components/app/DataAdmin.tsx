@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Loader2, Plus, Search, Trash2, X,
+  ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Loader2, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRecords, blankRecord, forApi, RecordRow } from './useRecords';
@@ -75,16 +75,6 @@ export function DataAdmin({ slug, spec }: Props) {
         <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
           {data.total} row{data.total === 1 ? '' : 's'}
         </span>
-
-        {data.exportUrl && (
-          <a
-            href={data.exportUrl}
-            className="shrink-0 rounded border border-border p-1.5 text-muted-foreground hover:text-foreground"
-            title="Export as CSV"
-          >
-            <Download className="h-3 w-3" />
-          </a>
-        )}
 
         <Button size="sm" className="h-7 shrink-0 gap-1 text-xs" onClick={() => setEditing('new')}>
           <Plus className="h-3 w-3" /> Add
