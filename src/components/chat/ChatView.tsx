@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChatMessageArea } from './ChatMessageArea';
 import { ChatInputSection } from './ChatInputSection';
 import { CreditWarning } from './CreditWarning';
@@ -14,6 +14,7 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatViewProps {
   // Message area props
@@ -94,6 +95,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSubscribed,
   subscriptionMessage,
 }) => {
+  const isMobile = useIsMobile();
+  // Which of the two a phone is showing. There is no room to split: at
+  // 390px the 35% floor leaves 136px of conversation and 253px of artifact,
+  // and neither is usable. One at a time, with a switch.
+  const [mobileView, setMobileView] = useState<'chat' | 'artifact'>('chat');
+
   const deckPanelRef = useRef<ImperativePanelHandle>(null);
 
   // Double-click the handle to put the split back. A persisted width with no
@@ -115,7 +122,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </div>
 
-        <div className="flex-shrink-0 border-t bg-background">
+        <div className="flex-shrink-0 bg-background">
           <div className={`mx-auto w-full p-4 ${deckId || appId ? '' : 'max-w-3xl'}`}>
             {creditStatus?.warn && (
               <div className="mb-3">
@@ -145,8 +152,75 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // so the schema is visible while the pages are being written.
   const artifact = deckId ? 'deck' : appId ? 'app' : null;
 
+  // An artifact appearing mid-conversation is the interesting moment, and on
+  // a phone it happens on a screen the user is not looking at. Switch to it
+  // once, when it first exists; they can switch back.
+  useEffect(() => {
+    if (artifact) setMobileView('artifact');
+  }, [artifact]);
+
+  const artifactPane = (
+    <div className="h-full min-w-0">
+      {artifact === 'deck' ? (
+        <DeckPanel
+          deckId={deckId}
+          revisionSignal={deckRevision}
+          expectedSlides={expectedSlides}
+        />
+      ) : (
+        <AppPanel
+          missionId={missionId ?? null}
+          slug={appSlug ?? null}
+          revisionSignal={appRevision}
+          progress={appProgress}
+        />
+      )}
+    </div>
+  );
+
+  // Phones get one pane and a switch rather than a split. The panes stay
+  // mounted -- unmounting the conversation loses its scroll position, and
+  // unmounting the app panel reloads the iframe, which rebuilds the app.
+  if (artifact && isMobile) {
+    return (
+      <div className="flex h-full w-full flex-col overflow-hidden bg-background" data-chat-interface>
+        <div className="flex shrink-0 gap-1 border-b bg-background p-1.5">
+          {([['chat', 'Chat'], ['artifact', artifact === 'deck' ? 'Slides' : 'App']] as const).map(
+            ([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setMobileView(key)}
+                aria-pressed={mobileView === key}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  mobileView === key
+                    ? 'bg-muted font-medium text-foreground'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            )
+          )}
+        </div>
+        <div className={`min-h-0 flex-1 ${mobileView === 'chat' ? '' : 'hidden'}`}>
+          {conversation}
+        </div>
+        <div className={`min-h-0 flex-1 ${mobileView === 'artifact' ? '' : 'hidden'}`}>
+          {artifactPane}
+        </div>
+        <SubscriptionDialog
+          open={showSubscriptionDialog}
+          onOpenChange={onSubscriptionDialogChange}
+          onSubscribed={onSubscribed}
+          message={subscriptionMessage}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background" data-chat-interface>
+    <div className="flex h-full w-full overflow-hidden bg-background" data-chat-interface>
       {artifact ? (
         // Draggable split. autoSaveId persists the width per browser, and the
         // bounds keep both sides usable: under ~30% the composer and the slide
@@ -176,22 +250,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             minSize={35}
             className="min-w-0"
           >
-            <div className="h-full min-w-0">
-              {artifact === 'deck' ? (
-                <DeckPanel
-                  deckId={deckId}
-                  revisionSignal={deckRevision}
-                  expectedSlides={expectedSlides}
-                />
-              ) : (
-                <AppPanel
-                  missionId={missionId ?? null}
-                  slug={appSlug ?? null}
-                  revisionSignal={appRevision}
-                  progress={appProgress}
-                />
-              )}
-            </div>
+            {artifactPane}
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
