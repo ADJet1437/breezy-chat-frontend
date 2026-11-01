@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { PanelLeft } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { LoginDialog } from './login';
+import { useLocation } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +23,12 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
   });
   const { isAuthenticated } = useAuth();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  // The drawer's own state. It used to be shadcn's SidebarTrigger, which
+  // toggles the SidebarProvider context -- but the sidebar here is a
+  // hand-rolled fixed div that never read that context, so the button
+  // fired and nothing moved. On mobile the drawer was permanently
+  // translated off screen with no way to bring it back.
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -64,6 +72,18 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
     };
   }, [sidebarCollapsed]);
 
+  useEffect(() => {
+    if (!isMobile) setDrawerOpen(false);
+  }, [isMobile]);
+
+  // Close on navigation. Tapping a nav item otherwise leaves the drawer
+  // sitting over the page it just opened, and this catches every route
+  // change rather than only the links the sidebar happens to render.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
   const handleSignIn = () => {
     setLoginDialogOpen(true);
   };
@@ -81,7 +101,9 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
             // render at full width over the content, which has no left
             // margin on mobile — so the first 288px of every page sat
             // underneath an opaque sidebar.
-            : 'w-72 z-50 pointer-events-auto -translate-x-full'
+            : `w-72 z-50 pointer-events-auto ${
+                drawerOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
         }`}>
           <AppSidebar 
             collapsed={sidebarCollapsed} 
@@ -89,6 +111,18 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           />
         </div>
         
+        {/* Tapping away closes it, which is what everyone expects of a
+            drawer and the only way out on a phone if the trigger scrolls
+            out of view. */}
+        {isMobile && drawerOpen && (
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setDrawerOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          />
+        )}
+
         {/* Main layout with content */}
         <div className="flex h-screen min-w-0">
           {/* Main content area */}
@@ -101,7 +135,17 @@ const Layout: React.FC<LayoutProps> = ({ children, rightSidebar }) => {
           }`}>
             {/* Mobile sidebar trigger */}
             <div className="md:hidden p-2 border-b bg-background/80 backdrop-blur-sm">
-              <SidebarTrigger />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(open => !open)}
+                aria-label="Open menu"
+                aria-expanded={drawerOpen}
+                // 40px square: below about 44 a thumb misses it as often
+                // as it hits.
+                className="flex h-10 w-10 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <PanelLeft className="h-[18px] w-[18px]" />
+              </button>
             </div>
             
             {/* Page content */}
