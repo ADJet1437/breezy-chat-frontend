@@ -16,6 +16,10 @@ interface FileUploadProps {
   onFilesUploaded: (fileIds: string[], fileDetails: UploadedFile[]) => void;
   disabled?: boolean;
   missionId?: string | null;
+  /** The trigger's look. The chat bar wants a quiet icon in a toolbar row;
+   *  the default is the standalone outlined button. */
+  variant?: 'outline' | 'ghost';
+  className?: string;
 }
 
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -55,6 +59,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onFilesUploaded,
   disabled,
   missionId,
+  variant = 'outline',
+  className,
 }) => {
   const [uploading, setUploading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -129,13 +135,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }}
       />
       <Button
-        variant="outline"
+        variant={variant}
         size="sm"
         onClick={() => input.current?.click()}
         disabled={disabled || uploading}
         aria-label="Attach files"
         title="Attach files"
-        className="h-10 w-10 rounded-xl p-2"
+        className={className ?? 'h-10 w-10 rounded-xl p-2'}
       >
         {uploading ? (
           <Loader2 className="h-4 w-4 animate-spin" />

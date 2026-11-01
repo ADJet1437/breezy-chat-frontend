@@ -122,7 +122,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </div>
 
-        <div className="flex-shrink-0 border-t bg-background">
+        <div className="flex-shrink-0 bg-background">
           <div className={`mx-auto w-full p-4 ${deckId || appId ? '' : 'max-w-3xl'}`}>
             {creditStatus?.warn && (
               <div className="mb-3">
