@@ -55,7 +55,7 @@ export function SidebarRecents({ collapsed = false }: { collapsed?: boolean }) {
         {conversations.map((conversation) => (
           <NavLink
             key={conversation.id}
-            to={`/tasks/${conversation.id}`}
+            to={`/chat/${conversation.id}`}
             className={({ isActive }) =>
               `block truncate rounded-md px-2 py-1.5 text-sm transition-colors ${
                 isActive

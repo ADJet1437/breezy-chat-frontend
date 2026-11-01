@@ -1,6 +1,7 @@
 import React from 'react';
-import { Send, Paperclip } from 'lucide-react';
+import { Send } from 'lucide-react';
 import FileUpload from '../FileUpload';
+import { AttachedFiles } from './AttachedFiles';
 
 interface ChatInputSectionProps {
   inputValue: string;
@@ -31,24 +32,13 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
 }) => {
   return (
     <div className="space-y-3">
-      {/* Attached Files Display */}
-      {attachedFileIds.length > 0 && (
-        <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-chat-attachment-bg rounded-lg border border-blue-200 dark:border-border">
-          <Paperclip className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-            {attachedFileIds.length} file(s) attached
-          </span>
-          <button
-            onClick={() => {
-              setAttachedFileIds([]);
-              setAttachedFileDetails([]);
-            }}
-            className="text-blue-600 hover:text-blue-800 text-sm ml-auto"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <AttachedFiles
+        files={attachedFileDetails}
+        onRemove={id => {
+          setAttachedFileIds(ids => ids.filter(i => i !== id));
+          setAttachedFileDetails(files => files.filter(f => f.id !== id));
+        }}
+      />
 
       {/* Input Area */}
       <div className="flex items-center space-x-3">

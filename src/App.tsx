@@ -49,7 +49,7 @@ const AppInner = () => {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/chat" element={<NewMission />} />
-            <Route path="/tasks/:id" element={<MissionDetail />} />
+            <Route path="/chat/:id" element={<MissionDetail />} />
             {/* The old path, kept so links already in the wild still land
                 somewhere. `replace` so it does not sit in history and send
                 the back button round in a circle. */}
@@ -74,10 +74,10 @@ const AppInner = () => {
   );
 };
 
-/** /missions/:id was renamed to /tasks/:id. */
+/** /missions/:id was renamed to /chat/:id. */
 const LegacyMissionRedirect = () => {
   const { id } = useParams();
-  return <Navigate to={`/tasks/${id}`} replace />;
+  return <Navigate to={`/chat/${id}`} replace />;
 };
 
 const App = () => (

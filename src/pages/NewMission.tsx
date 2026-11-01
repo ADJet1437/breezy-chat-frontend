@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ChatInterface from '../components/ChatInterface';
 import { useMissionContext } from '../contexts/MissionContext';
+import type { AttachedFile } from '../types/chat';
 
 interface LocationState {
   initialMessage?: string;
   initialFileIds?: string[];
+  initialFiles?: AttachedFile[];
 }
 
 const NewMission: React.FC = () => {
@@ -45,6 +47,7 @@ const NewMission: React.FC = () => {
         missionId={undefined}
         initialMessage={state.initialMessage}
         initialFileIds={state.initialFileIds || []}
+        initialFiles={state.initialFiles || []}
       />
     </Layout>
   );

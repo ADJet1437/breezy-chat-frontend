@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AppWindow,
   ChevronDown,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useShortcut } from '@/hooks/useShortcut';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,6 +61,12 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const [toolsOpen, setToolsOpen] = useState(true);
   const navigate = useNavigate();
+
+  // The sidebar badge has advertised ⌘K since the button existed; nothing
+  // was listening for it. The only global shortcut in the app is shadcn's
+  // sidebar toggle on ⌘B.
+  const startNewChat = useCallback(() => navigate('/'), [navigate]);
+  useShortcut('k', startNewChat);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -191,7 +198,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
         <div className="px-3 pt-4">
           <button
             type="button"
-            onClick={() => navigate('/')}
+            onClick={startNewChat}
             className={`flex w-full items-center gap-3 rounded-xl border border-sidebar-border px-3 py-2.5 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 ${
               collapsed ? 'justify-center px-0' : ''
             }`}
@@ -199,7 +206,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
             <Plus className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && (
               <>
-                <span>New Task</span>
+                <span>New Chat</span>
                 <span className="ml-auto flex items-center gap-1 text-[11px] text-sidebar-foreground/40">
                   <kbd className="rounded border border-sidebar-border px-1">⌘</kbd>
                   <kbd className="rounded border border-sidebar-border px-1">K</kbd>
