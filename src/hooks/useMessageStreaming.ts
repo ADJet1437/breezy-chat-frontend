@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authenticatedGet, authenticatedPost } from '../utils/authenticatedFetch';
 import { buildApiUrl } from '../utils/apiConfig';
 import { Message } from '../types/chat';
@@ -91,7 +90,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   // in context, which outlives navigation -- so starting a new task fetched
   // the *previous* conversation's deck and showed it beside an empty chat. A
   // conversation created in this session needs no fallback: the stream sets
-  // the deck directly, and the app navigates to /tasks/:id once it exists.
+  // the deck directly, and the URL is corrected to /tasks/:id once the
+  // task exists.
   useEffect(() => {
     // Clear first. Whatever deck is on screen belongs to the conversation we
     // are leaving, and it must not survive into the next one for the length
@@ -153,7 +153,6 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     };
   }, [missionId]);
 
-  const navigate = useNavigate();
 
   const sendMessageToBackend = async (message: string, overrideFileIds?: string[]) => {
     // Use only explicit missionId prop - no fallback to avoid race conditions
@@ -232,6 +231,19 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   newMissionId = data.answer;
                   setCurrentMissionId(data.answer);
                   setMissionPhase('init');
+
+                  // The address bar catches up without the router moving.
+                  //
+                  // navigate() here would unmount this component and abort
+                  // the stream it is reading; navigating at the END instead
+                  // threw the finished conversation away and refetched it,
+                  // which is the flash at the exact moment the answer
+                  // lands. replaceState changes the URL and nothing else:
+                  // the transcript on screen is already correct, and a
+                  // reload now resolves to the task rather than to /chat.
+                  if (!missionId) {
+                    window.history.replaceState(null, '', `/tasks/${data.answer}`);
+                  }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
                   setExecutionProgress(10);
@@ -488,11 +500,10 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       setAttachedFileIds([]);
       setAttachedFileDetails([]);
 
-      if (!missionId && newMissionId) {
-        navigate(`/tasks/${newMissionId}`);
-      } else {
-        inputBarRef.current?.focusInput();
-      }
+      // No navigation on completion: the URL was corrected when the task
+      // was created, and the messages on screen are the ones a refetch
+      // would return.
+      inputBarRef.current?.focusInput();
     }
   };
 
