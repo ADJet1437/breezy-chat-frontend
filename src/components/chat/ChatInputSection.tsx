@@ -45,10 +45,21 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
 
       {/* A filled, borderless field: it reads as one soft shape against the
           conversation rather than an outlined box bolted to the bottom.
-          Deeply rounded, and rounded more than it is tall only until it
-          wraps -- rounded-full on a field that grows to three lines turns
-          into a lozenge. */}
+          Deeply rounded, but not rounded-full -- a fully round field turns
+          into a lozenge the moment the text wraps to three lines. */}
       <div className="relative rounded-[22px] bg-muted/60 transition-colors focus-within:bg-muted">
+        {/* Both controls sit inside the field, flanking the text. The
+            padding below reserves their lanes, so a long message wraps
+            above them instead of running underneath. */}
+        <div className="absolute bottom-[11px] left-2">
+          <FileUpload
+            onFilesUploaded={onFilesUploaded}
+            disabled={busy}
+            variant="ghost"
+            className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-background/60 hover:text-foreground"
+          />
+        </div>
+
         <textarea
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
@@ -56,11 +67,11 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
           placeholder={busy ? 'Working…' : 'Reply'}
           disabled={busy}
           rows={1}
-          className="max-h-[160px] min-h-[52px] w-full resize-none border-0 bg-transparent py-[15px] pl-5 pr-12 text-[15px] leading-[22px] text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
+          className="max-h-[160px] min-h-[52px] w-full resize-none border-0 bg-transparent py-[15px] pl-12 pr-12 text-[15px] leading-[22px] text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
         />
-        {/* A glyph, not a filled button. The send is a confirmation of what
-            Enter already does, so it should not be the loudest thing in the
-            bar. */}
+
+        {/* A glyph, not a filled button. The send only confirms what Enter
+            already does, so it should not be the loudest thing in the bar. */}
         <button
           type="button"
           onClick={onSendMessage}
@@ -76,17 +87,9 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center gap-1 px-1">
-        <FileUpload
-          onFilesUploaded={onFilesUploaded}
-          disabled={busy}
-          variant="ghost"
-          className="h-8 w-8 rounded-lg p-0 text-muted-foreground hover:text-foreground"
-        />
-        <p className="mx-auto hidden text-[11px] text-muted-foreground sm:block">
-          Talosy can make mistakes. Check anything important.
-        </p>
-      </div>
+      <p className="hidden text-center text-[11px] text-muted-foreground sm:block">
+        Talosy can make mistakes. Check anything important.
+      </p>
     </div>
   );
 };
