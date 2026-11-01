@@ -1,9 +1,13 @@
 /**
  * The sidebar's Beta badges.
  *
- * Slides, Apps and Scheduled Tasks are named but not built -- they render
- * inert rather than routing somewhere wrong. The badge is what tells the
- * user that, instead of leaving them clicking a dead row.
+ * Slides and Scheduled Tasks are named but not built -- they render inert
+ * rather than routing somewhere wrong. The badge is what tells the user
+ * that, instead of leaving them clicking a dead row.
+ *
+ * Apps lost its badge when it got a page: a badge and a url together would
+ * say the surface is both unfinished and ready, which is the state this
+ * list exists to distinguish.
  *
  * Websites was removed outright: unlike the others it is not on the way, so
  * a Beta badge would have promised something that is not coming.
@@ -31,7 +35,7 @@ function row(name: string): HTMLElement {
 }
 
 describe('unfinished surfaces', () => {
-  it.each(['Scheduled Tasks', 'Slides', 'Apps'])(
+  it.each(['Scheduled Tasks', 'Slides'])(
     'marks %s as Beta',
     name => {
       sidebar();
@@ -46,9 +50,15 @@ describe('finished surfaces', () => {
     expect(within(row('Home')).queryByText('Beta')).toBeNull();
   });
 
-  it('badges exactly the three that are not built', () => {
+  it('badges exactly the two that are not built', () => {
     sidebar();
-    expect(screen.getAllByText('Beta')).toHaveLength(3);
+    expect(screen.getAllByText('Beta')).toHaveLength(2);
+  });
+
+  it('drops the badge from Apps, which now has a page', () => {
+    sidebar();
+    expect(within(row('Apps')).queryByText('Beta')).toBeNull();
+    expect(row('Apps').closest('a')).toHaveAttribute('href', '/apps');
   });
 
   it('does not offer Websites at all', () => {

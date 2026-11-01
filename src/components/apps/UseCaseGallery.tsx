@@ -11,32 +11,30 @@ interface UseCase {
 }
 
 interface Props {
-  /** Seeds the composer. Picking a tile starts the work, it does not navigate. */
+  /** What picking a tile should do. The page sends it straight to a new
+   *  chat; there is no composer here to seed. */
   onPick: (prompt: string) => void;
+  /** Cap the grid. Unset shows everything, which is what the page wants. */
+  limit?: number;
 }
 
-/** How many tiles the grid shows before the link to the rest. */
-const SHOWN = 6;
-
 /**
- * Things built with Talosy, under the composer.
+ * Things built with Talosy.
  *
- * This replaced four hand-drawn diagrams of analysis frameworks. The
- * frameworks said what the product could reason about; a picture of a
- * finished site says what it produces, which is the question a first-time
- * visitor is actually asking.
+ * Lives on the Apps page rather than under the home composer: the home
+ * page's job is to get a sentence typed, and a wall of finished work there
+ * competes with the one control that matters. Here it is the content.
  *
- * Clicking a tile seeds the composer rather than opening the demo. That
- * keeps the interaction the frameworks had and is the point of the
- * section: the picture earns the attention, and the click spends it on
- * starting something rather than on leaving for a new tab. The demo is
- * still reachable, from its own small link.
+ * Clicking a tile starts a chat to build something like it, rather than
+ * opening the demo. The picture earns the attention and the click spends
+ * it on starting something; the demo is still reachable from its own small
+ * link.
  *
  * Thumbnails, not screenshots: the originals are 728KB each and six of
  * them would be four megabytes before the page became interactive. The
  * backend derives thumb_url from image_url; these are 17KB.
  */
-export const UseCaseGallery: React.FC<Props> = ({ onPick }) => {
+export const UseCaseGallery: React.FC<Props> = ({ onPick, limit }) => {
   const [useCases, setUseCases] = useState<UseCase[] | null>(null);
 
   useEffect(() => {
@@ -63,7 +61,7 @@ export const UseCaseGallery: React.FC<Props> = ({ onPick }) => {
   // a moment late.
   if (!useCases?.length) return null;
 
-  const shown = useCases.slice(0, SHOWN);
+  const shown = limit ? useCases.slice(0, limit) : useCases;
 
   return (
     <section aria-labelledby="gallery-heading" className="space-y-4">

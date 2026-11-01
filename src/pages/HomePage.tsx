@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LoginDialog } from '../components/login';
 import Layout from '../components/Layout';
 import { HomeComposer } from '../components/chat/HomeComposer';
-import { UseCaseGallery } from '../components/home/UseCaseGallery';
+import { ThinkingModels } from '../components/home/ThinkingModels';
 
 /**
  * The landing page: composer, then the thinking-model starters.
@@ -76,9 +76,8 @@ const HomePage: React.FC = () => {
     });
   };
 
-  // Picking prefills the composer rather than sending: the prompt is a stem
-  // ("Build me something like Cozy Estate Finder: ") and only the user knows
-  // what they actually want built.
+  // Picking a framework prefills the composer rather than sending: the prompt
+  // is a stem ("Run a SWOT analysis on: ") and only the user knows the subject.
   const handlePickModel = (prompt: string) => {
     setSeed(prompt);
     composerRef.current?.querySelector('textarea')?.focus();
@@ -99,7 +98,7 @@ const HomePage: React.FC = () => {
             <HomeComposer onSubmit={handleCreateTask} seed={seed} />
           </div>
 
-          <UseCaseGallery onPick={handlePickModel} />
+          <ThinkingModels onPick={handlePickModel} />
         </div>
       </div>
 

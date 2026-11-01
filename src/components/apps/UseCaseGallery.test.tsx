@@ -1,12 +1,10 @@
 /**
- * The gallery under the composer.
+ * The gallery on the Apps page.
  *
- * It replaced four hand-drawn framework diagrams. Two things about it are
- * easy to get wrong and expensive when wrong: it must use the thumbnail
- * (the originals are 728KB each, so six tiles would be four megabytes
- * before the page is interactive), and clicking a tile must seed the
- * composer rather than navigate away -- the picture earns the attention
- * and the click should spend it on starting something.
+ * Two things about it are easy to get wrong and expensive when wrong: it
+ * must use the thumbnail (the originals are 728KB each, so a page of them
+ * would be tens of megabytes), and clicking a tile must start something
+ * rather than leave for the demo in a new tab.
  */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -70,11 +68,17 @@ describe('weight', () => {
     }
   });
 
-  it('shows a handful, not all of them', async () => {
+  it('shows everything by default, because the page is the gallery', async () => {
     serve(CASES);
     const { container } = render(<UseCaseGallery onPick={vi.fn()} />);
-    const shown = await renderedTiles(container);
-    expect(shown.length).toBeLessThan(CASES.length);
+    expect((await renderedTiles(container)).length).toBe(CASES.length);
+    expect(screen.queryByText(/See all/)).toBeNull();
+  });
+
+  it('can still be capped, for anywhere it is a preview', async () => {
+    serve(CASES);
+    const { container } = render(<UseCaseGallery onPick={vi.fn()} limit={4} />);
+    expect((await renderedTiles(container)).length).toBe(4);
     expect(screen.getByText(`See all ${CASES.length}`)).toBeInTheDocument();
   });
 });
