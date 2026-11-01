@@ -90,8 +90,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   // in context, which outlives navigation -- so starting a new task fetched
   // the *previous* conversation's deck and showed it beside an empty chat. A
   // conversation created in this session needs no fallback: the stream sets
-  // the deck directly, and the URL is corrected to /tasks/:id once the
-  // task exists.
+  // the deck directly, and the URL is corrected to /chat/:id once the
+  // conversation exists.
   useEffect(() => {
     // Clear first. Whatever deck is on screen belongs to the conversation we
     // are leaving, and it must not survive into the next one for the length
@@ -242,7 +242,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   // the transcript on screen is already correct, and a
                   // reload now resolves to the task rather than to /chat.
                   if (!missionId) {
-                    window.history.replaceState(null, '', `/tasks/${data.answer}`);
+                    window.history.replaceState(null, '', `/chat/${data.answer}`);
                   }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');

@@ -65,8 +65,8 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
   // The sidebar badge has advertised ⌘K since the button existed; nothing
   // was listening for it. The only global shortcut in the app is shadcn's
   // sidebar toggle on ⌘B.
-  const startNewTask = useCallback(() => navigate('/'), [navigate]);
-  useShortcut('k', startNewTask);
+  const startNewChat = useCallback(() => navigate('/'), [navigate]);
+  useShortcut('k', startNewChat);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
         <div className="px-3 pt-4">
           <button
             type="button"
-            onClick={startNewTask}
+            onClick={startNewChat}
             className={`flex w-full items-center gap-3 rounded-xl border border-sidebar-border px-3 py-2.5 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 ${
               collapsed ? 'justify-center px-0' : ''
             }`}
@@ -206,7 +206,7 @@ export function AppSidebar({ collapsed = false, onToggleCollapse }: AppSidebarPr
             <Plus className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && (
               <>
-                <span>New Task</span>
+                <span>New Chat</span>
                 <span className="ml-auto flex items-center gap-1 text-[11px] text-sidebar-foreground/40">
                   <kbd className="rounded border border-sidebar-border px-1">⌘</kbd>
                   <kbd className="rounded border border-sidebar-border px-1">K</kbd>
