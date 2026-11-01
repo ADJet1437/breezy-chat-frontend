@@ -5,6 +5,20 @@ import { Message } from '../types/chat';
 import { PaymentRequiredError, handleApiError } from '../utils/errorHandler';
 import { MissionPhase } from '../components/MissionProgressIndicator';
 
+/** Where the user stands on credits, as reported at the end of a turn. */
+export interface CreditStatus {
+  used: number;
+  limit: number;
+  remaining: number;
+  percentage: number;
+  plan_name: string;
+  reset_date: string;
+  /** At or past the warning threshold. The server owns the threshold. */
+  warn: boolean;
+  /** The next turn will be refused. */
+  exhausted: boolean;
+}
+
 interface UseMessageStreamingProps {
   missionId?: string;
   messages: Message[];
@@ -17,6 +31,7 @@ interface UseMessageStreamingProps {
 }
 
 interface UseMessageStreamingReturn {
+  creditStatus: CreditStatus | null;
   isStreaming: boolean;
   missionPhase: MissionPhase;
   executionProgress: number;
@@ -60,6 +75,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   } = props;
 
   const [isStreaming, setIsStreaming] = useState(false);
+  const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
   const [missionPhase, setMissionPhase] = useState<MissionPhase>('init');
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>('');
@@ -227,7 +243,12 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
                 const data = JSON.parse(jsonStr);
 
-                if (data.event_type === 'mission_init') {
+                if (data.event_type === 'credits_status') {
+                  // Sent once, after the turn finishes and its usage has been
+                  // written. The turn in flight is never interrupted, so this
+                  // is the only chance to warn before the next long one.
+                  setCreditStatus(data.data as CreditStatus);
+                } else if (data.event_type === 'mission_init') {
                   newMissionId = data.answer;
                   setCurrentMissionId(data.answer);
                   setMissionPhase('init');
@@ -473,13 +494,16 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       }
     } catch (error) {
       if (error instanceof PaymentRequiredError) {
-        let dialogMessage = '';
+        // The server says how many credits the plan includes and which plan
+        // ran out, so prefer its wording; these are the fallbacks.
+        let dialogMessage = error.message;
         if (error.errorCode === 'SUBSCRIPTION_REQUIRED') {
           dialogMessage = 'Please subscribe to continue chatting with our AI assistant.';
-        } else if (error.errorCode === 'TRIAL_LIMIT_EXCEEDED') {
-          dialogMessage = 'You\'ve reached your daily message limit for the Trial plan. Upgrade to continue chatting.';
-        } else {
-          dialogMessage = 'Please upgrade your subscription to continue.';
+        } else if (!dialogMessage) {
+          dialogMessage =
+            error.errorCode === 'TRIAL_LIMIT_EXCEEDED'
+              ? 'You\'ve used all the credits included in the Trial plan. Upgrade to continue.'
+              : 'Please upgrade your subscription to continue.';
         }
 
         setSubscriptionMessage(dialogMessage);
@@ -508,6 +532,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   };
 
   return {
+    creditStatus,
     isStreaming,
     missionPhase,
     executionProgress,

@@ -1,8 +1,10 @@
 import React, { useRef } from 'react';
 import { ChatMessageArea } from './ChatMessageArea';
 import { ChatInputSection } from './ChatInputSection';
+import { CreditWarning } from './CreditWarning';
 import { AttachedFile, Message } from '../../types/chat';
 import { MissionPhase } from '../MissionProgressIndicator';
+import { CreditStatus } from '../../hooks/useMessageStreaming';
 import SubscriptionDialog from '../SubscriptionDialog';
 import { DeckPanel } from '../deck/DeckPanel';
 import { AppPanel } from '../app/AppPanel';
@@ -32,6 +34,7 @@ interface ChatViewProps {
   attachedFileDetails: AttachedFile[];
   setAttachedFileIds: React.Dispatch<React.SetStateAction<string[]>>;
   setAttachedFileDetails: React.Dispatch<React.SetStateAction<AttachedFile[]>>;
+  creditStatus?: CreditStatus | null;
 
   // Artifact panel. A deck opens it; nothing else does yet. When another
   // artifact type arrives this becomes a {kind, component} lookup rather than
@@ -77,6 +80,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   attachedFileDetails,
   setAttachedFileIds,
   setAttachedFileDetails,
+  creditStatus,
   deckId,
   missionId,
   appId,
@@ -113,6 +117,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
         <div className="flex-shrink-0 border-t bg-background">
           <div className={`mx-auto w-full p-4 ${deckId || appId ? '' : 'max-w-3xl'}`}>
+            {creditStatus?.warn && (
+              <div className="mb-3">
+                <CreditWarning status={creditStatus} />
+              </div>
+            )}
             <ChatInputSection
               inputValue={inputValue}
               setInputValue={setInputValue}
