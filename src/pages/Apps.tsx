@@ -1,40 +1,50 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react';
 import Layout from '../components/Layout';
+import { LoginDialog } from '../components/login';
+import { HomeComposer } from '../components/chat/HomeComposer';
 import { UseCaseGallery } from '../components/apps/UseCaseGallery';
+import { useStartTask } from '../hooks/useStartTask';
 
 /**
- * What Talosy has built, and a way to start one of your own.
+ * Apps: a composer, then everything built with Talosy.
  *
- * The gallery sat under the home composer first. It competed there: the
- * home page's job is to get a sentence typed, and a wall of finished work
- * beside the one control that matters pulls against it. On a page of its
- * own the same grid is the content rather than a distraction, and there is
- * room to show all of them instead of six.
+ * The same shape as the home page, because it is the same job -- the
+ * gallery is the starter list here, where the thinking models are there.
+ * A grid with no way to act on it would send people back to the home page
+ * to type the thing they just decided to build.
  */
 const Apps: React.FC = () => {
-  const navigate = useNavigate();
+  const { startTask, loginDialog } = useStartTask();
+  const [seed, setSeed] = useState<string | undefined>(undefined);
+  const composerRef = useRef<HTMLDivElement>(null);
 
-  // Straight into a new chat with the prompt already sent -- there is no
-  // composer on this page to seed, and a tile that merely filled in a box
-  // somewhere else would be a worse version of the home page.
-  const start = (prompt: string) =>
-    navigate('/chat', { state: { initialMessage: prompt } });
+  // Picking a tile fills the composer rather than sending, exactly as the
+  // thinking models do on the home page: the prompt is a stem, and only
+  // the user knows what they actually want built. Sending immediately
+  // would commit them to someone else's sentence.
+  const pick = (prompt: string) => {
+    setSeed(prompt);
+    composerRef.current?.querySelector('textarea')?.focus();
+    composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Apps
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Things built with Talosy. Pick one to start something like it.
-          </p>
-        </header>
+      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+        <div ref={composerRef} className="scroll-mt-6">
+          <HomeComposer
+            onSubmit={startTask}
+            seed={seed}
+            placeholder="Describe the app you want built…"
+          />
+        </div>
 
-        <UseCaseGallery onPick={start} />
+        <div className="mt-10">
+          <UseCaseGallery onPick={pick} />
+        </div>
       </div>
+
+      <LoginDialog {...loginDialog} />
     </Layout>
   );
 };
