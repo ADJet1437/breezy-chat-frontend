@@ -88,7 +88,7 @@ export const ChatInputSection: React.FC<ChatInputSectionProps> = ({
       </div>
 
       <p className="hidden text-center text-[11px] text-muted-foreground sm:block">
-        Talosy can make mistakes. Check anything important.
+        AI can make mistakes. Check anything important.
       </p>
     </div>
   );
