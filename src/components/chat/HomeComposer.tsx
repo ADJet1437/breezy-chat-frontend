@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUp, Loader2, Network, Paperclip, X } from 'lucide-react';
+import { ArrowUp, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import FileUpload from '../FileUpload';
-import { AttachedFile } from '../../types/chat';
+import FileUpload, { UploadedFile } from '../FileUpload';
+import { AttachedFiles } from './AttachedFiles';
 
 interface HomeComposerProps {
   onSubmit: (message: string, fileIds: string[]) => Promise<void>;
@@ -26,7 +26,7 @@ export const HomeComposer: React.FC<HomeComposerProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [attachedFileIds, setAttachedFileIds] = useState<string[]>([]);
-  const [swarm, setSwarm] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -61,20 +61,13 @@ export const HomeComposer: React.FC<HomeComposerProps> = ({
   return (
     <div className="w-full">
       <div className="rounded-2xl border border-border bg-card/60 transition-colors focus-within:border-muted-foreground/30">
-        {attachedFileIds.length > 0 && (
-          <div className="flex items-center gap-2 border-b border-border px-5 py-2 text-sm text-muted-foreground">
-            <Paperclip className="h-3.5 w-3.5" />
-            <span>{attachedFileIds.length} file(s) attached</span>
-            <button
-              type="button"
-              onClick={() => setAttachedFileIds([])}
-              className="ml-auto rounded p-0.5 hover:text-foreground"
-              aria-label="Remove attached files"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+        <AttachedFiles
+          files={attachedFiles}
+          onRemove={id => {
+            setAttachedFileIds(ids => ids.filter(i => i !== id));
+            setAttachedFiles(files => files.filter(f => f.id !== id));
+          }}
+        />
 
         <textarea
           value={message}
@@ -93,26 +86,14 @@ export const HomeComposer: React.FC<HomeComposerProps> = ({
 
         <div className="flex items-center gap-2 px-4 pb-4 pt-2">
           <FileUpload
-            onFilesUploaded={(fileIds: string[], _details: AttachedFile[]) =>
-              setAttachedFileIds(fileIds)
-            }
+            onFilesUploaded={(fileIds, details) => {
+              // Appended, not replaced: attaching a second time should add
+              // to what is there, the way picking files twice does
+              // everywhere else.
+              setAttachedFileIds(ids => [...ids, ...fileIds]);
+              setAttachedFiles(files => [...files, ...details]);
+            }}
           />
-
-          {/* Routing hint sent with the task. The backend does not read it yet,
-              so it is local state until a mode parameter exists. */}
-          <button
-            type="button"
-            onClick={() => setSwarm(v => !v)}
-            aria-pressed={swarm}
-            className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
-              swarm
-                ? 'bg-blue-500/15 text-blue-400'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-            }`}
-          >
-            <Network className="h-4 w-4" />
-            Swarm
-          </button>
 
           <button
             type="button"
