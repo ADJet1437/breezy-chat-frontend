@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  AppWindow,
   ChevronDown,
   Clock,
   Database,
@@ -40,16 +39,22 @@ interface AppSidebarProps {
  * Items with a `url` navigate; the rest name surfaces that do not exist yet and
  * are rendered inert rather than routed somewhere wrong. Give one a `url` when
  * its page lands.
+ *
+ * Everything unfinished carries a Beta badge, and Home deliberately does not:
+ * a badge on every row says nothing, and the one row without it is what makes
+ * the others readable. Drop an item's badge when its surface is finished, at
+ * the same time as it gains a `url`.
  */
+const BETA = 'Beta';
+
 const PRIMARY_ITEMS = [
   { title: 'Home', icon: Smile, url: '/' },
-  { title: 'Scheduled Tasks', icon: Clock },
+  { title: 'Scheduled Tasks', icon: Clock, badge: BETA },
 ];
 
 const TOOL_ITEMS = [
-  { title: 'Slides', icon: Monitor },
-  { title: 'Apps', icon: Grid2x2 },
-  { title: 'Websites', icon: AppWindow },
+  { title: 'Slides', icon: Monitor, badge: BETA },
+  { title: 'Apps', icon: Grid2x2, badge: BETA },
 ];
 
 type NavItem = { title: string; icon: React.ElementType; url?: string; badge?: string };
