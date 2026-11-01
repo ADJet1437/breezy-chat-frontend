@@ -76,6 +76,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
   const [isStreaming, setIsStreaming] = useState(false);
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
+  // The mission this hook created, for as long as the router does not know
+  // about it. See where it is read, below.
+  const sessionMissionId = useRef<string | null>(null);
   const [missionPhase, setMissionPhase] = useState<MissionPhase>('init');
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [currentStep, setCurrentStep] = useState<string>('');
@@ -119,6 +122,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     setAppSlug(null);
     setAppRevision(0);
     setAppProgress(null);
+    // Belongs to the conversation being left, exactly like the deck above.
+    sessionMissionId.current = null;
 
     if (!missionId) return;
 
@@ -171,8 +176,22 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
 
   const sendMessageToBackend = async (message: string, overrideFileIds?: string[]) => {
-    // Use only explicit missionId prop - no fallback to avoid race conditions
-    const effectiveMissionId = missionId;
+    // The route's id when there is one, otherwise the mission this hook
+    // started. Both are needed: the URL is corrected with replaceState at
+    // mission_init, which moves the address bar and nothing else -- the
+    // router never learns, so useParams keeps returning undefined for the
+    // whole conversation. Reading only the route meant every message after
+    // the first arrived with no mission_id, and the backend does what it is
+    // told: a brand new mission each time, with no history. On screen the
+    // transcript looked continuous, because this component keeps appending
+    // to its own array -- but the model was answering the first message of
+    // a fresh conversation every time, and said so.
+    //
+    // A ref rather than the mission in context, which outlives navigation:
+    // this one is created by this component and dies with it, so a new chat
+    // cannot inherit the previous conversation's id however the user got
+    // there.
+    const effectiveMissionId = missionId ?? sessionMissionId.current;
     let newMissionId: string | null = null;
 
     setIsStreaming(true);
@@ -264,6 +283,8 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                   // reload now resolves to the task rather than to /chat.
                   if (!missionId) {
                     window.history.replaceState(null, '', `/chat/${data.answer}`);
+                    // The router will not tell us this on the next message.
+                    sessionMissionId.current = data.answer;
                   }
                 } else if (data.event_type === 'execution_init') {
                   setMissionPhase('execution');
