@@ -6,7 +6,6 @@ interface UseCase {
   title: string;
   url: string;
   image_url: string;
-  thumb_url: string;
   description?: string;
 }
 
@@ -30,9 +29,12 @@ interface Props {
  * it on starting something; the demo is still reachable from its own small
  * link.
  *
- * Thumbnails, not screenshots: the originals are 728KB each and six of
- * them would be four megabytes before the page became interactive. The
- * backend derives thumb_url from image_url; these are 17KB.
+ * The screenshots are the full-size originals -- 728KB each, median --
+ * because the thumbnails were reverted rather than deploy a rebuilt
+ * use-case image. loading="lazy" is therefore load-bearing here, not a
+ * nicety: it is the only thing keeping the page from pulling every one of
+ * them at once. Restoring thumb_url is the fix if this page ever feels
+ * slow.
  */
 export const UseCaseGallery: React.FC<Props> = ({ onPick, limit }) => {
   const [useCases, setUseCases] = useState<UseCase[] | null>(null);
@@ -91,7 +93,7 @@ export const UseCaseGallery: React.FC<Props> = ({ onPick, limit }) => {
                 the two clicks. */}
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-border bg-muted/40 transition-colors group-hover:border-muted-foreground/40">
               <img
-                src={useCase.thumb_url || useCase.image_url}
+                src={useCase.image_url}
                 alt=""
                 loading="lazy"
                 decoding="async"
