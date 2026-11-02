@@ -1,10 +1,10 @@
 /**
  * The gallery on the Apps page.
  *
- * Two things about it are easy to get wrong and expensive when wrong: it
- * must use the thumbnail (the originals are 728KB each, so a page of them
- * would be tens of megabytes), and clicking a tile must start something
- * rather than leave for the demo in a new tab.
+ * The images are the full-size screenshots -- 728KB each -- since the
+ * thumbnails were reverted. That makes loading="lazy" the only thing
+ * standing between this page and tens of megabytes, which is why there is
+ * a test on it rather than a comment.
  */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,7 +15,6 @@ const CASES = Array.from({ length: 9 }, (_, i) => ({
   title: `Cozy Estate Finder ${i}`,
   url: `https://example.com/demo-${i}`,
   image_url: `https://cdn.test/static/images/case-${i}.png`,
-  thumb_url: `https://cdn.test/static/thumbs/case-${i}.webp`,
 }));
 
 /**
@@ -44,20 +43,11 @@ beforeEach(() => vi.restoreAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 describe('weight', () => {
-  it('renders the thumbnail, never the full screenshot', async () => {
+  it('renders the screenshot the API gives it', async () => {
     serve(CASES);
     const { container } = render(<UseCaseGallery onPick={vi.fn()} />);
-    for (const img of await renderedTiles(container)) {
-      expect(img.getAttribute('src')).toContain('/thumbs/');
-      expect(img.getAttribute('src')).not.toContain('/images/');
-    }
-  });
-
-  it('falls back to the original when a thumbnail is missing', async () => {
-    serve([{ ...CASES[0], thumb_url: '' }]);
-    const { container } = render(<UseCaseGallery onPick={vi.fn()} />);
-    const [img] = await renderedTiles(container);
-    expect(img.getAttribute('src')).toBe(CASES[0].image_url);
+    const tiles = await renderedTiles(container);
+    expect(tiles[0].getAttribute('src')).toBe(CASES[0].image_url);
   });
 
   it('defers images below the fold', async () => {
