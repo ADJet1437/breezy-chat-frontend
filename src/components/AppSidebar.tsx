@@ -54,7 +54,7 @@ const PRIMARY_ITEMS = [
 
 const TOOL_ITEMS = [
   { title: 'Slides', icon: Monitor, badge: BETA },
-  { title: 'Apps', icon: Grid2x2, badge: BETA },
+  { title: 'Apps', icon: Grid2x2, url: '/apps' },
 ];
 
 type NavItem = { title: string; icon: React.ElementType; url?: string; badge?: string };

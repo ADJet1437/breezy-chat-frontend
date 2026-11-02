@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { setGlobalToast } from "./utils/errorHandler";
 import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
+import Apps from './pages/Apps';
 import MissionDetail from "./pages/MissionDetail";
 import NewMission from "./pages/NewMission";
 import AuthCallback from "./pages/AuthCallback";
@@ -48,6 +49,7 @@ const AppInner = () => {
           <Routes>
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<HomePage />} />
+            <Route path="/apps" element={<Apps />} />
             <Route path="/chat" element={<NewMission />} />
             <Route path="/chat/:id" element={<MissionDetail />} />
             {/* The old path, kept so links already in the wild still land
