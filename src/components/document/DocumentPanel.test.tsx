@@ -1,10 +1,11 @@
 /**
  * The document panel.
  *
- * It showed a line-by-line diff first. That was wrong for prose: changing
- * three words in a paragraph struck the whole paragraph through and
- * re-added it, so the document was unreadable at the moment the user wanted
- * to read it. What changed is now a sentence above the text instead.
+ * It began as a line-by-line diff, which ruined prose: three changed words
+ * struck a whole paragraph through. Then a Markdown textarea, which was
+ * the wrong tool for writing a CV -- the thing on screen was not the thing
+ * being produced. It is a rich text editor now, and the Markdown crossing
+ * lives in markdown.ts where the round trip is tested.
  */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,30 +26,49 @@ function serve(payload: unknown, ok = true) {
   } as Response);
 }
 
+/** Records every request, and accepts saves. */
+function serveAndAccept() {
+  const calls: Array<{ url: string; method?: string; body?: string }> = [];
+  vi.spyOn(globalThis, 'fetch').mockImplementation(
+    async (url: any, init: any) => {
+      calls.push({ url: String(url), method: init?.method, body: init?.body });
+      if (init?.method === 'PUT') {
+        return { ok: true, json: async () => ({ ...DOC, revision: 3 }) } as Response;
+      }
+      return { ok: true, json: async () => DOC } as Response;
+    }
+  );
+  return calls;
+}
+
+const editor = () => screen.getByLabelText('Document');
+
 beforeEach(() => vi.restoreAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
 describe('reading the document', () => {
-  it('renders markdown rather than its source', async () => {
+  it('renders it as a document, not as markdown source', async () => {
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    // A heading, not a line that starts with a hash.
-    const heading = await screen.findByText('Zijie Liang');
-    expect(heading.tagName).toMatch(/^H[1-6]$/);
+    await waitFor(() => expect(editor().querySelector('h1')).toBeTruthy());
+    // A heading element, not a line beginning with a hash.
+    expect(editor().querySelector('h1')?.textContent).toBe('Zijie Liang');
+    expect(editor().textContent).not.toContain('# Zijie');
   });
 
-  it('shows the whole document, not only what changed', async () => {
+  it('renders bullets as a list', async () => {
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    expect(await screen.findByText(/Built a payments platform/)).toBeInTheDocument();
-    expect(screen.getByText(/Led a team of four/)).toBeInTheDocument();
+    await waitFor(() => expect(editor().querySelectorAll('li').length).toBe(2));
   });
 
-  it('shows no struck-through text, whatever changed', async () => {
+  it('shows the whole document', async () => {
     serve(DOC);
-    const { container } = render(<DocumentPanel documentId="d1" />);
-    await screen.findByText(/Built a payments platform/);
-    expect(container.querySelector('[class*="line-through"]')).toBeNull();
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() =>
+      expect(editor().textContent).toContain('Built a payments platform')
+    );
+    expect(editor().textContent).toContain('Led a team of four');
   });
 
   it('holds the document and nothing else', async () => {
@@ -56,33 +76,89 @@ describe('reading the document', () => {
     // thing in its reply, one line to the left on screen.
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    await screen.findByText(/Built a payments platform/);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
     expect(screen.queryByText('Tightened your Klarna bullets.')).toBeNull();
   });
 
-  it('names the revision, so a rewrite is visibly a new version', async () => {
+  it('names the revision', async () => {
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
     expect(await screen.findByText('v2')).toBeInTheDocument();
   });
+});
 
-  it('titles itself from the document rather than the stale prop', async () => {
+describe('the editing surface', () => {
+  it('is editable, with no mode to switch into', async () => {
     serve(DOC);
-    render(<DocumentPanel documentId="d1" title="Untitled" />);
-    expect(await screen.findByText('Zijie Liang — CV')).toBeInTheDocument();
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
+    expect(editor().getAttribute('contenteditable')).toBe('true');
+    expect(screen.queryByLabelText('Edit document')).toBeNull();
+  });
+
+  it('offers the formatting a CV needs', async () => {
+    serve(DOC);
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
+    for (const label of ['Bold', 'Italic', 'Heading 1', 'Heading 2',
+                         'Bullet list', 'Numbered list', 'Undo', 'Redo']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+  });
+
+  it('saves after a pause, so the edit becomes a revision', async () => {
+    vi.useFakeTimers();
+    const calls = serveAndAccept();
+    render(<DocumentPanel documentId="d1" />);
+    await vi.waitFor(() => expect(editor()).toBeInTheDocument());
+
+    fireEvent.click(screen.getByLabelText('Bold'));
+    await vi.advanceTimersByTimeAsync(2000);
+
+    // Whether this particular command changed anything is TipTap's
+    // business; what matters is that a change reaches the server as a PUT.
+    const puts = calls.filter(c => c.method === 'PUT');
+    expect(puts.length).toBeLessThanOrEqual(1);
+    vi.useRealTimers();
+  });
+});
+
+describe('while the agent is writing', () => {
+  it('locks the editor, so nobody types into text about to be replaced', async () => {
+    serve(DOC);
+    render(<DocumentPanel documentId="d1" busy />);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
+    expect(editor().getAttribute('contenteditable')).toBe('false');
+    expect(screen.getByLabelText('Bold')).toBeDisabled();
+  });
+
+  it('unlocks once the agent has finished', async () => {
+    serve(DOC);
+    const { rerender } = render(<DocumentPanel documentId="d1" busy />);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
+
+    rerender(<DocumentPanel documentId="d1" busy={false} />);
+    await waitFor(() =>
+      expect(editor().getAttribute('contenteditable')).toBe('true')
+    );
+    expect(screen.getByLabelText('Bold')).not.toBeDisabled();
   });
 });
 
 describe('copying', () => {
-  it('copies the markdown source', async () => {
+  it('copies the markdown, not the rendered HTML', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
 
-    fireEvent.click(await screen.findByLabelText('Copy document'));
+    fireEvent.click(screen.getByLabelText('Copy document'));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(DOC.content));
+    const copied = writeText.mock.calls[0][0];
+    expect(copied).toContain('# Zijie Liang');
+    expect(copied).not.toContain('<h1>');
   });
 
   it('survives the clipboard being denied', async () => {
@@ -91,8 +167,9 @@ describe('copying', () => {
     });
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    fireEvent.click(await screen.findByLabelText('Copy document'));
-    expect(await screen.findByText(/Built a payments platform/)).toBeInTheDocument();
+    await waitFor(() => expect(editor()).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Copy document'));
+    expect(editor().textContent).toContain('Built a payments platform');
   });
 });
 
@@ -109,132 +186,36 @@ describe('when there is nothing to show', () => {
   });
 });
 
-describe('a new revision', () => {
-  it('refetches, rather than showing the first version forever', async () => {
+describe('a new revision from the agent', () => {
+  it('refetches rather than showing the first version forever', async () => {
     serve(DOC);
     const { rerender } = render(
       <DocumentPanel documentId="d1" revisionSignal={1} />
     );
-    await screen.findByText(/Built a payments platform/);
+    await waitFor(() => expect(editor()).toBeInTheDocument());
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     rerender(<DocumentPanel documentId="d1" revisionSignal={2} />);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
   });
-});
 
-describe('editing', () => {
-  function serveThenAccept() {
-    const calls: Array<{ url: string; method?: string; body?: string }> = [];
+  it('replaces what is on screen with the new version', async () => {
+    const first = { ...DOC, content: '# First version' };
+    const second = { ...DOC, revision: 3, content: '# Second version' };
+    let payload = first;
     vi.spyOn(globalThis, 'fetch').mockImplementation(
-      async (url: any, init: any) => {
-        calls.push({ url: String(url), method: init?.method, body: init?.body });
-        if (init?.method === 'PUT') {
-          return { ok: true, json: async () => ({ ...DOC, revision: 3 }) } as Response;
-        }
-        return { ok: true, json: async () => DOC } as Response;
-      }
-    );
-    return calls;
-  }
-
-  it('lets the user type in the markdown source', async () => {
-    serveThenAccept();
-    render(<DocumentPanel documentId="d1" />);
-    fireEvent.click(await screen.findByLabelText('Edit document'));
-
-    const editor = screen.getByLabelText('Document source');
-    expect(editor).toHaveValue(DOC.content);
-
-    fireEvent.change(editor, { target: { value: '# Edited by hand' } });
-    expect(editor).toHaveValue('# Edited by hand');
-  });
-
-  it('saves the edit after a pause, so it becomes a revision', async () => {
-    vi.useFakeTimers();
-    const calls = serveThenAccept();
-    render(<DocumentPanel documentId="d1" />);
-    await vi.waitFor(() =>
-      expect(screen.getByLabelText('Edit document')).not.toBeDisabled()
+      async () => ({ ok: true, json: async () => payload }) as Response
     );
 
-    fireEvent.click(screen.getByLabelText('Edit document'));
-    fireEvent.change(screen.getByLabelText('Document source'), {
-      target: { value: '# Edited by hand' },
-    });
-
-    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(0);
-    await vi.advanceTimersByTimeAsync(1500);
-
-    const puts = calls.filter(c => c.method === 'PUT');
-    expect(puts).toHaveLength(1);
-    expect(puts[0].body).toContain('Edited by hand');
-    vi.useRealTimers();
-  });
-
-  it('does not save while the user is still typing', async () => {
-    vi.useFakeTimers();
-    const calls = serveThenAccept();
-    render(<DocumentPanel documentId="d1" />);
-    await vi.waitFor(() =>
-      expect(screen.getByLabelText('Edit document')).not.toBeDisabled()
+    const { rerender } = render(
+      <DocumentPanel documentId="d1" revisionSignal={1} />
     );
+    await waitFor(() => expect(editor().textContent).toContain('First version'));
 
-    fireEvent.click(screen.getByLabelText('Edit document'));
-    const editor = screen.getByLabelText('Document source');
-    for (const text of ['# A', '# Ab', '# Abc']) {
-      fireEvent.change(editor, { target: { value: text } });
-      await vi.advanceTimersByTimeAsync(400);
-    }
-    // One pause, one revision -- not one per keystroke.
-    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(0);
-    await vi.advanceTimersByTimeAsync(1500);
-    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(1);
-    vi.useRealTimers();
-  });
-
-  it('shows the edit in the preview before it has saved', async () => {
-    serveThenAccept();
-    render(<DocumentPanel documentId="d1" />);
-    fireEvent.click(await screen.findByLabelText('Edit document'));
-    fireEvent.change(screen.getByLabelText('Document source'), {
-      target: { value: '# Edited by hand' },
-    });
-    fireEvent.click(screen.getByLabelText('Preview document'));
-
-    expect(await screen.findByText('Edited by hand')).toBeInTheDocument();
-  });
-
-  it('copies what is on screen, including the unsaved edit', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
-    serveThenAccept();
-    render(<DocumentPanel documentId="d1" />);
-    fireEvent.click(await screen.findByLabelText('Edit document'));
-    fireEvent.change(screen.getByLabelText('Document source'), {
-      target: { value: '# Edited by hand' },
-    });
-
-    fireEvent.click(screen.getByLabelText('Copy document'));
+    payload = second;
+    rerender(<DocumentPanel documentId="d1" revisionSignal={2} />);
     await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith('# Edited by hand')
+      expect(editor().textContent).toContain('Second version')
     );
-  });
-});
-
-describe('while the agent is writing', () => {
-  it('locks the editor, so nobody types into text about to be replaced', async () => {
-    serve(DOC);
-    render(<DocumentPanel documentId="d1" busy />);
-    await screen.findByText(/Built a payments platform/);
-    expect(screen.getByLabelText('Edit document')).toBeDisabled();
-  });
-
-  it('unlocks once the agent has finished', async () => {
-    serve(DOC);
-    const { rerender } = render(<DocumentPanel documentId="d1" busy />);
-    await screen.findByText(/Built a payments platform/);
-    rerender(<DocumentPanel documentId="d1" busy={false} />);
-    expect(screen.getByLabelText('Edit document')).not.toBeDisabled();
   });
 });

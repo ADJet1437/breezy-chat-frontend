@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Check, Copy, Eye, FileText, Loader2, Pencil } from 'lucide-react';
-import MarkdownRenderer from '@/components/ui/MarkdownRenderer';
+import { Check, Copy, FileText, Loader2 } from 'lucide-react';
+import { DocumentEditor } from './DocumentEditor';
 import { useDocument } from './useDocument';
 
 interface Props {
@@ -26,11 +26,16 @@ const COPIED_FOR_MS = 1600;
  *
  * Revisions are still kept server-side. They are not shown.
  *
- * It is also editable. A user edit is saved as a revision like any the
- * agent writes, which is what makes it survive: current_revision is the
- * version token both writers share, and the agent must send back the one
- * it was working from. A number it has not seen refuses its write instead
- * of overwriting what was typed here.
+ * It is an editor, always -- there is no read mode to switch out of. The
+ * document is the thing the user came for, and a panel that showed it
+ * read-only until a button was pressed made editing feel like a mode
+ * rather than the point.
+ *
+ * A user edit is saved as a revision like any the agent writes, which is
+ * what makes it survive: current_revision is the version token both
+ * writers share, and the agent must send back the one it was working
+ * from. A number it has not seen refuses its write instead of overwriting
+ * what was typed here.
  */
 export function DocumentPanel({
   documentId,
@@ -43,12 +48,6 @@ export function DocumentPanel({
     revisionSignal
   );
   const [copied, setCopied] = useState(false);
-  const [editing, setEditing] = useState(false);
-
-  // Markdown source, not a WYSIWYG. A rich editor round-tripping through
-  // its own model quietly mangles documents, and a corrupted CV is worse
-  // than no editor at all.
-  const canEdit = Boolean(document) && !busy;
 
   const copy = async () => {
     if (!document) return;
@@ -86,20 +85,6 @@ export function DocumentPanel({
         )}
         <button
           type="button"
-          onClick={() => setEditing(v => !v)}
-          disabled={!canEdit}
-          aria-label={editing ? 'Preview document' : 'Edit document'}
-          aria-pressed={editing}
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-        >
-          {editing ? (
-            <Eye className="h-3.5 w-3.5" />
-          ) : (
-            <Pencil className="h-3.5 w-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
           onClick={copy}
           disabled={!document}
           aria-label="Copy document"
@@ -113,33 +98,21 @@ export function DocumentPanel({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div className="flex min-h-0 flex-1 flex-col">
         {loading && !document && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 px-5 py-5 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </div>
         )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="px-5 py-5 text-sm text-destructive">{error}</p>}
 
-        {document && editing && (
-          <textarea
+        {document && (
+          <DocumentEditor
             value={draft}
-            onChange={e => setDraft(e.target.value)}
-            spellCheck
-            aria-label="Document source"
-            className="h-full min-h-[300px] w-full resize-none border-0 bg-transparent font-mono text-[13px] leading-relaxed text-foreground focus:outline-none"
+            onChange={setDraft}
+            readOnly={busy}
           />
-        )}
-
-        {document && !editing && (
-          // The same renderer the transcript uses, so a heading looks like a
-          // heading rather than a line beginning with #. The draft, not the
-          // fetched content: an edit should show in the preview before the
-          // debounce has saved it.
-          <div className="prose prose-sm max-w-full dark:prose-invert">
-            <MarkdownRenderer content={draft} />
-          </div>
         )}
       </div>
     </div>
