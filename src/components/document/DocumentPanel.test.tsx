@@ -219,3 +219,90 @@ describe('a new revision from the agent', () => {
     );
   });
 });
+
+describe('downloading a PDF', () => {
+  function stubBlobUrls() {
+    const created: string[] = [];
+    const revoked: string[] = [];
+    URL.createObjectURL = vi.fn(() => {
+      const url = `blob:${created.length}`;
+      created.push(url);
+      return url;
+    });
+    URL.revokeObjectURL = vi.fn((url: string) => void revoked.push(url));
+    return { created, revoked };
+  }
+
+  it('asks the server for the PDF and saves it under the title', async () => {
+    stubBlobUrls();
+    const clicked: HTMLAnchorElement[] = [];
+    const realCreate = window.document.createElement.bind(window.document);
+    vi.spyOn(window.document, 'createElement').mockImplementation((tag: any) => {
+      const el = realCreate(tag);
+      if (tag === 'a') {
+        el.click = () => void clicked.push(el as HTMLAnchorElement);
+      }
+      return el;
+    });
+
+    const calls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) => {
+      calls.push(String(url));
+      if (String(url).includes('export.pdf')) {
+        return { ok: true, blob: async () => new Blob(['%PDF-']) } as Response;
+      }
+      return { ok: true, json: async () => DOC } as Response;
+    });
+
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByLabelText('Download as PDF'));
+
+    await waitFor(() => expect(clicked).toHaveLength(1));
+    expect(calls.some(u => u.includes('/documents/d1/export.pdf'))).toBe(true);
+    expect(clicked[0].download).toBe('Zijie Liang — CV.pdf');
+  });
+
+  it('releases the blob, rather than holding it for the life of the tab', async () => {
+    const { revoked } = stubBlobUrls();
+    const realCreate = window.document.createElement.bind(window.document);
+    vi.spyOn(window.document, 'createElement').mockImplementation((tag: any) => {
+      const el = realCreate(tag);
+      if (tag === 'a') el.click = () => {};
+      return el;
+    });
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) =>
+      String(url).includes('export.pdf')
+        ? ({ ok: true, blob: async () => new Blob(['%PDF-']) } as Response)
+        : ({ ok: true, json: async () => DOC } as Response)
+    );
+
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Download as PDF'));
+
+    await waitFor(() => expect(revoked).toHaveLength(1));
+  });
+
+  it('recovers if the export fails, leaving the document alone', async () => {
+    stubBlobUrls();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) =>
+      String(url).includes('export.pdf')
+        ? ({ ok: false, blob: async () => new Blob() } as Response)
+        : ({ ok: true, json: async () => DOC } as Response)
+    );
+
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('Download as PDF'));
+
+    // The button comes back rather than spinning for ever.
+    await waitFor(() =>
+      expect(screen.getByLabelText('Download as PDF')).not.toBeDisabled()
+    );
+    expect(screen.getByLabelText('Document').textContent).toContain(
+      'Built a payments platform'
+    );
+  });
+});

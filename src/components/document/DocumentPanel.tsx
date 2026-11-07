@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Check, Copy, FileText, Loader2 } from 'lucide-react';
+import { Check, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import { authenticatedGet } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
 import { DocumentEditor } from './DocumentEditor';
 import { useDocument } from './useDocument';
 
@@ -48,6 +50,7 @@ export function DocumentPanel({
     revisionSignal
   );
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const copy = async () => {
     if (!document) return;
@@ -58,6 +61,32 @@ export function DocumentPanel({
     } catch {
       // Denied clipboard permission, or an insecure origin. The text is on
       // screen and selectable either way.
+    }
+  };
+
+  const download = async () => {
+    if (!document || downloading) return;
+    setDownloading(true);
+    try {
+      // Fetched rather than linked: the endpoint needs the auth header,
+      // and a plain <a href> cannot carry one.
+      const response = await authenticatedGet(
+        buildApiUrl(`/api/v1/documents/${documentId}/export.pdf`)
+      );
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `${document.title || 'document'}.pdf`;
+      link.click();
+      // Revoked, or the blob is held for the life of the tab -- a few
+      // megabytes each time someone downloads a draft.
+      URL.revokeObjectURL(url);
+    } catch {
+      // Nothing was saved or lost; the document is still on screen.
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -83,6 +112,20 @@ export function DocumentPanel({
             v{document.revision}
           </span>
         )}
+        <button
+          type="button"
+          onClick={download}
+          disabled={!document || downloading}
+          aria-label="Download as PDF"
+          title="Download as PDF"
+          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+        >
+          {downloading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5" />
+          )}
+        </button>
         <button
           type="button"
           onClick={copy}
