@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { authenticatedGet } from '@/utils/authenticatedFetch';
+import { useEffect, useRef, useState } from 'react';
+import { authenticatedGet, authenticatedPut } from '@/utils/authenticatedFetch';
 import { buildApiUrl } from '@/utils/apiConfig';
 
 export interface DocumentContent {
@@ -14,7 +14,15 @@ interface UseDocumentResult {
   document: DocumentContent | null;
   loading: boolean;
   error: string | null;
+  /** What is on screen, including keystrokes not yet saved. */
+  draft: string;
+  setDraft: (text: string) => void;
+  saving: boolean;
 }
+
+/** Idle time before a draft is saved. Long enough that typing a sentence is
+ *  one revision, short enough that nobody loses work by closing the tab. */
+const SAVE_AFTER_IDLE_MS = 1200;
 
 /**
  * The document the agent is working on.
@@ -30,6 +38,11 @@ export function useDocument(
   const [document, setDocument] = useState<DocumentContent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  // What the server last confirmed. Compared against the draft so a save
+  // fires on a real change rather than on every blur.
+  const saved = useRef('');
 
   useEffect(() => {
     if (!documentId) {
@@ -54,7 +67,13 @@ export function useDocument(
           return;
         }
         const data = await response.json();
-        if (!cancelled) setDocument(data);
+        if (cancelled) return;
+        setDocument(data);
+        // The agent's version replaces what is on screen. A draft the user
+        // was midway through is already saved -- the debounce is shorter
+        // than a turn -- and the agent wrote from it.
+        setDraft(data.content);
+        saved.current = data.content;
       } catch {
         if (!cancelled) setError('Could not load the document.');
       } finally {
@@ -67,5 +86,39 @@ export function useDocument(
     };
   }, [documentId, revisionSignal]);
 
-  return { document, loading, error };
+  // Save after a pause. Each save is a revision, and current_revision is
+  // the version token the agent must send back -- so a saved edit is also
+  // what stops the agent's next write from overwriting it.
+  useEffect(() => {
+    if (!documentId || !document) return;
+    if (draft === saved.current) return;
+
+    const timer = setTimeout(async () => {
+      setSaving(true);
+      try {
+        const response = await authenticatedPut(
+          buildApiUrl(`/api/v1/documents/${documentId}`),
+          { content: draft }
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        saved.current = draft;
+        // Take the new revision number, not the text: the user may have
+        // typed on while this was in flight, and replacing the draft with
+        // the response would delete those keystrokes.
+        setDocument(current =>
+          current ? { ...current, revision: data.revision } : current
+        );
+      } catch {
+        // Left unsaved rather than lost: the draft is still on screen and
+        // the next pause tries again.
+      } finally {
+        setSaving(false);
+      }
+    }, SAVE_AFTER_IDLE_MS);
+
+    return () => clearTimeout(timer);
+  }, [draft, documentId, document]);
+
+  return { document, loading, error, draft, setDraft, saving };
 }

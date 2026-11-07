@@ -51,12 +51,13 @@ describe('reading the document', () => {
     expect(container.querySelector('[class*="line-through"]')).toBeNull();
   });
 
-  it('says what changed, in a sentence above the text', async () => {
+  it('holds the document and nothing else', async () => {
+    // The agent's summary used to sit above the text. It says the same
+    // thing in its reply, one line to the left on screen.
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    expect(
-      await screen.findByText('Tightened your Klarna bullets.')
-    ).toBeInTheDocument();
+    await screen.findByText(/Built a payments platform/);
+    expect(screen.queryByText('Tightened your Klarna bullets.')).toBeNull();
   });
 
   it('names the revision, so a rewrite is visibly a new version', async () => {
@@ -119,5 +120,121 @@ describe('a new revision', () => {
 
     rerender(<DocumentPanel documentId="d1" revisionSignal={2} />);
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('editing', () => {
+  function serveThenAccept() {
+    const calls: Array<{ url: string; method?: string; body?: string }> = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async (url: any, init: any) => {
+        calls.push({ url: String(url), method: init?.method, body: init?.body });
+        if (init?.method === 'PUT') {
+          return { ok: true, json: async () => ({ ...DOC, revision: 3 }) } as Response;
+        }
+        return { ok: true, json: async () => DOC } as Response;
+      }
+    );
+    return calls;
+  }
+
+  it('lets the user type in the markdown source', async () => {
+    serveThenAccept();
+    render(<DocumentPanel documentId="d1" />);
+    fireEvent.click(await screen.findByLabelText('Edit document'));
+
+    const editor = screen.getByLabelText('Document source');
+    expect(editor).toHaveValue(DOC.content);
+
+    fireEvent.change(editor, { target: { value: '# Edited by hand' } });
+    expect(editor).toHaveValue('# Edited by hand');
+  });
+
+  it('saves the edit after a pause, so it becomes a revision', async () => {
+    vi.useFakeTimers();
+    const calls = serveThenAccept();
+    render(<DocumentPanel documentId="d1" />);
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Edit document')).not.toBeDisabled()
+    );
+
+    fireEvent.click(screen.getByLabelText('Edit document'));
+    fireEvent.change(screen.getByLabelText('Document source'), {
+      target: { value: '# Edited by hand' },
+    });
+
+    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const puts = calls.filter(c => c.method === 'PUT');
+    expect(puts).toHaveLength(1);
+    expect(puts[0].body).toContain('Edited by hand');
+    vi.useRealTimers();
+  });
+
+  it('does not save while the user is still typing', async () => {
+    vi.useFakeTimers();
+    const calls = serveThenAccept();
+    render(<DocumentPanel documentId="d1" />);
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText('Edit document')).not.toBeDisabled()
+    );
+
+    fireEvent.click(screen.getByLabelText('Edit document'));
+    const editor = screen.getByLabelText('Document source');
+    for (const text of ['# A', '# Ab', '# Abc']) {
+      fireEvent.change(editor, { target: { value: text } });
+      await vi.advanceTimersByTimeAsync(400);
+    }
+    // One pause, one revision -- not one per keystroke.
+    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(calls.filter(c => c.method === 'PUT')).toHaveLength(1);
+    vi.useRealTimers();
+  });
+
+  it('shows the edit in the preview before it has saved', async () => {
+    serveThenAccept();
+    render(<DocumentPanel documentId="d1" />);
+    fireEvent.click(await screen.findByLabelText('Edit document'));
+    fireEvent.change(screen.getByLabelText('Document source'), {
+      target: { value: '# Edited by hand' },
+    });
+    fireEvent.click(screen.getByLabelText('Preview document'));
+
+    expect(await screen.findByText('Edited by hand')).toBeInTheDocument();
+  });
+
+  it('copies what is on screen, including the unsaved edit', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    serveThenAccept();
+    render(<DocumentPanel documentId="d1" />);
+    fireEvent.click(await screen.findByLabelText('Edit document'));
+    fireEvent.change(screen.getByLabelText('Document source'), {
+      target: { value: '# Edited by hand' },
+    });
+
+    fireEvent.click(screen.getByLabelText('Copy document'));
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith('# Edited by hand')
+    );
+  });
+});
+
+describe('while the agent is writing', () => {
+  it('locks the editor, so nobody types into text about to be replaced', async () => {
+    serve(DOC);
+    render(<DocumentPanel documentId="d1" busy />);
+    await screen.findByText(/Built a payments platform/);
+    expect(screen.getByLabelText('Edit document')).toBeDisabled();
+  });
+
+  it('unlocks once the agent has finished', async () => {
+    serve(DOC);
+    const { rerender } = render(<DocumentPanel documentId="d1" busy />);
+    await screen.findByText(/Built a payments platform/);
+    rerender(<DocumentPanel documentId="d1" busy={false} />);
+    expect(screen.getByLabelText('Edit document')).not.toBeDisabled();
   });
 });

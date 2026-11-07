@@ -197,6 +197,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           documentId={documentId ?? null}
           title={documentTitle}
           revisionSignal={documentRevision}
+          busy={isStreaming}
         />
       ),
     },
