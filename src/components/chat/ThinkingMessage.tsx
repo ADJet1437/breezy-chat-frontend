@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Brain, ChevronDown } from 'lucide-react';
 
 interface Props {
@@ -17,7 +17,21 @@ interface Props {
  */
 export const ThinkingMessage: React.FC<Props> = ({ content, streaming }) => {
   const [open, setOpen] = useState(false);
-  const expanded = open || streaming;
+  const scroller = useRef<HTMLDivElement>(null);
+  // Boolean, not `open || streaming`: streaming is optional, so that
+  // expression is `undefined` when the block is closed and React drops
+  // the aria-expanded attribute entirely rather than writing "false".
+  const expanded = open || Boolean(streaming);
+
+  // Follow the newest text while it streams. Without this the pane holds its
+  // scroll at the top once the reasoning is taller than the cap, so the user
+  // watches a motionless block during the one part of a long turn where
+  // something is visibly happening.
+  useEffect(() => {
+    if (!streaming) return;
+    const pane = scroller.current;
+    if (pane) pane.scrollTop = pane.scrollHeight;
+  }, [content, streaming]);
 
   return (
     <div className="flex justify-start">
@@ -40,8 +54,16 @@ export const ThinkingMessage: React.FC<Props> = ({ content, streaming }) => {
         </button>
 
         {expanded && (
-          <div className="border-t border-border px-3 py-2">
-            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+          // Capped and scrollable, the same as the tool chip beside it and
+          // for the same reason: reasoning for one round of an app build
+          // runs to several hundred words, and at full height it pushed the
+          // answer -- and every earlier message -- off the screen. Expanded
+          // while streaming makes that the default state, not a rare one.
+          <div
+            ref={scroller}
+            className="max-h-56 overflow-y-auto border-t border-border px-3 py-2"
+          >
+            <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-muted-foreground">
               {content}
             </p>
           </div>
