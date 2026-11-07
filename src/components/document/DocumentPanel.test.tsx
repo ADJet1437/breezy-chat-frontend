@@ -261,25 +261,19 @@ describe('downloading', () => {
       expect(screen.getByLabelText('Document')).toBeInTheDocument()
     );
     fireEvent.pointerDown(
-      screen.getByText('Download'),
+      screen.getByLabelText('Download'),
       new PointerEvent('pointerdown', { ctrlKey: false, button: 0 })
     );
   }
 
-  it('offers the button by name, not as a bare icon', async () => {
-    serveExports();
-    render(<DocumentPanel documentId="d1" />);
-    await waitFor(() =>
-      expect(screen.getByLabelText('Document')).toBeInTheDocument()
-    );
-    expect(screen.getByText('Download')).toBeInTheDocument();
-  });
-
-  it('offers both formats', async () => {
+  it('offers both formats, and says nothing else', async () => {
     serveExports();
     await openMenu();
     expect(await screen.findByText('PDF')).toBeInTheDocument();
     expect(screen.getByText('Word')).toBeInTheDocument();
+    // No explanatory asides next to either.
+    expect(screen.queryByText(/to send/)).toBeNull();
+    expect(screen.queryByText(/to keep editing/)).toBeNull();
   });
 
   it('downloads a PDF under the document title', async () => {
@@ -331,7 +325,7 @@ describe('downloading', () => {
     fireEvent.click(await screen.findByText('PDF'));
 
     await waitFor(() =>
-      expect(screen.getByText('Download').closest('button')).not.toBeDisabled()
+      expect(screen.getByLabelText('Download')).not.toBeDisabled()
     );
     expect(screen.getByLabelText('Document').textContent).toContain(
       'Built a payments platform'

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, ChevronDown, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import { Check, Copy, Download, FileText, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,29 +118,23 @@ export function DocumentPanel({
             <button
               type="button"
               disabled={!document || downloading}
-              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              aria-label="Download"
+              title="Download"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
             >
               {downloading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Download className="h-3.5 w-3.5" />
               )}
-              Download
-              <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => download('pdf')}>
               PDF
-              <span className="ml-auto pl-4 text-[11px] text-muted-foreground">
-                to send
-              </span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => download('docx')}>
               Word
-              <span className="ml-auto pl-4 text-[11px] text-muted-foreground">
-                to keep editing
-              </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
