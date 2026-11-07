@@ -1,26 +1,21 @@
 /**
- * The document panel, and the diff that makes it trustworthy.
+ * The document panel.
  *
- * A model handed a whole CV and asked to strengthen one bullet will
- * sometimes reword three other things on the way past. A panel that showed
- * only the result would hide that, and the user would have to re-read a
- * document they already knew, every time, to trust it. So removed lines
- * stay on screen struck through, and added lines are marked.
+ * It showed a line-by-line diff first. That was wrong for prose: changing
+ * three words in a paragraph struck the whole paragraph through and
+ * re-added it, so the document was unreadable at the moment the user wanted
+ * to read it. What changed is now a sentence above the text instead.
  */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DocumentPanel } from './DocumentPanel';
 
-const DIFF = {
+const DOC = {
+  id: 'd1',
+  title: 'Zijie Liang — CV',
   revision: 2,
   summary: 'Tightened your Klarna bullets.',
-  has_previous: true,
-  lines: [
-    { kind: 'same', text: '# Zijie Liang' },
-    { kind: 'removed', text: '- Built things' },
-    { kind: 'added', text: '- Built a payments platform' },
-    { kind: 'same', text: '- Led a team of four' },
-  ],
+  content: '# Zijie Liang\n\n## Klarna\n\n- Built a payments platform\n- Led a team of four',
 };
 
 function serve(payload: unknown, ok = true) {
@@ -33,35 +28,31 @@ function serve(payload: unknown, ok = true) {
 beforeEach(() => vi.restoreAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
-function line(text: string): HTMLElement {
-  return screen.getByText(text);
-}
-
-describe('showing what changed', () => {
-  it('keeps the removed line on screen rather than silently dropping it', async () => {
-    serve(DIFF);
+describe('reading the document', () => {
+  it('renders markdown rather than its source', async () => {
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    const removed = await screen.findByText('- Built things');
-    expect(removed).toBeInTheDocument();
-    expect(removed.className).toMatch(/line-through/);
+    // A heading, not a line that starts with a hash.
+    const heading = await screen.findByText('Zijie Liang');
+    expect(heading.tagName).toMatch(/^H[1-6]$/);
   });
 
-  it('marks the added line', async () => {
-    serve(DIFF);
+  it('shows the whole document, not only what changed', async () => {
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    const added = await screen.findByText('- Built a payments platform');
-    expect(added.className).toMatch(/emerald/);
+    expect(await screen.findByText(/Built a payments platform/)).toBeInTheDocument();
+    expect(screen.getByText(/Led a team of four/)).toBeInTheDocument();
   });
 
-  it('leaves untouched lines unmarked', async () => {
-    serve(DIFF);
-    render(<DocumentPanel documentId="d1" />);
-    const same = await screen.findByText('- Led a team of four');
-    expect(same.className).not.toMatch(/emerald|line-through|destructive/);
+  it('shows no struck-through text, whatever changed', async () => {
+    serve(DOC);
+    const { container } = render(<DocumentPanel documentId="d1" />);
+    await screen.findByText(/Built a payments platform/);
+    expect(container.querySelector('[class*="line-through"]')).toBeNull();
   });
 
-  it('shows the agent claim beside the evidence', async () => {
-    serve(DIFF);
+  it('says what changed, in a sentence above the text', async () => {
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
     expect(
       await screen.findByText('Tightened your Klarna bullets.')
@@ -69,53 +60,38 @@ describe('showing what changed', () => {
   });
 
   it('names the revision, so a rewrite is visibly a new version', async () => {
-    serve(DIFF);
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
     expect(await screen.findByText('v2')).toBeInTheDocument();
   });
-});
 
-describe('the first version', () => {
-  it('renders as plain text with nothing marked', async () => {
-    serve({
-      revision: 1,
-      summary: 'Wrote it.',
-      has_previous: false,
-      lines: [
-        { kind: 'same', text: '# Zijie Liang' },
-        { kind: 'same', text: 'Engineer.' },
-      ],
-    });
-    render(<DocumentPanel documentId="d1" />);
-    const heading = await screen.findByText('# Zijie Liang');
-    expect(heading.className).not.toMatch(/emerald|line-through/);
+  it('titles itself from the document rather than the stale prop', async () => {
+    serve(DOC);
+    render(<DocumentPanel documentId="d1" title="Untitled" />);
+    expect(await screen.findByText('Zijie Liang — CV')).toBeInTheDocument();
   });
 });
 
 describe('copying', () => {
-  it('copies the document without the deleted lines in it', async () => {
+  it('copies the markdown source', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
-    serve(DIFF);
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
 
     fireEvent.click(await screen.findByLabelText('Copy document'));
 
-    await waitFor(() => expect(writeText).toHaveBeenCalled());
-    const copied = writeText.mock.calls[0][0];
-    expect(copied).toContain('- Built a payments platform');
-    expect(copied).not.toContain('- Built things');
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(DOC.content));
   });
 
   it('survives the clipboard being denied', async () => {
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
     });
-    serve(DIFF);
+    serve(DOC);
     render(<DocumentPanel documentId="d1" />);
     fireEvent.click(await screen.findByLabelText('Copy document'));
-    // The text is on screen and selectable; nothing should have thrown.
-    expect(await screen.findByText('# Zijie Liang')).toBeInTheDocument();
+    expect(await screen.findByText(/Built a payments platform/)).toBeInTheDocument();
   });
 });
 
@@ -134,11 +110,11 @@ describe('when there is nothing to show', () => {
 
 describe('a new revision', () => {
   it('refetches, rather than showing the first version forever', async () => {
-    serve(DIFF);
+    serve(DOC);
     const { rerender } = render(
       <DocumentPanel documentId="d1" revisionSignal={1} />
     );
-    await screen.findByText('# Zijie Liang');
+    await screen.findByText(/Built a payments platform/);
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
     rerender(<DocumentPanel documentId="d1" revisionSignal={2} />);
