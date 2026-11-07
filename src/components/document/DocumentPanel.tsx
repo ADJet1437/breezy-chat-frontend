@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Check, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { authenticatedGet } from '@/utils/authenticatedFetch';
 import { buildApiUrl } from '@/utils/apiConfig';
 import { DocumentEditor } from './DocumentEditor';
@@ -64,21 +70,21 @@ export function DocumentPanel({
     }
   };
 
-  const download = async () => {
+  const download = async (format: 'pdf' | 'docx') => {
     if (!document || downloading) return;
     setDownloading(true);
     try {
       // Fetched rather than linked: the endpoint needs the auth header,
       // and a plain <a href> cannot carry one.
       const response = await authenticatedGet(
-        buildApiUrl(`/api/v1/documents/${documentId}/export.pdf`)
+        buildApiUrl(`/api/v1/documents/${documentId}/export.${format}`)
       );
       if (!response.ok) return;
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;
-      link.download = `${document.title || 'document'}.pdf`;
+      link.download = `${document.title || 'document'}.${format}`;
       link.click();
       // Revoked, or the blob is held for the life of the tab -- a few
       // megabytes each time someone downloads a draft.
@@ -107,25 +113,37 @@ export function DocumentPanel({
             Saving…
           </span>
         )}
-        {document && !saving && (
-          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-            v{document.revision}
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={download}
-          disabled={!document || downloading}
-          aria-label="Download as PDF"
-          title="Download as PDF"
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-        >
-          {downloading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={!document || downloading}
+              className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-muted disabled:opacity-40"
+            >
+              {downloading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              Download
+              <ChevronDown className="h-3 w-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => download('pdf')}>
+              PDF
+              <span className="ml-auto pl-4 text-[11px] text-muted-foreground">
+                to send
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => download('docx')}>
+              Word
+              <span className="ml-auto pl-4 text-[11px] text-muted-foreground">
+                to keep editing
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <button
           type="button"
           onClick={copy}

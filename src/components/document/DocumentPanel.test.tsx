@@ -80,10 +80,14 @@ describe('reading the document', () => {
     expect(screen.queryByText('Tightened your Klarna bullets.')).toBeNull();
   });
 
-  it('names the revision', async () => {
+  it('does not show the revision number', async () => {
+    // Version bookkeeping the user never asked for. It matters to the
+    // agent, which must send it back; it means nothing to a person
+    // reading their CV.
     serve(DOC);
     render(<DocumentPanel documentId="d1" />);
-    expect(await screen.findByText('v2')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
+    expect(screen.queryByText('v2')).toBeNull();
   });
 });
 
@@ -220,86 +224,114 @@ describe('a new revision from the agent', () => {
   });
 });
 
-describe('downloading a PDF', () => {
+describe('downloading', () => {
   function stubBlobUrls() {
-    const created: string[] = [];
     const revoked: string[] = [];
-    URL.createObjectURL = vi.fn(() => {
-      const url = `blob:${created.length}`;
-      created.push(url);
-      return url;
-    });
+    URL.createObjectURL = vi.fn(() => 'blob:x');
     URL.revokeObjectURL = vi.fn((url: string) => void revoked.push(url));
-    return { created, revoked };
+    return { revoked };
   }
 
-  it('asks the server for the PDF and saves it under the title', async () => {
-    stubBlobUrls();
+  function captureDownloads() {
     const clicked: HTMLAnchorElement[] = [];
     const realCreate = window.document.createElement.bind(window.document);
     vi.spyOn(window.document, 'createElement').mockImplementation((tag: any) => {
       const el = realCreate(tag);
-      if (tag === 'a') {
-        el.click = () => void clicked.push(el as HTMLAnchorElement);
-      }
+      if (tag === 'a') el.click = () => void clicked.push(el as HTMLAnchorElement);
       return el;
     });
+    return clicked;
+  }
 
+  function serveExports() {
     const calls: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) => {
       calls.push(String(url));
-      if (String(url).includes('export.pdf')) {
-        return { ok: true, blob: async () => new Blob(['%PDF-']) } as Response;
+      if (String(url).includes('export.')) {
+        return { ok: true, blob: async () => new Blob(['x']) } as Response;
       }
       return { ok: true, json: async () => DOC } as Response;
     });
+    return calls;
+  }
 
+  async function openMenu() {
     render(<DocumentPanel documentId="d1" />);
-    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByLabelText('Document')).toBeInTheDocument()
+    );
+    fireEvent.pointerDown(
+      screen.getByText('Download'),
+      new PointerEvent('pointerdown', { ctrlKey: false, button: 0 })
+    );
+  }
 
-    fireEvent.click(screen.getByLabelText('Download as PDF'));
+  it('offers the button by name, not as a bare icon', async () => {
+    serveExports();
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Document')).toBeInTheDocument()
+    );
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  it('offers both formats', async () => {
+    serveExports();
+    await openMenu();
+    expect(await screen.findByText('PDF')).toBeInTheDocument();
+    expect(screen.getByText('Word')).toBeInTheDocument();
+  });
+
+  it('downloads a PDF under the document title', async () => {
+    stubBlobUrls();
+    const clicked = captureDownloads();
+    const calls = serveExports();
+    await openMenu();
+
+    fireEvent.click(await screen.findByText('PDF'));
 
     await waitFor(() => expect(clicked).toHaveLength(1));
     expect(calls.some(u => u.includes('/documents/d1/export.pdf'))).toBe(true);
     expect(clicked[0].download).toBe('Zijie Liang — CV.pdf');
   });
 
+  it('downloads a Word file from the same button', async () => {
+    stubBlobUrls();
+    const clicked = captureDownloads();
+    const calls = serveExports();
+    await openMenu();
+
+    fireEvent.click(await screen.findByText('Word'));
+
+    await waitFor(() => expect(clicked).toHaveLength(1));
+    expect(calls.some(u => u.includes('/documents/d1/export.docx'))).toBe(true);
+    expect(clicked[0].download).toBe('Zijie Liang — CV.docx');
+  });
+
   it('releases the blob, rather than holding it for the life of the tab', async () => {
     const { revoked } = stubBlobUrls();
-    const realCreate = window.document.createElement.bind(window.document);
-    vi.spyOn(window.document, 'createElement').mockImplementation((tag: any) => {
-      const el = realCreate(tag);
-      if (tag === 'a') el.click = () => {};
-      return el;
-    });
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) =>
-      String(url).includes('export.pdf')
-        ? ({ ok: true, blob: async () => new Blob(['%PDF-']) } as Response)
-        : ({ ok: true, json: async () => DOC } as Response)
-    );
+    captureDownloads();
+    serveExports();
+    await openMenu();
 
-    render(<DocumentPanel documentId="d1" />);
-    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
-    fireEvent.click(screen.getByLabelText('Download as PDF'));
-
+    fireEvent.click(await screen.findByText('PDF'));
     await waitFor(() => expect(revoked).toHaveLength(1));
   });
 
   it('recovers if the export fails, leaving the document alone', async () => {
     stubBlobUrls();
+    captureDownloads();
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any) =>
-      String(url).includes('export.pdf')
+      String(url).includes('export.')
         ? ({ ok: false, blob: async () => new Blob() } as Response)
         : ({ ok: true, json: async () => DOC } as Response)
     );
+    await openMenu();
 
-    render(<DocumentPanel documentId="d1" />);
-    await waitFor(() => expect(screen.getByLabelText('Document')).toBeInTheDocument());
-    fireEvent.click(screen.getByLabelText('Download as PDF'));
+    fireEvent.click(await screen.findByText('PDF'));
 
-    // The button comes back rather than spinning for ever.
     await waitFor(() =>
-      expect(screen.getByLabelText('Download as PDF')).not.toBeDisabled()
+      expect(screen.getByText('Download').closest('button')).not.toBeDisabled()
     );
     expect(screen.getByLabelText('Document').textContent).toContain(
       'Built a payments platform'
