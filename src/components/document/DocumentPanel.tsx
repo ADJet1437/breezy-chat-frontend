@@ -1,0 +1,193 @@
+import { useState } from 'react';
+import { Check, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { authenticatedGet } from '@/utils/authenticatedFetch';
+import { buildApiUrl } from '@/utils/apiConfig';
+import { DocumentEditor } from './DocumentEditor';
+import { useDocument } from './useDocument';
+
+interface Props {
+  documentId: string | null;
+  title?: string | null;
+  revisionSignal?: number;
+  /** The agent is writing. The editor locks rather than letting the user
+   *  type into text that is about to be replaced. */
+  busy?: boolean;
+  /** The document as it arrives, before the tool has run. Shown instead of
+   *  the editor while it is non-null. */
+  streaming?: string | null;
+}
+
+const COPIED_FOR_MS = 1600;
+
+/**
+ * The document the agent is working on, rendered to read.
+ *
+ * It showed a line-by-line diff first, and that was wrong. Line diffing
+ * suits bullets and ruins prose: change three words in a paragraph and the
+ * whole paragraph is struck through and re-added, so the document becomes
+ * unreadable at exactly the moment the user wants to read it. What changed
+ * is said in a sentence above instead -- the agent's own summary -- and the
+ * text below is just the document.
+ *
+ * Revisions are still kept server-side. They are not shown.
+ *
+ * It is an editor, always -- there is no read mode to switch out of. The
+ * document is the thing the user came for, and a panel that showed it
+ * read-only until a button was pressed made editing feel like a mode
+ * rather than the point.
+ *
+ * A user edit is saved as a revision like any the agent writes, which is
+ * what makes it survive: current_revision is the version token both
+ * writers share, and the agent must send back the one it was working
+ * from. A number it has not seen refuses its write instead of overwriting
+ * what was typed here.
+ */
+export function DocumentPanel({
+  documentId,
+  title,
+  revisionSignal = 0,
+  busy = false,
+  streaming,
+}: Props) {
+  const { document, loading, error, draft, setDraft, saving } = useDocument(
+    documentId,
+    revisionSignal
+  );
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const copy = async () => {
+    if (!document) return;
+    try {
+      await navigator.clipboard.writeText(draft);
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPIED_FOR_MS);
+    } catch {
+      // Denied clipboard permission, or an insecure origin. The text is on
+      // screen and selectable either way.
+    }
+  };
+
+  const download = async (format: 'pdf' | 'docx') => {
+    if (!document || downloading) return;
+    setDownloading(true);
+    try {
+      // Fetched rather than linked: the endpoint needs the auth header,
+      // and a plain <a href> cannot carry one.
+      const response = await authenticatedGet(
+        buildApiUrl(`/api/v1/documents/${documentId}/export.${format}`)
+      );
+      if (!response.ok) return;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `${document.title || 'document'}.${format}`;
+      link.click();
+      // Revoked, or the blob is held for the life of the tab -- a few
+      // megabytes each time someone downloads a draft.
+      URL.revokeObjectURL(url);
+    } catch {
+      // Nothing was saved or lost; the document is still on screen.
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!documentId && !streaming) return null;
+
+  return (
+    <div className="flex h-full min-w-0 flex-col bg-background">
+      <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
+        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+        {/* min-w-0 is what makes truncate work: a flex item defaults to
+            min-width:auto and would otherwise push the panel wider than its
+            pane rather than eliding. */}
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          {document?.title || title || 'Document'}
+        </span>
+        {saving && (
+          <span className="shrink-0 text-[11px] text-muted-foreground">
+            Saving…
+          </span>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={!document || downloading}
+              aria-label="Download"
+              title="Download"
+              className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+            >
+              {downloading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => download('pdf')}>
+              PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => download('docx')}>
+              Word
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button
+          type="button"
+          onClick={copy}
+          disabled={!document}
+          aria-label="Copy document"
+          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </button>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        {loading && !document && (
+          <div className="flex items-center gap-2 px-5 py-5 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          </div>
+        )}
+
+        {error && <p className="px-5 py-5 text-sm text-destructive">{error}</p>}
+
+        {streaming !== null && streaming !== undefined && (
+          // Plain text while it arrives, not the editor. Feeding a partial
+          // document to TipTap on every delta would reparse it seventy
+          // times and fight the caret; and half a Markdown heading is not
+          // a heading yet, so rendering it would make the text jump as
+          // each line completes.
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <p className="whitespace-pre-wrap break-words font-sans text-[13.5px] leading-relaxed text-foreground">
+              {streaming}
+              <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-foreground/70" />
+            </p>
+          </div>
+        )}
+
+        {document && (streaming === null || streaming === undefined) && (
+          <DocumentEditor
+            value={draft}
+            onChange={setDraft}
+            readOnly={busy}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

@@ -8,6 +8,7 @@ import { CreditStatus } from '../../hooks/useMessageStreaming';
 import SubscriptionDialog from '../SubscriptionDialog';
 import { DeckPanel } from '../deck/DeckPanel';
 import { AppPanel } from '../app/AppPanel';
+import { DocumentPanel } from '../document/DocumentPanel';
 import {
   ResizableHandle,
   ResizablePanel,
@@ -48,6 +49,10 @@ interface ChatViewProps {
   appRevision?: number;
   appProgress?: string | null;
   deckRevision?: number;
+  documentId?: string | null;
+  documentTitle?: string | null;
+  documentRevision?: number;
+  documentStreaming?: string | null;
   expectedSlides?: number;
 
   // Subscription dialog
@@ -89,6 +94,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
   appRevision = 0,
   appProgress,
   deckRevision = 0,
+  documentId,
+  documentTitle,
+  documentRevision = 0,
+  documentStreaming,
   expectedSlides = 0,
   showSubscriptionDialog,
   onSubscriptionDialogChange,
@@ -147,10 +156,58 @@ export const ChatView: React.FC<ChatViewProps> = ({
       </div>
   );
 
-  // A conversation shows one artifact: the deck if it has one, otherwise the
-  // app. The app panel opens on design_app, long before anything is built,
-  // so the schema is visible while the pages are being written.
-  const artifact = deckId ? 'deck' : appId ? 'app' : null;
+  // A conversation shows one artifact. The order is the precedence: a deck
+  // wins over an app, which wins over a document, because that is the order
+  // of how much screen a thing needs rather than any claim about
+  // importance.
+  //
+  // A lookup rather than a chain of ternaries -- the old comment here asked
+  // for exactly this once a third type arrived, and a viewMode union is what
+  // made the panel before this one assume everything was a code project.
+  const ARTIFACTS = [
+    {
+      kind: 'deck' as const,
+      label: 'Slides',
+      present: Boolean(deckId),
+      render: () => (
+        <DeckPanel
+          deckId={deckId}
+          revisionSignal={deckRevision}
+          expectedSlides={expectedSlides}
+        />
+      ),
+    },
+    {
+      kind: 'app' as const,
+      label: 'App',
+      present: Boolean(appId),
+      render: () => (
+        <AppPanel
+          missionId={missionId ?? null}
+          slug={appSlug ?? null}
+          revisionSignal={appRevision}
+          progress={appProgress}
+        />
+      ),
+    },
+    {
+      kind: 'document' as const,
+      label: 'Document',
+      present: Boolean(documentId) || Boolean(documentStreaming),
+      render: () => (
+        <DocumentPanel
+          documentId={documentId ?? null}
+          title={documentTitle}
+          revisionSignal={documentRevision}
+          busy={isStreaming}
+          streaming={documentStreaming}
+        />
+      ),
+    },
+  ];
+
+  const shown = ARTIFACTS.find(a => a.present) ?? null;
+  const artifact = shown?.kind ?? null;
 
   // An artifact appearing mid-conversation is the interesting moment, and on
   // a phone it happens on a screen the user is not looking at. Switch to it
@@ -160,22 +217,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   }, [artifact]);
 
   const artifactPane = (
-    <div className="h-full min-w-0">
-      {artifact === 'deck' ? (
-        <DeckPanel
-          deckId={deckId}
-          revisionSignal={deckRevision}
-          expectedSlides={expectedSlides}
-        />
-      ) : (
-        <AppPanel
-          missionId={missionId ?? null}
-          slug={appSlug ?? null}
-          revisionSignal={appRevision}
-          progress={appProgress}
-        />
-      )}
-    </div>
+    <div className="h-full min-w-0">{shown?.render()}</div>
   );
 
   // Phones get one pane and a switch rather than a split. The panes stay
@@ -185,7 +227,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     return (
       <div className="flex h-full w-full flex-col overflow-hidden bg-background" data-chat-interface>
         <div className="flex shrink-0 gap-1 border-b bg-background p-1.5">
-          {([['chat', 'Chat'], ['artifact', artifact === 'deck' ? 'Slides' : 'App']] as const).map(
+          {([['chat', 'Chat'], ['artifact', shown?.label ?? 'Artifact']] as const).map(
             ([key, label]) => (
               <button
                 key={key}
