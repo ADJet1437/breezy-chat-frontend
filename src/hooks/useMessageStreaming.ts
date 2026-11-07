@@ -31,6 +31,9 @@ interface UseMessageStreamingProps {
 }
 
 interface UseMessageStreamingReturn {
+  documentId: string | null;
+  documentTitle: string | null;
+  documentRevision: number;
   creditStatus: CreditStatus | null;
   isStreaming: boolean;
   missionPhase: MissionPhase;
@@ -92,6 +95,11 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   const [deckRevision, setDeckRevision] = useState<number>(0);
   const [expectedSlides, setExpectedSlides] = useState<number>(0);
   const [appId, setAppId] = useState<string | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [documentTitle, setDocumentTitle] = useState<string | null>(null);
+  // Bumped by every write_document, so the panel refetches the diff
+  // instead of showing the first version for the rest of the conversation.
+  const [documentRevision, setDocumentRevision] = useState(0);
   // The app's own address. Carried because a brand-new conversation
   // has no mission id on the client yet -- the mission is created
   // server-side mid-request -- and without this the panel had nothing
@@ -122,6 +130,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     setAppSlug(null);
     setAppRevision(0);
     setAppProgress(null);
+    setDocumentId(null);
+    setDocumentTitle(null);
+    setDocumentRevision(0);
     // Belongs to the conversation being left, exactly like the deck above.
     sessionMissionId.current = null;
 
@@ -145,6 +156,27 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
         }
       } catch {
         // A conversation without a deck is the normal case.
+      }
+    })();
+
+    // The document in this conversation. Same reason as the deck below:
+    // documentId otherwise exists only for as long as the stream that
+    // announced it, so reopening a finished conversation showed the whole
+    // rewrite in the transcript and no document to read.
+    (async () => {
+      try {
+        const response = await authenticatedGet(
+          buildApiUrl(`/api/v1/documents?mission_id=${missionId}`)
+        );
+        if (!response.ok || cancelled) return;
+        const documents = await response.json();
+        const newest = (documents ?? [])[0];
+        if (newest && !cancelled) {
+          setDocumentId(newest.id);
+          setDocumentTitle(newest.title);
+        }
+      } catch {
+        // A conversation without a document is the normal case.
       }
     })();
 
@@ -423,6 +455,11 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     // without naming the app; the panel still wants to know.
                     setAppRevision(n => n + 1);
                   }
+                  if (data.data.document_id) {
+                    setDocumentId(data.data.document_id);
+                    if (data.data.title) setDocumentTitle(data.data.title);
+                    setDocumentRevision(n => n + 1);
+                  }
                   if (data.data.deck_id) {
                     // modify_deck returns the same deck_id with a higher
                     // revision; the revision is what busts the slide image
@@ -553,6 +590,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   };
 
   return {
+    documentId,
+    documentTitle,
+    documentRevision,
     creditStatus,
     isStreaming,
     missionPhase,
