@@ -174,6 +174,7 @@ const ChatInterface = ({
       documentId={streamingHook.documentId}
       documentTitle={streamingHook.documentTitle}
       documentRevision={streamingHook.documentRevision}
+      documentStreaming={streamingHook.documentStreaming}
       deckId={streamingHook.deckId}
       deckRevision={streamingHook.deckRevision}
       expectedSlides={streamingHook.expectedSlides}

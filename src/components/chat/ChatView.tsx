@@ -52,6 +52,7 @@ interface ChatViewProps {
   documentId?: string | null;
   documentTitle?: string | null;
   documentRevision?: number;
+  documentStreaming?: string | null;
   expectedSlides?: number;
 
   // Subscription dialog
@@ -96,6 +97,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   documentId,
   documentTitle,
   documentRevision = 0,
+  documentStreaming,
   expectedSlides = 0,
   showSubscriptionDialog,
   onSubscriptionDialogChange,
@@ -191,13 +193,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
     {
       kind: 'document' as const,
       label: 'Document',
-      present: Boolean(documentId),
+      present: Boolean(documentId) || Boolean(documentStreaming),
       render: () => (
         <DocumentPanel
           documentId={documentId ?? null}
           title={documentTitle}
           revisionSignal={documentRevision}
           busy={isStreaming}
+          streaming={documentStreaming}
         />
       ),
     },

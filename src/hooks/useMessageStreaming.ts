@@ -34,6 +34,7 @@ interface UseMessageStreamingReturn {
   documentId: string | null;
   documentTitle: string | null;
   documentRevision: number;
+  documentStreaming: string | null;
   creditStatus: CreditStatus | null;
   isStreaming: boolean;
   missionPhase: MissionPhase;
@@ -100,6 +101,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
   // Bumped by every write_document, so the panel refetches the diff
   // instead of showing the first version for the rest of the conversation.
   const [documentRevision, setDocumentRevision] = useState(0);
+  // The document as it is being written, before the tool has run and
+  // before anything is saved. Null when nothing is being written.
+  const [documentStreaming, setDocumentStreaming] = useState<string | null>(null);
   // The app's own address. Carried because a brand-new conversation
   // has no mission id on the client yet -- the mission is created
   // server-side mid-request -- and without this the panel had nothing
@@ -133,6 +137,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     setDocumentId(null);
     setDocumentTitle(null);
     setDocumentRevision(0);
+    setDocumentStreaming(null);
     // Belongs to the conversation being left, exactly like the deck above.
     sessionMissionId.current = null;
 
@@ -294,7 +299,13 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
 
                 const data = JSON.parse(jsonStr);
 
-                if (data.event_type === 'credits_status') {
+                if (data.event_type === 'document_stream') {
+                  // Deltas, so this appends. The first one starts a fresh
+                  // document rather than continuing the last.
+                  setDocumentStreaming(current =>
+                    (current ?? '') + (data.answer ?? '')
+                  );
+                } else if (data.event_type === 'credits_status') {
                   // Sent once, after the turn finishes and its usage has been
                   // written. The turn in flight is never interrupted, so this
                   // is the only chance to warn before the next long one.
@@ -456,6 +467,9 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
                     setAppRevision(n => n + 1);
                   }
                   if (data.data.document_id) {
+                    // Written and saved. The panel refetches the real
+                    // thing, so the preview has nothing left to show.
+                    setDocumentStreaming(null);
                     setDocumentId(data.data.document_id);
                     if (data.data.title) setDocumentTitle(data.data.title);
                     setDocumentRevision(n => n + 1);
@@ -579,6 +593,10 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsStreaming(false);
+      // A write that never completed -- refused, or the turn ended first --
+      // would otherwise leave its half-written preview on screen for ever,
+      // over whatever document is actually saved.
+      setDocumentStreaming(null);
       setAttachedFileIds([]);
       setAttachedFileDetails([]);
 
@@ -593,6 +611,7 @@ export const useMessageStreaming = (props: UseMessageStreamingProps): UseMessage
     documentId,
     documentTitle,
     documentRevision,
+    documentStreaming,
     creditStatus,
     isStreaming,
     missionPhase,

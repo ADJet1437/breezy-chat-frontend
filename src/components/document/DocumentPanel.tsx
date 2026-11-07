@@ -18,6 +18,9 @@ interface Props {
   /** The agent is writing. The editor locks rather than letting the user
    *  type into text that is about to be replaced. */
   busy?: boolean;
+  /** The document as it arrives, before the tool has run. Shown instead of
+   *  the editor while it is non-null. */
+  streaming?: string | null;
 }
 
 const COPIED_FOR_MS = 1600;
@@ -50,6 +53,7 @@ export function DocumentPanel({
   title,
   revisionSignal = 0,
   busy = false,
+  streaming,
 }: Props) {
   const { document, loading, error, draft, setDraft, saving } = useDocument(
     documentId,
@@ -96,7 +100,7 @@ export function DocumentPanel({
     }
   };
 
-  if (!documentId) return null;
+  if (!documentId && !streaming) return null;
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-background">
@@ -162,7 +166,21 @@ export function DocumentPanel({
 
         {error && <p className="px-5 py-5 text-sm text-destructive">{error}</p>}
 
-        {document && (
+        {streaming !== null && streaming !== undefined && (
+          // Plain text while it arrives, not the editor. Feeding a partial
+          // document to TipTap on every delta would reparse it seventy
+          // times and fight the caret; and half a Markdown heading is not
+          // a heading yet, so rendering it would make the text jump as
+          // each line completes.
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <p className="whitespace-pre-wrap break-words font-sans text-[13.5px] leading-relaxed text-foreground">
+              {streaming}
+              <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-foreground/70" />
+            </p>
+          </div>
+        )}
+
+        {document && (streaming === null || streaming === undefined) && (
           <DocumentEditor
             value={draft}
             onChange={setDraft}

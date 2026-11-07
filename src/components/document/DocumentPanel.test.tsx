@@ -332,3 +332,59 @@ describe('downloading', () => {
     );
   });
 });
+
+describe('while the document is being written', () => {
+  it('shows the text as it arrives, before anything is saved', async () => {
+    serve(DOC);
+    render(
+      <DocumentPanel
+        documentId={null}
+        streaming={'# Zijie Liang\n\nBackend eng'}
+        busy
+      />
+    );
+    expect(await screen.findByText(/Backend eng/)).toBeInTheDocument();
+  });
+
+  it('opens the panel before the document has an id', () => {
+    // The write has not finished, so there is nothing to fetch yet -- but
+    // the user should be watching it happen, not staring at the chat.
+    const { container } = render(
+      <DocumentPanel documentId={null} streaming="# Writing" busy />
+    );
+    expect(container).not.toBeEmptyDOMElement();
+  });
+
+  it('does not put the half-written text in the editor', async () => {
+    // TipTap would reparse the document on every delta and fight the
+    // caret, and half a Markdown heading is not a heading yet.
+    serve(DOC);
+    render(
+      <DocumentPanel documentId="d1" streaming={'# Half a head'} busy />
+    );
+    await screen.findByText(/Half a head/);
+    expect(screen.queryByLabelText('Document')).toBeNull();
+  });
+
+  it('gives way to the editor once the write lands', async () => {
+    serve(DOC);
+    const { rerender } = render(
+      <DocumentPanel documentId="d1" streaming={'# Partial'} busy />
+    );
+    await screen.findByText(/Partial/);
+
+    rerender(<DocumentPanel documentId="d1" streaming={null} />);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Document')).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/Partial/)).toBeNull();
+  });
+
+  it('shows the saved document when nothing is streaming', async () => {
+    serve(DOC);
+    render(<DocumentPanel documentId="d1" />);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Document')).toBeInTheDocument()
+    );
+  });
+});
